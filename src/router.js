@@ -39,6 +39,11 @@ import MessagesCreate from './pages/Messages/Create.vue';
 import MessagesShow from './pages/Messages/Show.vue';
 import OnlineCredentialsIndex from './pages/OnlineSystemCredentials/Index.vue';
 import OnlineCredentialsShow from './pages/OnlineSystemCredentials/Show.vue';
+import InvoicesIndex from './pages/Invoices/Index.vue';
+import InvoicesDue from './pages/Invoices/Due.vue';
+import CreditNotesIndex from './pages/CreditNotes/Index.vue';
+import ProInvoiceCreate from './pages/CustomerProInvoices/Create.vue';
+import AccountTransactionsJournal from './pages/AccountTransactions/Journal.vue';
 import OnlineUsers from './pages/OnlineUsers.vue';
 import Me from './pages/Me.vue';
 
@@ -50,7 +55,12 @@ const routes = [
     { path: '/suppliers/:id', name: 'suppliers.show', component: SuppliersShow },
     { path: '/customers', name: 'customers.index', component: CustomersIndex },
     { path: '/customers/create', name: 'customers.create', component: CustomersManage },
+    { path: '/customers/invoices', name: 'customerInvoices.index', component: InvoicesIndex },
+    { path: '/customers/invoices/due', name: 'customerInvoices.due', component: InvoicesDue },
+    { path: '/customers/credit-notes', name: 'customerCreditNotes.index', component: CreditNotesIndex },
+    { path: '/customers/:customer/pro-invoices/create', name: 'customerProInvoices.create', component: ProInvoiceCreate },
     { path: '/customers/:id', name: 'customers.show', component: CustomersShow },
+    { path: '/finance/account-transactions/journal/:type/:reference', name: 'accountTransactions.journal', component: AccountTransactionsJournal },
     { path: '/departures', name: 'departures.index', component: DeparturesIndex },
     { path: '/departures/overview', name: 'departures.overview', component: DeparturesOverview },
     { path: '/meal-types', name: 'mealTypes.index', component: MealTypesIndex },
