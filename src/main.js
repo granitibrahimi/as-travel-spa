@@ -5,12 +5,13 @@ import App from './App.vue';
 import router from './router';
 import { initTheme } from './helpers/theme';
 import { setUnauthenticatedHandler } from './helpers/api';
-
-// Apply the saved/OS theme before anything renders (no flash of wrong theme).
-initTheme();
 import { useAuthStore } from './stores/auth';
 import { usePresenceStore } from './stores/presence';
 import { useIdleStore } from './stores/idle';
+import { useNotificationsStore } from './stores/notifications';
+
+// Apply the saved/OS theme before anything renders (no flash of wrong theme).
+initTheme();
 
 const app = createApp(App);
 const pinia = createPinia();
@@ -20,6 +21,7 @@ app.use(pinia);
 const auth = useAuthStore();
 const presence = usePresenceStore();
 const idle = useIdleStore();
+const notifications = useNotificationsStore();
 
 // A 401 from the API drops the token; send the user back to login.
 setUnauthenticatedHandler(() => {
@@ -32,12 +34,13 @@ setUnauthenticatedHandler(() => {
 auth.bootstrap().finally(() => {
     app.use(router);
 
-    // Join/leave the online-users presence channel + arm the idle auto-logout
-    // with auth state. Echo is already connected by the auth store on
-    // login/bootstrap.
+    // Join/leave the online-users presence channel, subscribe to real-time
+    // notifications, and arm the idle auto-logout with auth state. Echo is
+    // already connected by the auth store on login/bootstrap.
     watch(() => auth.isAuthenticated, (isAuthenticated) => {
         if (isAuthenticated) {
             presence.join();
+            notifications.subscribe();
 
             // Warn then log out after a spell of inactivity. The redirect carries
             // a hint so the login page can explain why the session ended.
@@ -47,6 +50,7 @@ auth.bootstrap().finally(() => {
             });
         } else {
             presence.leave();
+            notifications.unsubscribe();
             idle.stop();
         }
     }, { immediate: true });

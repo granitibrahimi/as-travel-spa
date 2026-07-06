@@ -6,15 +6,15 @@ import NotFound from './pages/NotFound.vue';
 import SuppliersIndex from './pages/Suppliers/Index.vue';
 import SuppliersManage from './pages/Suppliers/Manage.vue';
 import SuppliersShow from './pages/Suppliers/Show.vue';
-import CustomersIndex from './pages/Customers/Index.vue';
-import CustomersManage from './pages/Customers/Manage.vue';
-import CustomersShow from './pages/Customers/Show.vue';
+import CustomersIndex from './pages/Customers/Customers/Index.vue';
+import CustomersManage from './pages/Customers/Customers/Manage.vue';
+import CustomersShow from './pages/Customers/Customers/Show.vue';
 import DeparturesIndex from './pages/Departures/Index.vue';
 import DeparturesOverview from './pages/Departures/Overview.vue';
 import MealTypesIndex from './pages/MealTypes/Index.vue';
 import MealTypesManage from './pages/MealTypes/Manage.vue';
-import CountriesIndex from './pages/Countries/Index.vue';
-import CountriesManage from './pages/Countries/Manage.vue';
+import CountriesIndex from './pages/Base/Countries/Index.vue';
+import CountriesManage from './pages/Base/Countries/Manage.vue';
 import SentEmailsIndex from './pages/SentEmails/Index.vue';
 import SentEmailsShow from './pages/SentEmails/Show.vue';
 import QuickBooksSyncIndex from './pages/QuickBooksSync/Index.vue';
@@ -30,33 +30,33 @@ import DestinationsParent from './pages/Destinations/Parent.vue';
 import ParentDestinationsIndex from './pages/ParentDestinations/Index.vue';
 import ParentDestinationsManage from './pages/ParentDestinations/Manage.vue';
 import ParentDestinationsChildren from './pages/ParentDestinations/ChildDestinations.vue';
-import AnnouncementsIndex from './pages/Announcements/Index.vue';
-import AnnouncementsManage from './pages/Announcements/Manage.vue';
-import AnnouncementsNew from './pages/Announcements/New.vue';
-import AnnouncementsStatistics from './pages/Announcements/Statistics.vue';
+import AnnouncementsIndex from './pages/Base/Announcements/Index.vue';
+import AnnouncementsManage from './pages/Base/Announcements/Manage.vue';
+import AnnouncementsNew from './pages/Base/Announcements/New.vue';
+import AnnouncementsStatistics from './pages/Base/Announcements/Statistics.vue';
 import MessagesIndex from './pages/Messages/Index.vue';
 import MessagesCreate from './pages/Messages/Create.vue';
 import MessagesShow from './pages/Messages/Show.vue';
 import OnlineCredentialsIndex from './pages/OnlineSystemCredentials/Index.vue';
 import OnlineCredentialsShow from './pages/OnlineSystemCredentials/Show.vue';
-import PaymentMethodsIndex from './pages/PaymentMethods/Index.vue';
-import PaymentMethodsManage from './pages/PaymentMethods/Manage.vue';
-import TaxTypesIndex from './pages/TaxTypes/Index.vue';
-import TaxTypesManage from './pages/TaxTypes/Manage.vue';
-import InvoicesIndex from './pages/Invoices/Index.vue';
-import InvoicesDue from './pages/Invoices/Due.vue';
-import CreditNotesIndex from './pages/CreditNotes/Index.vue';
-import ProInvoiceCreate from './pages/CustomerProInvoices/Create.vue';
-import AccountTransactionsJournal from './pages/AccountTransactions/Journal.vue';
+import PaymentMethodsIndex from './pages/Finance/PaymentMethods/Index.vue';
+import PaymentMethodsManage from './pages/Finance/PaymentMethods/Manage.vue';
+import TaxTypesIndex from './pages/Finance/TaxTypes/Index.vue';
+import TaxTypesManage from './pages/Finance/TaxTypes/Manage.vue';
+import InvoicesIndex from './pages/Customers/Invoices/Index.vue';
+import InvoicesDue from './pages/Customers/Invoices/Due.vue';
+import CreditNotesIndex from './pages/Customers/CreditNotes/Index.vue';
+import ProInvoiceCreate from './pages/Customers/ProInvoices/Create.vue';
+import AccountTransactionsJournal from './pages/Finance/AccountTransactions/Journal.vue';
 import JournalsIndex from './pages/Journals/Index.vue';
 import JournalsManage from './pages/Journals/Manage.vue';
 import JournalsShow from './pages/Journals/Show.vue';
-import ZReportsIndex from './pages/ZReports/Index.vue';
-import ZReportsCreate from './pages/ZReports/Create.vue';
-import ZReportsShow from './pages/ZReports/Show.vue';
-import AccountsIndex from './pages/Accounts/Index.vue';
-import AccountsTypes from './pages/Accounts/Types.vue';
-import AccountsMapping from './pages/Accounts/Mapping.vue';
+import ZReportsIndex from './pages/Finance/ZReports/Index.vue';
+import ZReportsCreate from './pages/Finance/ZReports/Create.vue';
+import ZReportsShow from './pages/Finance/ZReports/Show.vue';
+import AccountsIndex from './pages/Finance/Accounts/Index.vue';
+import AccountsTypes from './pages/Finance/Accounts/Types.vue';
+import AccountsMapping from './pages/Finance/Accounts/Mapping.vue';
 import UsersIndex from './pages/Users/Index.vue';
 import UsersManage from './pages/Users/Manage.vue';
 import UsersShow from './pages/Users/Show.vue';
@@ -84,6 +84,7 @@ import TasksIndex from './pages/Tasks/Index.vue';
 import TasksDashboard from './pages/Tasks/Dashboard.vue';
 import TasksCreate from './pages/Tasks/Create.vue';
 import TasksShow from './pages/Tasks/Show.vue';
+import NotificationsIndex from './pages/Notifications/Index.vue';
 import OnlineUsers from './pages/OnlineUsers.vue';
 import Me from './pages/Me.vue';
 
@@ -185,6 +186,7 @@ const routes = [
     { path: '/sent-emails/:id', name: 'sentEmails.show', component: SentEmailsShow },
     { path: '/quickbooks/sync', name: 'quickBooksSync.index', component: QuickBooksSyncIndex },
     { path: '/quickbooks/sync/:id', name: 'quickBooksSync.show', component: QuickBooksSyncShow },
+    { path: '/notifications', name: 'notifications.index', component: NotificationsIndex },
     { path: '/online-users', name: 'online-users', component: OnlineUsers },
     { path: '/me', name: 'me', component: Me },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
