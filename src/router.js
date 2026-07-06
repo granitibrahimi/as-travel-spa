@@ -4,11 +4,15 @@ import Login from './pages/Login.vue';
 import Home from './pages/Home.vue';
 import NotFound from './pages/NotFound.vue';
 import SuppliersIndex from './pages/Suppliers/Index.vue';
+import SuppliersManage from './pages/Suppliers/Manage.vue';
+import SuppliersShow from './pages/Suppliers/Show.vue';
 
 const routes = [
     { path: '/login', name: 'login', component: Login, meta: { public: true } },
     { path: '/', name: 'home', component: Home },
     { path: '/suppliers', name: 'suppliers.index', component: SuppliersIndex },
+    { path: '/suppliers/create', name: 'suppliers.create', component: SuppliersManage },
+    { path: '/suppliers/:id', name: 'suppliers.show', component: SuppliersShow },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
 ];
 

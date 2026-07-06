@@ -189,6 +189,20 @@ export const workspaces = [
             },
         ],
     },
+    {
+        key: 'administration',
+        label: 'Administration',
+        can: 'administration.access',
+        home: '/',
+        groups: [
+            {
+                label: 'Online Users',
+                items: [
+                    { label: 'All Users', to: '/online-users', can: 'onlineUsers.list' },
+                ],
+            },
+        ]
+    },
 ];
 
 /**
