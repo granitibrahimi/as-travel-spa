@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import api, { getToken, setToken } from '../api';
+import api, { getToken, setToken } from '../helpers/api';
 
 /**
  * Authentication state: the bearer token (persisted in localStorage) and the
