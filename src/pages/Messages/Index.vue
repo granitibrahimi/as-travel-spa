@@ -6,7 +6,8 @@ import { useAuthStore } from '../../stores/auth';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import ApiPagination from '../../components/ApiPagination.vue';
-import ActionsOverlay from '../../components/ActionsOverlay.vue';
+import DropdownMenu from '../../components/DropdownMenu.vue';
+import ConfirmDialog from '../../components/ConfirmDialog.vue';
 import Loader from '../../components/Loader.vue';
 
 // All data comes from the platform JSON API (bearer token). Paths are relative
@@ -17,8 +18,8 @@ const messages = ref(null);
 const loading = ref(false);
 const search = ref('');
 
-// Row picked via the ⋯ button — opens the actions side overlay.
-const selected = ref(null);
+// Row queued for deletion — opens the confirm dialog.
+const toDelete = ref(null);
 const deleting = ref(false);
 
 let request = null;
@@ -49,16 +50,22 @@ async function fetchMessages(page = 1) {
 
 onMounted(() => fetchMessages());
 
-async function deleteSelected() {
-    if (deleting.value || ! selected.value) {
+// Messages have ≤4 row actions, so they live in the ⋯ dropdown (see CLAUDE.md).
+const rowActions = (message) => [
+    ...(auth.can('messages.show') ? [{ label: 'View message', href: `/messages/${message.id}` }] : []),
+    ...(auth.can('messages.delete') ? [{ label: 'Delete message', danger: true, action: () => (toDelete.value = message) }] : []),
+];
+
+async function confirmDelete() {
+    if (deleting.value || ! toDelete.value) {
         return;
     }
 
     deleting.value = true;
 
     try {
-        await api.delete(`/messages/${selected.value.id}`);
-        selected.value = null;
+        await api.delete(`/messages/${toDelete.value.id}`);
+        toDelete.value = null;
         await fetchMessages(messages.value?.current_page ?? 1);
     } finally {
         deleting.value = false;
@@ -110,18 +117,7 @@ async function deleteSelected() {
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ message.sender ?? '-' }}</td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ message.created_at }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
-                                <button
-                                    type="button"
-                                    class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
-                                    aria-label="Message actions"
-                                    @click="selected = message"
-                                >
-                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <circle cx="12" cy="5" r="1.8" />
-                                        <circle cx="12" cy="12" r="1.8" />
-                                        <circle cx="12" cy="19" r="1.8" />
-                                    </svg>
-                                </button>
+                                <DropdownMenu :items="rowActions(message)" />
                             </td>
                         </tr>
                     </tbody>
@@ -141,34 +137,14 @@ async function deleteSelected() {
             </template>
         </FullWidthBox>
 
-        <!-- Per-message actions (legacy #side-overlay equivalent). The API does not
-             serve an `actions` array for messages, so the actions are built here from
-             the SPA's own permission gates. -->
-        <ActionsOverlay
-            :show="Boolean(selected)"
-            :title="selected?.subject"
-            :subtitle="selected ? `#${selected.id}${selected.sender ? ' · ' + selected.sender : ''}` : ''"
-            :delete-message="selected ? `${selected.subject} will be permanently deleted.` : ''"
-            @close="selected = null"
-        >
-            <div v-if="selected" class="space-y-3">
-                <RouterLink
-                    v-if="auth.can('messages.show')"
-                    :to="`/messages/${selected.id}`"
-                    class="block w-full rounded border border-gray-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-gray-50"
-                >
-                    View message
-                </RouterLink>
-                <button
-                    v-if="auth.can('messages.delete')"
-                    type="button"
-                    class="block w-full rounded border border-red-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-60"
-                    :disabled="deleting"
-                    @click="deleteSelected"
-                >
-                    {{ deleting ? 'Deleting…' : 'Delete message' }}
-                </button>
-            </div>
-        </ActionsOverlay>
+        <ConfirmDialog
+            :show="Boolean(toDelete)"
+            title="Delete message?"
+            :message="toDelete ? `${toDelete.subject} will be permanently deleted.` : ''"
+            confirm-label="Yes, delete"
+            :processing="deleting"
+            @confirm="confirmDelete"
+            @cancel="toDelete = null"
+        />
     </AppLayout>
 </template>

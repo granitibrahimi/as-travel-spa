@@ -48,6 +48,35 @@ import InvoicesDue from './pages/Invoices/Due.vue';
 import CreditNotesIndex from './pages/CreditNotes/Index.vue';
 import ProInvoiceCreate from './pages/CustomerProInvoices/Create.vue';
 import AccountTransactionsJournal from './pages/AccountTransactions/Journal.vue';
+import JournalsIndex from './pages/Journals/Index.vue';
+import JournalsManage from './pages/Journals/Manage.vue';
+import JournalsShow from './pages/Journals/Show.vue';
+import ZReportsIndex from './pages/ZReports/Index.vue';
+import ZReportsCreate from './pages/ZReports/Create.vue';
+import ZReportsShow from './pages/ZReports/Show.vue';
+import AccountsIndex from './pages/Accounts/Index.vue';
+import AccountsTypes from './pages/Accounts/Types.vue';
+import AccountsMapping from './pages/Accounts/Mapping.vue';
+import UsersIndex from './pages/Users/Index.vue';
+import UsersManage from './pages/Users/Manage.vue';
+import UsersShow from './pages/Users/Show.vue';
+import UsersLogs from './pages/Users/Logs.vue';
+import RolesIndex from './pages/Roles/Index.vue';
+import RolesManage from './pages/Roles/Manage.vue';
+import RolesPermissions from './pages/Roles/Permissions.vue';
+import PermissionsIndex from './pages/Permissions/Index.vue';
+import WorkScheduleIndex from './pages/WorkSchedule/Index.vue';
+import OfficialHolidaysIndex from './pages/OfficialHolidays/Index.vue';
+import OfficialHolidaysManage from './pages/OfficialHolidays/Manage.vue';
+import VacationsOverview from './pages/Vacations/Overview.vue';
+import VacationsApply from './pages/Vacations/Apply.vue';
+import VacationsRequests from './pages/Vacations/Requests.vue';
+import VacationsShow from './pages/Vacations/Show.vue';
+import VacationsEdit from './pages/Vacations/Edit.vue';
+import VacationsEditBalance from './pages/Vacations/EditBalance.vue';
+import PersonsIndex from './pages/Persons/Index.vue';
+import PersonsManage from './pages/Persons/Manage.vue';
+import PersonsShow from './pages/Persons/Show.vue';
 import OnlineUsers from './pages/OnlineUsers.vue';
 import Me from './pages/Me.vue';
 
@@ -103,6 +132,40 @@ const routes = [
     { path: '/tax-types', name: 'taxTypes.index', component: TaxTypesIndex },
     { path: '/tax-types/create', name: 'taxTypes.create', component: TaxTypesManage },
     { path: '/tax-types/:id/edit', name: 'taxTypes.edit', component: TaxTypesManage },
+    { path: '/journals', name: 'journals.index', component: JournalsIndex },
+    { path: '/journals/create', name: 'journals.create', component: JournalsManage },
+    { path: '/journals/:id/edit', name: 'journals.edit', component: JournalsManage },
+    { path: '/journals/:id', name: 'journals.show', component: JournalsShow },
+    { path: '/z-reports', name: 'zReports.index', component: ZReportsIndex },
+    { path: '/z-reports/create', name: 'zReports.create', component: ZReportsCreate },
+    { path: '/z-reports/:id', name: 'zReports.show', component: ZReportsShow },
+    { path: '/accounts', name: 'accounts.index', component: AccountsIndex },
+    { path: '/accounts/types', name: 'accounts.types', component: AccountsTypes },
+    { path: '/accounts/mapping', name: 'accounts.mapping', component: AccountsMapping },
+    { path: '/users', name: 'users.index', component: UsersIndex },
+    { path: '/users/create', name: 'users.create', component: UsersManage },
+    { path: '/users/logs', name: 'users.logs', component: UsersLogs },
+    { path: '/users/:id/edit', name: 'users.edit', component: UsersManage },
+    { path: '/users/:id', name: 'users.show', component: UsersShow },
+    { path: '/roles', name: 'roles.index', component: RolesIndex },
+    { path: '/roles/create', name: 'roles.create', component: RolesManage },
+    { path: '/roles/:id/edit', name: 'roles.edit', component: RolesManage },
+    { path: '/roles/:id/permissions', name: 'roles.permissions', component: RolesPermissions },
+    { path: '/permissions', name: 'permissions.index', component: PermissionsIndex },
+    { path: '/work-schedule', name: 'workSchedule.index', component: WorkScheduleIndex },
+    { path: '/official-holidays', name: 'officialHolidays.index', component: OfficialHolidaysIndex },
+    { path: '/official-holidays/create', name: 'officialHolidays.create', component: OfficialHolidaysManage },
+    { path: '/official-holidays/:id/edit', name: 'officialHolidays.edit', component: OfficialHolidaysManage },
+    { path: '/vacations', name: 'vacations.index', component: VacationsOverview },
+    { path: '/vacations/apply', name: 'vacations.apply', component: VacationsApply },
+    { path: '/vacations/requests', name: 'vacations.requests', component: VacationsRequests },
+    { path: '/vacations/:userId/balance', name: 'vacations.balance', component: VacationsEditBalance },
+    { path: '/vacations/:id/edit', name: 'vacations.edit', component: VacationsEdit },
+    { path: '/vacations/:id', name: 'vacations.show', component: VacationsShow },
+    { path: '/travelers', name: 'persons.index', component: PersonsIndex },
+    { path: '/travelers/create', name: 'persons.create', component: PersonsManage },
+    { path: '/travelers/:id/edit', name: 'persons.edit', component: PersonsManage },
+    { path: '/travelers/:id', name: 'persons.show', component: PersonsShow },
     { path: '/sent-emails', name: 'sentEmails.index', component: SentEmailsIndex },
     { path: '/sent-emails/:id', name: 'sentEmails.show', component: SentEmailsShow },
     { path: '/quickbooks/sync', name: 'quickBooksSync.index', component: QuickBooksSyncIndex },
