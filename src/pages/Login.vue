@@ -11,6 +11,9 @@ const form = reactive({ email: '', password: '' });
 const error = ref('');
 const processing = ref(false);
 
+// Shown when the previous session ended via the idle auto-logout.
+const idleLogout = ref(route.query.reason === 'idle');
+
 async function submit() {
     if (processing.value) {
         return;
@@ -74,6 +77,10 @@ async function submit() {
             <div class="mb-1 flex justify-center">
                 <img src="/logo.svg" alt="AS Travel" class="h-12 w-auto">
             </div>
+
+            <p v-if="idleLogout" class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                You were signed out due to inactivity. Please sign in again.
+            </p>
 
             <form class="space-y-4" @submit.prevent="submit">
                 <div>

@@ -77,6 +77,13 @@ import VacationsEditBalance from './pages/Vacations/EditBalance.vue';
 import PersonsIndex from './pages/Persons/Index.vue';
 import PersonsManage from './pages/Persons/Manage.vue';
 import PersonsShow from './pages/Persons/Show.vue';
+import StaticOffersIndex from './pages/StaticOffers/Index.vue';
+import StaticOffersManage from './pages/StaticOffers/Manage.vue';
+import StaticOffersShow from './pages/StaticOffers/Show.vue';
+import TasksIndex from './pages/Tasks/Index.vue';
+import TasksDashboard from './pages/Tasks/Dashboard.vue';
+import TasksCreate from './pages/Tasks/Create.vue';
+import TasksShow from './pages/Tasks/Show.vue';
 import OnlineUsers from './pages/OnlineUsers.vue';
 import Me from './pages/Me.vue';
 
@@ -166,6 +173,14 @@ const routes = [
     { path: '/travelers/create', name: 'persons.create', component: PersonsManage },
     { path: '/travelers/:id/edit', name: 'persons.edit', component: PersonsManage },
     { path: '/travelers/:id', name: 'persons.show', component: PersonsShow },
+    { path: '/offers', name: 'staticOffers.index', component: StaticOffersIndex },
+    { path: '/offers/create', name: 'staticOffers.create', component: StaticOffersManage },
+    { path: '/offers/:id/edit', name: 'staticOffers.edit', component: StaticOffersManage },
+    { path: '/offers/:id', name: 'staticOffers.show', component: StaticOffersShow },
+    { path: '/tasks', name: 'tasks.index', component: TasksIndex },
+    { path: '/tasks/dashboard', name: 'tasks.dashboard', component: TasksDashboard },
+    { path: '/tasks/create', name: 'tasks.create', component: TasksCreate },
+    { path: '/tasks/:id', name: 'tasks.show', component: TasksShow },
     { path: '/sent-emails', name: 'sentEmails.index', component: SentEmailsIndex },
     { path: '/sent-emails/:id', name: 'sentEmails.show', component: SentEmailsShow },
     { path: '/quickbooks/sync', name: 'quickBooksSync.index', component: QuickBooksSyncIndex },

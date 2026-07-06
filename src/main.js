@@ -4,6 +4,7 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import { setUnauthenticatedHandler } from './helpers/api';
+import { startIdleTimer, stopIdleTimer } from './helpers/idle';
 import { useAuthStore } from './stores/auth';
 import { usePresenceStore } from './stores/presence';
 
@@ -26,13 +27,23 @@ setUnauthenticatedHandler(() => {
 auth.bootstrap().finally(() => {
     app.use(router);
 
-    // Join/leave the online-users presence channel with auth state. Echo is
-    // already connected by the auth store on login/bootstrap.
+    // Join/leave the online-users presence channel + arm the idle auto-logout
+    // with auth state. Echo is already connected by the auth store on
+    // login/bootstrap.
     watch(() => auth.isAuthenticated, (isAuthenticated) => {
         if (isAuthenticated) {
             presence.join();
+
+            // Log out after a spell of inactivity. Redirect carries a hint so
+            // the login page can explain why the session ended.
+            startIdleTimer(async () => {
+                stopIdleTimer();
+                await auth.logout();
+                router.push({ name: 'login', query: { reason: 'idle' } });
+            });
         } else {
             presence.leave();
+            stopIdleTimer();
         }
     }, { immediate: true });
 
