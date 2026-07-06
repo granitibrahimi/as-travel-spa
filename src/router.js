@@ -6,6 +6,9 @@ import NotFound from './pages/NotFound.vue';
 import SuppliersIndex from './pages/Suppliers/Index.vue';
 import SuppliersManage from './pages/Suppliers/Manage.vue';
 import SuppliersShow from './pages/Suppliers/Show.vue';
+import CustomersIndex from './pages/Customers/Index.vue';
+import CustomersManage from './pages/Customers/Manage.vue';
+import CustomersShow from './pages/Customers/Show.vue';
 
 const routes = [
     { path: '/login', name: 'login', component: Login, meta: { public: true } },
@@ -13,6 +16,9 @@ const routes = [
     { path: '/suppliers', name: 'suppliers.index', component: SuppliersIndex },
     { path: '/suppliers/create', name: 'suppliers.create', component: SuppliersManage },
     { path: '/suppliers/:id', name: 'suppliers.show', component: SuppliersShow },
+    { path: '/customers', name: 'customers.index', component: CustomersIndex },
+    { path: '/customers/create', name: 'customers.create', component: CustomersManage },
+    { path: '/customers/:id', name: 'customers.show', component: CustomersShow },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
 ];
 
