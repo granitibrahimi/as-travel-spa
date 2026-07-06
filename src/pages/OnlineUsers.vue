@@ -71,11 +71,17 @@ const users = computed(() => presence.users);
                 Connecting to the real-time server…
             </p>
 
-            <div v-else class="overflow-x-auto">
-                <table class="w-full border-collapse border border-gray-300 text-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[640px] table-fixed border-collapse border border-gray-300 text-sm">
+                    <colgroup>
+                        <col style="width: 48px;">
+                        <col style="width: 30%;">
+                        <col style="width: 25%;">
+                        <col>
+                    </colgroup>
                     <thead>
                         <tr class="text-left text-xs uppercase text-gray-500">
-                            <th class="border border-gray-300 px-3 py-2" style="width: 40px;"></th>
+                            <th class="border border-gray-300 px-3 py-2"></th>
                             <th class="border border-gray-300 px-3 py-2">User</th>
                             <th class="border border-gray-300 px-3 py-2">Current page</th>
                             <th class="border border-gray-300 px-3 py-2 font-mono">URL</th>
@@ -88,18 +94,18 @@ const users = computed(() => presence.users);
                             </td>
                         </tr>
                         <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50">
-                            <td class="border border-gray-300 px-3 py-2 text-center">
+                            <td class="border border-gray-300 px-3 py-2 text-center align-top">
                                 <span class="inline-block h-2.5 w-2.5 rounded-full bg-green-500" title="Online" />
                             </td>
-                            <td class="border border-gray-300 px-3 py-2 font-medium">
-                                {{ user.name }}
+                            <td class="border border-gray-300 px-3 py-2 align-top font-medium">
+                                <span class="truncate">{{ user.name }}</span>
                                 <span v-if="user.self" class="ml-1 text-xs font-normal text-gray-400">(you)</span>
                             </td>
-                            <td class="border border-gray-300 px-3 py-2">
+                            <td class="border border-gray-300 px-3 py-2 align-top">
                                 <span v-if="pageLabel(user.url)">{{ pageLabel(user.url) }}</span>
                                 <span v-else class="text-gray-400">—</span>
                             </td>
-                            <td class="border border-gray-300 px-3 py-2 font-mono text-xs text-gray-600">
+                            <td class="border border-gray-300 px-3 py-2 align-top font-mono text-xs text-gray-600 break-all">
                                 {{ user.url ?? '—' }}
                             </td>
                         </tr>
