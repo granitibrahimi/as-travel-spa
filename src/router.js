@@ -2,12 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from './stores/auth';
 import Login from './pages/Login.vue';
 import Home from './pages/Home.vue';
+import NotFound from './pages/NotFound.vue';
 import SuppliersIndex from './pages/Suppliers/Index.vue';
 
 const routes = [
     { path: '/login', name: 'login', component: Login, meta: { public: true } },
     { path: '/', name: 'home', component: Home },
     { path: '/suppliers', name: 'suppliers.index', component: SuppliersIndex },
+    { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
 ];
 
 const router = createRouter({

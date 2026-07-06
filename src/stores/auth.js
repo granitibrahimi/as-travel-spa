@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import api, { getToken, setToken } from '../helpers/api';
+import { connectEcho, disconnectEcho } from '../helpers/echo';
 
 /**
  * Authentication state: the bearer token (persisted in localStorage) and the
@@ -24,6 +25,10 @@ export const useAuthStore = defineStore('auth', {
             return permissions.includes('*') || permissions.includes(permission);
         },
 
+        canAny(permissions) {
+            return permissions.some((permission) => this.can(permission));
+        },
+
         async login(credentials) {
             const { data } = await api.post('/tokens', {
                 ...credentials,
@@ -33,6 +38,7 @@ export const useAuthStore = defineStore('auth', {
             this.token = data.token;
             setToken(data.token);
             this.user = data.user;
+            connectEcho();
         },
 
         /**
@@ -49,6 +55,7 @@ export const useAuthStore = defineStore('auth', {
             try {
                 const { data } = await api.get('/me');
                 this.user = data;
+                connectEcho();
             } catch {
                 this.reset();
             } finally {
@@ -70,6 +77,7 @@ export const useAuthStore = defineStore('auth', {
             this.token = null;
             this.user = null;
             setToken(null);
+            disconnectEcho();
         },
     },
 });
