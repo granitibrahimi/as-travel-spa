@@ -13,6 +13,10 @@ import DeparturesIndex from './pages/Departures/Index.vue';
 import DeparturesOverview from './pages/Departures/Overview.vue';
 import MealTypesIndex from './pages/MealTypes/Index.vue';
 import MealTypesManage from './pages/MealTypes/Manage.vue';
+import CountriesIndex from './pages/Countries/Index.vue';
+import CountriesManage from './pages/Countries/Manage.vue';
+import SentEmailsIndex from './pages/SentEmails/Index.vue';
+import SentEmailsShow from './pages/SentEmails/Show.vue';
 import OnlineUsers from './pages/OnlineUsers.vue';
 
 const routes = [
@@ -29,6 +33,10 @@ const routes = [
     { path: '/meal-types', name: 'mealTypes.index', component: MealTypesIndex },
     { path: '/meal-types/create', name: 'mealTypes.create', component: MealTypesManage },
     { path: '/meal-types/:id/edit', name: 'mealTypes.edit', component: MealTypesManage },
+    { path: '/countries', name: 'countries.index', component: CountriesIndex },
+    { path: '/countries/:id/edit', name: 'countries.edit', component: CountriesManage },
+    { path: '/sent-emails', name: 'sentEmails.index', component: SentEmailsIndex },
+    { path: '/sent-emails/:id', name: 'sentEmails.show', component: SentEmailsShow },
     { path: '/online-users', name: 'online-users', component: OnlineUsers },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
 ];
