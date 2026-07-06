@@ -1,13 +1,18 @@
 <script setup>
 import { ref, onBeforeUnmount } from 'vue';
+import { RouterLink } from 'vue-router';
 
 defineProps({
     /**
      * Menu entries: { label, href?, action?, danger? }.
      * `href` renders a link; `action` is called on click.
+     * Internal paths (starting with "/") route client-side via RouterLink;
+     * absolute URLs (http…) render as a plain anchor (new document).
      */
     items: { type: Array, required: true },
 });
+
+const isInternal = (href) => typeof href === 'string' && href.startsWith('/');
 
 const open = ref(false);
 const triggerRef = ref(null);
@@ -85,9 +90,20 @@ onBeforeUnmount(close);
                 @mousedown.stop
             >
                 <template v-for="(item, i) in items" :key="i">
+                    <RouterLink
+                        v-if="item.href && isInternal(item.href)"
+                        :to="item.href"
+                        class="block px-4 py-1.5 text-sm hover:bg-gray-50"
+                        :class="item.danger ? 'text-red-600' : 'text-gray-700'"
+                        @click="close"
+                    >
+                        {{ item.label }}
+                    </RouterLink>
                     <a
-                        v-if="item.href"
+                        v-else-if="item.href"
                         :href="item.href"
+                        target="_blank"
+                        rel="noopener"
                         class="block px-4 py-1.5 text-sm hover:bg-gray-50"
                         :class="item.danger ? 'text-red-600' : 'text-gray-700'"
                     >

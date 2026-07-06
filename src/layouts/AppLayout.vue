@@ -62,16 +62,17 @@ try {
 const isActive = (to) => route.path === to;
 const groupHasActive = (group) => group.items.some((item) => isActive(item.to));
 
-// Groups default collapsed; expanded only when the user opened it or it holds
-// the active page (so the current location is never hidden).
+// The user's explicit toggle always wins. With no explicit choice, a group
+// defaults to open when it holds the active page (so the current location isn't
+// hidden) and collapsed otherwise.
 const isGroupCollapsed = (group) => {
-    if (groupHasActive(group)) {
-        return false;
-    }
-
     const override = collapsedGroups.value[group.label];
 
-    return override === undefined ? true : Boolean(override);
+    if (override !== undefined) {
+        return Boolean(override);
+    }
+
+    return !groupHasActive(group);
 };
 
 function toggleGroup(label) {

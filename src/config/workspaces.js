@@ -201,6 +201,12 @@ export const workspaces = [
                     { label: 'All Users', to: '/online-users', can: 'onlineUsers.list' },
                 ],
             },
+            {
+                label: 'QuickBooks',
+                items: [
+                    { label: 'Sync Data', to: '/quickbooks/sync', can: 'quickBooksSync.list' },
+                ],
+            },
         ]
     },
 ];
