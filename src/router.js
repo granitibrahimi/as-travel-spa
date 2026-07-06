@@ -39,6 +39,10 @@ import MessagesCreate from './pages/Messages/Create.vue';
 import MessagesShow from './pages/Messages/Show.vue';
 import OnlineCredentialsIndex from './pages/OnlineSystemCredentials/Index.vue';
 import OnlineCredentialsShow from './pages/OnlineSystemCredentials/Show.vue';
+import PaymentMethodsIndex from './pages/PaymentMethods/Index.vue';
+import PaymentMethodsManage from './pages/PaymentMethods/Manage.vue';
+import TaxTypesIndex from './pages/TaxTypes/Index.vue';
+import TaxTypesManage from './pages/TaxTypes/Manage.vue';
 import InvoicesIndex from './pages/Invoices/Index.vue';
 import InvoicesDue from './pages/Invoices/Due.vue';
 import CreditNotesIndex from './pages/CreditNotes/Index.vue';
@@ -93,6 +97,12 @@ const routes = [
     { path: '/messages/:id', name: 'messages.show', component: MessagesShow },
     { path: '/online-credentials', name: 'onlineCredentials.index', component: OnlineCredentialsIndex },
     { path: '/online-credentials/:id', name: 'onlineCredentials.show', component: OnlineCredentialsShow },
+    { path: '/payment-methods', name: 'paymentMethods.index', component: PaymentMethodsIndex },
+    { path: '/payment-methods/create', name: 'paymentMethods.create', component: PaymentMethodsManage },
+    { path: '/payment-methods/:id/edit', name: 'paymentMethods.edit', component: PaymentMethodsManage },
+    { path: '/tax-types', name: 'taxTypes.index', component: TaxTypesIndex },
+    { path: '/tax-types/create', name: 'taxTypes.create', component: TaxTypesManage },
+    { path: '/tax-types/:id/edit', name: 'taxTypes.edit', component: TaxTypesManage },
     { path: '/sent-emails', name: 'sentEmails.index', component: SentEmailsIndex },
     { path: '/sent-emails/:id', name: 'sentEmails.show', component: SentEmailsShow },
     { path: '/quickbooks/sync', name: 'quickBooksSync.index', component: QuickBooksSyncIndex },

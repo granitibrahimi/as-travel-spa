@@ -88,6 +88,13 @@ export const workspaces = [
                     { label: 'All Credentials', to: '/online-credentials', can: 'onlineSystemCredentials.list' },
                 ],
             },
+            {
+                label: 'Messages',
+                items: [
+                    { label: 'All Messages', to: '/messages', can: 'messages.list' },
+                    { label: 'New Message', to: '/messages/create', can: 'messages.create' },
+                ],
+            },
         ],
     },
     {
@@ -118,6 +125,13 @@ export const workspaces = [
                     { label: 'Apply for Vacation', to: '/vacations/apply', can: 'vacations.applyForm' },
                     { label: 'Official Holidays', to: '/official-holidays', can: 'officialHolidays.list' },
                     { label: 'Work Schedule', to: '/work-schedule', can: 'workSchedule.index' },
+                ],
+            },
+            {
+                label: 'Messages',
+                items: [
+                    { label: 'All Messages', to: '/messages', can: 'messages.list' },
+                    { label: 'New Message', to: '/messages/create', can: 'messages.create' },
                 ],
             },
         ],
@@ -185,6 +199,13 @@ export const workspaces = [
                 label: 'Emails',
                 items: [
                     { label: 'Sent Emails', to: '/sent-emails', can: 'sentEmails.list' },
+                ],
+            },
+            {
+                label: 'Messages',
+                items: [
+                    { label: 'All Messages', to: '/messages', can: 'messages.list' },
+                    { label: 'New Message', to: '/messages/create', can: 'messages.create' },
                 ],
             },
         ],
