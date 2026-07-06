@@ -4,9 +4,9 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import { setUnauthenticatedHandler } from './helpers/api';
-import { startIdleTimer, stopIdleTimer } from './helpers/idle';
 import { useAuthStore } from './stores/auth';
 import { usePresenceStore } from './stores/presence';
+import { useIdleStore } from './stores/idle';
 
 const app = createApp(App);
 const pinia = createPinia();
@@ -15,6 +15,7 @@ app.use(pinia);
 
 const auth = useAuthStore();
 const presence = usePresenceStore();
+const idle = useIdleStore();
 
 // A 401 from the API drops the token; send the user back to login.
 setUnauthenticatedHandler(() => {
@@ -34,16 +35,15 @@ auth.bootstrap().finally(() => {
         if (isAuthenticated) {
             presence.join();
 
-            // Log out after a spell of inactivity. Redirect carries a hint so
-            // the login page can explain why the session ended.
-            startIdleTimer(async () => {
-                stopIdleTimer();
+            // Warn then log out after a spell of inactivity. The redirect carries
+            // a hint so the login page can explain why the session ended.
+            idle.start(async () => {
                 await auth.logout();
                 router.push({ name: 'login', query: { reason: 'idle' } });
             });
         } else {
             presence.leave();
-            stopIdleTimer();
+            idle.stop();
         }
     }, { immediate: true });
 
