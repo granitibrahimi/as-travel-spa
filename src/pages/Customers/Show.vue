@@ -9,10 +9,13 @@ import Select from '../../components/Form/Select.vue';
 import InputText from '../../components/Form/InputText.vue';
 import ApiPagination from '../../components/ApiPagination.vue';
 import CustomerDetails from '../../components/CustomerDetails.vue';
+import ActionsOverlay from '../../components/ActionsOverlay.vue';
 import Loader from '../../components/Loader.vue';
 
 const route = useRoute();
 const id = route.params.id;
+
+const actionsOpen = ref(false);
 
 const customer = ref(null);
 const stats = ref(null);
@@ -91,6 +94,22 @@ watch(filters, () => {
     <AppLayout :title="title ? `Customer: ${title}` : 'Customer'" fluid>
         <div class="space-y-6">
             <FullWidthBox :title="title ? `Customer: ${title}` : 'Customer'" :collapsible="false">
+                <template #actions>
+                    <button
+                        v-if="customer"
+                        type="button"
+                        class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                        aria-label="Customer actions"
+                        @click="actionsOpen = true"
+                    >
+                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="5" r="1.8" />
+                            <circle cx="12" cy="12" r="1.8" />
+                            <circle cx="12" cy="19" r="1.8" />
+                        </svg>
+                    </button>
+                </template>
+
                 <Loader v-if="! customer" />
 
                 <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -131,6 +150,15 @@ watch(filters, () => {
                     </RouterLink>
                 </template>
             </FullWidthBox>
+
+            <ActionsOverlay
+                :show="actionsOpen"
+                :title="customer?.full_name"
+                :subtitle="customer ? `#${customer.id} · ${customer.unique_id ?? ''}` : ''"
+                :groups="customer?.actions ?? []"
+                :delete-message="customer ? `${customer.full_name} will be permanently deleted.` : ''"
+                @close="actionsOpen = false"
+            />
 
             <FullWidthBox title="List of all transactions" :collapsible="false">
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-4">

@@ -8,10 +8,13 @@ import FullWidthBox from '../../components/FullWidthBox.vue';
 import Select from '../../components/Form/Select.vue';
 import InputText from '../../components/Form/InputText.vue';
 import ApiPagination from '../../components/ApiPagination.vue';
+import ActionsOverlay from '../../components/ActionsOverlay.vue';
 import Loader from '../../components/Loader.vue';
 
 const route = useRoute();
 const id = route.params.id;
+
+const actionsOpen = ref(false);
 
 // The page is a shell: details, stats and transactions all load from the API.
 // Details come first; the (slower) balances summary fills in afterwards.
@@ -103,6 +106,22 @@ const details = (record) => [
     <AppLayout :title="title ? `Supplier: ${title}` : 'Supplier'" fluid>
         <div class="space-y-6">
             <FullWidthBox :title="title ? `Supplier: ${title}` : 'Supplier'" :collapsible="false">
+                <template #actions>
+                    <button
+                        v-if="supplier"
+                        type="button"
+                        class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                        aria-label="Supplier actions"
+                        @click="actionsOpen = true"
+                    >
+                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="5" r="1.8" />
+                            <circle cx="12" cy="12" r="1.8" />
+                            <circle cx="12" cy="19" r="1.8" />
+                        </svg>
+                    </button>
+                </template>
+
                 <Loader v-if="! supplier" />
 
                 <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -160,6 +179,15 @@ const details = (record) => [
                     </RouterLink>
                 </template>
             </FullWidthBox>
+
+            <ActionsOverlay
+                :show="actionsOpen"
+                :title="supplier?.full_name"
+                :subtitle="supplier ? `#${supplier.id} · ${supplier.unique_id ?? ''}` : ''"
+                :groups="supplier?.actions ?? []"
+                :delete-message="supplier ? `${supplier.full_name} will be permanently deleted.` : ''"
+                @close="actionsOpen = false"
+            />
 
             <FullWidthBox title="List of all transactions" :collapsible="false">
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-3">

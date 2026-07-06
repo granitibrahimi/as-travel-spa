@@ -18,6 +18,7 @@ import CountriesManage from './pages/Countries/Manage.vue';
 import SentEmailsIndex from './pages/SentEmails/Index.vue';
 import SentEmailsShow from './pages/SentEmails/Show.vue';
 import OnlineUsers from './pages/OnlineUsers.vue';
+import Me from './pages/Me.vue';
 
 const routes = [
     { path: '/login', name: 'login', component: Login, meta: { public: true } },
@@ -38,6 +39,7 @@ const routes = [
     { path: '/sent-emails', name: 'sentEmails.index', component: SentEmailsIndex },
     { path: '/sent-emails/:id', name: 'sentEmails.show', component: SentEmailsShow },
     { path: '/online-users', name: 'online-users', component: OnlineUsers },
+    { path: '/me', name: 'me', component: Me },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
 ];
 
