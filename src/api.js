@@ -3,10 +3,11 @@ import axios from 'axios';
 /**
  * Axios client for the AS Travel platform API. Cross-origin, bearer-token
  * authenticated — the token is attached from the auth store's persisted value.
- * VITE_API_URL points at the platform (e.g. https://csrm.test).
+ * VITE_API_URL is the full API base including the version, e.g.
+ * https://csrm.test/api/v1 — so request paths are relative ('/tokens', '/me').
  */
 const api = axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api`,
+    baseURL: import.meta.env.VITE_API_URL ?? '/api/v1',
     headers: {
         Accept: 'application/json',
     },

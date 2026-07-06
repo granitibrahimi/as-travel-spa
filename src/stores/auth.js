@@ -25,7 +25,7 @@ export const useAuthStore = defineStore('auth', {
         },
 
         async login(credentials) {
-            const { data } = await api.post('/v1/tokens', {
+            const { data } = await api.post('/tokens', {
                 ...credentials,
                 device_name: 'spa',
             });
@@ -47,7 +47,7 @@ export const useAuthStore = defineStore('auth', {
             }
 
             try {
-                const { data } = await api.get('/v1/me');
+                const { data } = await api.get('/me');
                 this.user = data;
             } catch {
                 this.reset();
@@ -58,7 +58,7 @@ export const useAuthStore = defineStore('auth', {
 
         async logout() {
             try {
-                await api.delete('/v1/tokens');
+                await api.delete('/tokens');
             } catch {
                 // Even if the request fails, drop the local session.
             } finally {
