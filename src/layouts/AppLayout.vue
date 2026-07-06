@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useLayoutStore } from '../stores/layout';
+import { useNotificationsStore } from '../stores/notifications';
 import { isDark, toggleTheme } from '../helpers/theme';
 
 const props = defineProps({
@@ -13,13 +14,20 @@ const props = defineProps({
 
 const auth = useAuthStore();
 const layout = useLayoutStore();
+const notifications = useNotificationsStore();
 const router = useRouter();
 const route = useRoute();
+
+const canSeeNotifications = computed(() => auth.can('userNotifications.list'));
 
 // Resolve the active workspace once the user is known.
 onMounted(() => {
     if (!layout.activeWorkspace) {
         layout.init();
+    }
+
+    if (canSeeNotifications.value) {
+        notifications.fetchUnread();
     }
 });
 
@@ -129,6 +137,23 @@ async function signOut() {
 
                 <!-- Right: user menu (workspaces + account) -->
                 <div class="flex flex-1 items-center justify-end gap-4">
+                    <RouterLink
+                        v-if="canSeeNotifications"
+                        to="/notifications"
+                        class="relative inline-flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                        aria-label="Notifications"
+                    >
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <span
+                            v-if="notifications.unread > 0"
+                            class="absolute -right-0.5 -top-0.5 inline-flex min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-4 text-white"
+                        >
+                            {{ notifications.unread > 99 ? '99+' : notifications.unread }}
+                        </span>
+                    </RouterLink>
+
                     <div v-if="userMenu" class="relative z-50">
                         <div v-if="userMenuOpen" class="fixed inset-0 -z-10" @click="userMenuOpen = false" />
                         <button

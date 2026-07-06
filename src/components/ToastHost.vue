@@ -42,7 +42,7 @@ const accent = (type) => accents[type] ?? accents.info;
                         type="button"
                         class="-mr-1 -mt-1 shrink-0 rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
                         aria-label="Dismiss"
-                        @click="notifications.dismiss(toast.id)"
+                        @click="notifications.dismiss(toast.id, { markSeen: true })"
                     >
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M6 18L18 6" />
