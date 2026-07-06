@@ -9,6 +9,11 @@ import SuppliersShow from './pages/Suppliers/Show.vue';
 import CustomersIndex from './pages/Customers/Index.vue';
 import CustomersManage from './pages/Customers/Manage.vue';
 import CustomersShow from './pages/Customers/Show.vue';
+import DeparturesIndex from './pages/Departures/Index.vue';
+import DeparturesOverview from './pages/Departures/Overview.vue';
+import MealTypesIndex from './pages/MealTypes/Index.vue';
+import MealTypesManage from './pages/MealTypes/Manage.vue';
+import OnlineUsers from './pages/OnlineUsers.vue';
 
 const routes = [
     { path: '/login', name: 'login', component: Login, meta: { public: true } },
@@ -19,8 +24,15 @@ const routes = [
     { path: '/customers', name: 'customers.index', component: CustomersIndex },
     { path: '/customers/create', name: 'customers.create', component: CustomersManage },
     { path: '/customers/:id', name: 'customers.show', component: CustomersShow },
+    { path: '/departures', name: 'departures.index', component: DeparturesIndex },
+    { path: '/departures/overview', name: 'departures.overview', component: DeparturesOverview },
+    { path: '/meal-types', name: 'mealTypes.index', component: MealTypesIndex },
+    { path: '/meal-types/create', name: 'mealTypes.create', component: MealTypesManage },
+    { path: '/meal-types/:id/edit', name: 'mealTypes.edit', component: MealTypesManage },
+    { path: '/online-users', name: 'online-users', component: OnlineUsers },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
 ];
+
 
 const router = createRouter({
     history: createWebHistory(),
