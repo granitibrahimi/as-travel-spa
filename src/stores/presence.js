@@ -26,6 +26,8 @@ let channel = null;
 export const usePresenceStore = defineStore('presence', {
     state: () => ({
         joined: false,
+        // Connection lifecycle: 'idle' | 'connecting' | 'joined' | 'error'.
+        status: 'idle',
         // Our own current location, mirrored into our own roster entry.
         currentUrl: null,
         // Roster keyed by user id: { id, name, url, self, at }.
@@ -55,10 +57,12 @@ export const usePresenceStore = defineStore('presence', {
                 return;
             }
 
+            this.status = 'connecting';
             channel = echo.join(CHANNEL);
 
             channel
                 .here((members) => {
+                    this.status = 'joined';
                     this.members = {};
                     members.forEach((member) => this.addMember(member));
                     // Tell everyone already here where we are.
@@ -81,8 +85,10 @@ export const usePresenceStore = defineStore('presence', {
                     }
                 })
                 .error(() => {
-                    // Authorization failed (no permission / auth endpoint down).
-                    // Stay un-joined so the UI can show an empty/error state.
+                    // Channel authorization failed — commonly a CORS/auth issue
+                    // reaching /broadcasting/auth, or missing permission. Surface
+                    // it so the UI stops implying it's still connecting.
+                    this.status = 'error';
                     this.joined = false;
                     channel = null;
                 });
@@ -140,6 +146,7 @@ export const usePresenceStore = defineStore('presence', {
             echo?.leave(CHANNEL);
             channel = null;
             this.joined = false;
+            this.status = 'idle';
             this.members = {};
         },
     },

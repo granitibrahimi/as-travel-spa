@@ -59,7 +59,15 @@ const users = computed(() => presence.users);
                 You don't have permission to view online users.
             </p>
 
-            <p v-else-if="!presence.joined" class="py-6 text-center text-sm text-gray-400">
+            <div v-else-if="presence.status === 'error'" class="py-6 text-center text-sm">
+                <p class="font-medium text-red-600">Couldn't connect to the real-time server.</p>
+                <p class="mt-1 text-gray-400">
+                    The presence channel authorization request was rejected (check the
+                    <code class="font-mono">/broadcasting/auth</code> endpoint's CORS / auth config).
+                </p>
+            </div>
+
+            <p v-else-if="presence.status !== 'joined'" class="py-6 text-center text-sm text-gray-400">
                 Connecting to the real-time server…
             </p>
 

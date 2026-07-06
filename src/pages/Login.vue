@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import ThemeToggle from '../components/ThemeToggle.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -70,6 +71,10 @@ async function submit() {
             <path fill="rgba(20,42,66,0.55)" d="M0 260 L180 160 L380 260 L560 150 L760 270 L980 170 L1180 280 L1440 190 L1440 320 L0 320 Z" />
             <path fill="rgba(12,28,46,0.8)" d="M0 300 L240 230 L480 300 L720 240 L960 305 L1200 250 L1440 300 L1440 320 L0 320 Z" />
         </svg>
+    </div>
+
+    <div class="absolute right-4 top-4 z-10">
+        <ThemeToggle />
     </div>
 
     <div class="relative flex min-h-[70vh] items-center justify-center">

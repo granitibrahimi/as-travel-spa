@@ -3,7 +3,11 @@ import { createApp, watch } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
+import { initTheme } from './helpers/theme';
 import { setUnauthenticatedHandler } from './helpers/api';
+
+// Apply the saved/OS theme before anything renders (no flash of wrong theme).
+initTheme();
 import { useAuthStore } from './stores/auth';
 import { usePresenceStore } from './stores/presence';
 import { useIdleStore } from './stores/idle';

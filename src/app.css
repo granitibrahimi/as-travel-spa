@@ -1,3 +1,70 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Dark theme (activated by the `dark` class on <html>).
+ *
+ * The app is styled with hard-coded light Tailwind utilities, so rather than
+ * add dark: variants to every page we remap the neutral utilities in use under
+ * a `.dark` scope. `.dark .foo` (specificity 0,2,0) wins over the base utility
+ * (0,1,0) without !important. Brand/semantic colors (red, amber, green, blue)
+ * are left alone — they read fine on a dark surface.
+ */
+.dark body {
+    background-color: #0f172a;
+    color: #e2e8f0;
+}
+
+/* Surfaces */
+.dark .bg-white { background-color: #1e293b; }
+.dark .bg-gray-50 { background-color: #0f172a; }
+.dark .bg-gray-100 { background-color: #334155; }
+.dark .bg-gray-200 { background-color: #475569; }
+.dark .bg-gray-300 { background-color: #64748b; }
+/* Translucent surfaces (login card / borders). */
+.dark .bg-white\/80 { background-color: rgb(30 41 59 / 0.85); }
+.dark .bg-white\/40 { background-color: rgb(30 41 59 / 0.4); }
+.dark .border-white\/40 { border-color: rgb(148 163 184 / 0.25); }
+
+/* Text */
+.dark .text-gray-900 { color: #f1f5f9; }
+.dark .text-gray-800 { color: #e2e8f0; }
+.dark .text-gray-700 { color: #cbd5e1; }
+.dark .text-gray-600 { color: #94a3b8; }
+.dark .text-gray-500 { color: #94a3b8; }
+.dark .text-gray-400 { color: #64748b; }
+.dark .text-gray-300 { color: #475569; }
+
+/* Borders */
+.dark .border-gray-300 { border-color: #334155; }
+.dark .border-gray-200 { border-color: #334155; }
+.dark .border-gray-100 { border-color: #1e293b; }
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1e293b; }
+
+/* Hover states */
+.dark .hover\:bg-gray-50:hover { background-color: #334155; }
+.dark .hover\:bg-gray-100:hover { background-color: #475569; }
+.dark .hover\:text-gray-600:hover { color: #cbd5e1; }
+.dark .hover\:text-gray-800:hover { color: #e2e8f0; }
+.dark .hover\:text-gray-900:hover { color: #f1f5f9; }
+.dark .hover\:border-gray-300:hover { border-color: #475569; }
+
+/* Form controls default to a light chrome; give them a dark surface. */
+.dark input,
+.dark textarea,
+.dark select {
+    background-color: #1e293b;
+    color: #f1f5f9;
+    border-color: #334155;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: #64748b;
+}
+
+/* Dim the bright login travel scene so it isn't blinding in dark mode. */
+.dark .travel-bg {
+    filter: brightness(0.55) saturate(0.9);
+}
