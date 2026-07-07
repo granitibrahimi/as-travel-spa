@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useLayoutStore } from '../stores/layout';
 import { useNotificationsStore } from '../stores/notifications';
+import { useFormOptionsStore } from '../stores/formOptions';
 import { isDark, toggleTheme } from '../helpers/theme';
 
 const props = defineProps({
@@ -15,8 +16,15 @@ const props = defineProps({
 const auth = useAuthStore();
 const layout = useLayoutStore();
 const notifications = useNotificationsStore();
+const formOptions = useFormOptionsStore();
 const router = useRouter();
 const route = useRoute();
+
+// Manual refresh of the shared form options (shows the sync screen).
+function updateData() {
+    userMenuOpen.value = false;
+    formOptions.sync({ force: true });
+}
 
 const canSeeNotifications = computed(() => auth.can('userNotifications.list'));
 
@@ -204,6 +212,25 @@ async function signOut() {
                             </button>
 
                             <div class="my-1 border-t border-gray-100" />
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                                :disabled="formOptions.status === 'syncing'"
+                                @click="updateData"
+                            >
+                                {{ formOptions.status === 'syncing' ? 'Updating…' : 'Update data' }}
+                                <svg
+                                    class="h-4 w-4 text-gray-400"
+                                    :class="{ 'animate-spin': formOptions.status === 'syncing' }"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M20 9a8 8 0 00-14.9-3M4 15a8 8 0 0014.9 3" />
+                                </svg>
+                            </button>
+
                             <button
                                 type="button"
                                 class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"

@@ -90,6 +90,18 @@ Do not read `record.actions` from API responses. See
 
 Count only the actions the user can actually see (after permission filtering).
 
+## Shared form options (reference data)
+
+- Cross-app dropdown data (payment methods, countries, destinations, meal
+  types, …) lives in `src/stores/formOptions.js`: localStorage-backed, synced
+  via a manifest diff so only changed categories re-download. Synced on login
+  and on demand via the user-menu "Update data" button; `SyncScreen.vue` shows
+  per-category progress. Forms should read from its getters and call
+  `ensureLoaded()` rather than fetching option lists themselves.
+- **Currently gated behind `ENABLED = false`** (inert) until the API endpoints
+  exist. To turn on: set `ENABLED = true`, the real `MANIFEST_URL`/`OPTIONS_URL`,
+  and confirm the `CATEGORIES` keys match the API response keys.
+
 ## Code style
 
 - 4-space indentation. Vue SFCs use `<script setup>`.
@@ -103,15 +115,16 @@ Count only the actions the user can actually see (after permission filtering).
 The platform repo is `~/Documents/as/as-travel-invoicing-platform` (Laravel
 modular monolith). When moving a feature here:
 
-- **Reference implementation to mirror 1:1**: platform
-  `modules/Suppliers/Http/Controllers/API/SupplierDepositsController.php`
-  (+ its Resource/Request, `Routes/apiRoutes.php` group, factory, Pest test)
-  and SPA `src/pages/Suppliers/Deposits/{Index,Manage,Show}.vue`.
+- **Reference implementation to mirror 1:1**: platform endpoint actions in
+  `modules/Suppliers/Actions/SupplierRefunds/*` (one invokable action per
+  endpoint: `asController()` → `handle()`, `rules()`, `jsonResponse()`; routes
+  bind `Action::class` in `Routes/apiRoutes.php`; Resource + factory + Pest
+  test per feature) and SPA `src/pages/Suppliers/Deposits/{Index,Manage,Show}.vue`.
 - **Every interaction hits a dedicated platform `api/v1` endpoint** (Sanctum +
-  `->can()` gate, reusing platform actions via `Action::run()`); never call
-  platform web routes, and use proper verbs — several legacy web routes are
-  side-effecting GETs, don't copy that. If a needed endpoint is missing, add it
-  on the platform first.
+  `->can()` gate); never call platform web routes, and use proper verbs —
+  several legacy web routes are side-effecting GETs, don't copy that. If a
+  needed endpoint is missing, add it on the platform first (as an action, not
+  an API controller).
 - If a platform response embeds server-built `actions`/URLs (legacy pattern,
   e.g. supplier `actions` groups), prefer native SPA routes + `auth.can`.
 - **Dates**: platform finance endpoints validate `date_format:d.m.Y`; date

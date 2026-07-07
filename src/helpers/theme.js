@@ -2,7 +2,7 @@ import { ref } from 'vue';
 
 // Light/dark theme. The `dark` class on <html> drives Tailwind's dark variants
 // and the neutral remaps in app.css. The choice is persisted; first visit
-// follows the OS preference.
+// defaults to light.
 const STORAGE_KEY = 'as.theme';
 
 // Shared singleton state (module-level ref) so any component stays in sync.
@@ -23,9 +23,8 @@ export function initTheme() {
         // localStorage unavailable (private mode) — fall back to OS preference.
     }
 
-    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-
-    apply(saved ? saved === 'dark' : prefersDark);
+    // Default to light on first visit; only go dark if explicitly chosen.
+    apply(saved === 'dark');
 }
 
 export function toggleTheme() {

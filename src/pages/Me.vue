@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { useFormOptionsStore, CATEGORIES } from '../stores/formOptions';
 import AppLayout from '../layouts/AppLayout.vue';
 import FullWidthBox from '../components/FullWidthBox.vue';
 import DataTree from '../components/DataTree.vue';
@@ -8,6 +9,7 @@ import InputText from '../components/Form/InputText.vue';
 import Loader from '../components/Loader.vue';
 
 const auth = useAuthStore();
+const formOptions = useFormOptionsStore();
 
 // Render the in-memory /me snapshot held by the auth store — no extra request.
 // The store fetches it on login and on app boot; Refresh below re-fetches it.
@@ -56,6 +58,23 @@ async function refresh() {
         refreshing.value = false;
     }
 }
+
+// Form options are cached in localStorage and mirrored into the store. Load the
+// cached snapshot (no network) so we can show exactly what forms would read.
+onMounted(() => formOptions.hydrate());
+
+// One row per configured category, with whatever options are currently cached.
+const formOptionCategories = computed(() =>
+    CATEGORIES.map((category) => {
+        const options = formOptions.options(category.key);
+
+        return { ...category, options, count: options.length };
+    }),
+);
+
+const totalFormOptions = computed(() =>
+    formOptionCategories.value.reduce((sum, category) => sum + category.count, 0),
+);
 </script>
 
 <template>
@@ -104,6 +123,36 @@ async function refresh() {
                     {{ permission }}
                 </li>
             </ul>
+        </FullWidthBox>
+
+        <FullWidthBox :collapsible="false" class="mt-4">
+            <template #title>
+                <span class="flex items-center gap-2">
+                    Form Options (cache)
+                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{{ totalFormOptions }}</span>
+                </span>
+            </template>
+
+            <p v-if="totalFormOptions === 0" class="py-4 text-center text-sm text-gray-400">
+                No form options cached yet.
+            </p>
+            <div v-else class="space-y-3">
+                <div
+                    v-for="category in formOptionCategories"
+                    :key="category.key"
+                    class="rounded border border-gray-200"
+                >
+                    <div class="flex items-center gap-2 border-b border-gray-100 bg-gray-50 px-3 py-2">
+                        <span class="text-sm font-medium text-gray-700">{{ category.label }}</span>
+                        <span class="font-mono text-xs text-gray-400">{{ category.key }}</span>
+                        <span class="ml-auto rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{{ category.count }}</span>
+                    </div>
+                    <div class="px-3 py-2">
+                        <p v-if="category.count === 0" class="text-sm text-gray-400">Empty.</p>
+                        <DataTree v-else :data="category.options" />
+                    </div>
+                </div>
+            </div>
         </FullWidthBox>
 
         <FullWidthBox v-if="me && !refreshing" title="Raw JSON" :default-collapsed="true" class="mt-4">

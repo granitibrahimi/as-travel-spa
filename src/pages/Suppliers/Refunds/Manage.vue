@@ -1,15 +1,18 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { usePaymentMethodsRepository } from '../../../repositories/paymentMethods';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import InputNumber from '../../../components/Form/InputNumber.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
-import Select from '../../../components/Form/Select.vue';
+import SearchSelect from '../../../components/Form/SearchSelect.vue';
+import Loader from '../../../components/Loader.vue';
+import Alert from '../../../components/Alert.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -26,8 +29,13 @@ const form = reactive({
     notes: '',
 });
 
-const paymentMethods = ref([]);
+const paymentMethodsRepo = usePaymentMethodsRepository();
+// Incoming methods, as [{ value, label }] for SearchSelect — reactive off the cache.
+const paymentMethods = computed(() => paymentMethodsRepo.incoming());
 const availableAmount = ref(null);
+// Nothing to refund: block creating a new refund when the supplier has no
+// available balance. Edits stay open so existing refunds remain adjustable.
+const nothingToReimburse = computed(() => !isEdit && Number(availableAmount.value) <= 0);
 const errors = ref({});
 const processing = ref(false);
 const loaded = ref(false);
@@ -52,11 +60,13 @@ onMounted(async () => {
         });
     }
 
-    const { data: options } = await api.get('/supplier-refunds/form-options', {
+    // Payment methods come from the cached form options (incoming only). The
+    // available amount for this supplier comes from its own endpoint; keep the
+    // loader up until it lands so the amount's max is set before the form shows.
+    const { data } = await api.get('/supplier-refunds/available-amount', {
         params: { supplier_id: optionsSupplierId ?? undefined },
     });
-    paymentMethods.value = options.payment_methods ?? [];
-    availableAmount.value = options.available_amount;
+    availableAmount.value = data.available_amount;
 
     loaded.value = true;
 });
@@ -97,15 +107,19 @@ const cancelTo = isEdit ? `/supplier-refunds/${refundId}` : `/suppliers/${suppli
 
 <template>
     <AppLayout :title="isEdit ? 'Edit refund' : 'New refund'">
-        <form class="space-y-6" @submit.prevent="submit">
+        <Loader v-if="! loaded" />
+        <Alert v-else-if="nothingToReimburse" type="warning">
+            There is nothing to reimburse back to this supplier.
+        </Alert>
+        <form v-else class="space-y-6" @submit.prevent="submit">
             <FullWidthBox title="Refund details" :collapsible="false">
                 <p v-if="availableAmount !== null" class="mb-4 rounded bg-gray-50 px-3 py-2 text-sm text-gray-600">
                     Available for reimbursement: <span class="font-medium tabular-nums">{{ money(availableAmount) }}</span>
                 </p>
 
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Select v-model="form.payment_method_id" :options="paymentMethods" label="Payment method *" :error="errors.payment_method_id" />
-                    <InputNumber v-model="form.amount" label="Amount *" :error="errors.amount" />
+                    <SearchSelect v-model="form.payment_method_id" :options="paymentMethods" label="Payment method *" :error="errors.payment_method_id" />
+                    <InputNumber v-model="form.amount" label="Amount *" :error="errors.amount" min="0" :max="availableAmount ?? undefined" />
                     <InputText v-model="form.transaction_nr" label="Transaction # *" :error="errors.transaction_nr" />
                     <InputText v-model="form.on_date" type="date" label="Date *" :error="errors.on_date" />
                 </div>

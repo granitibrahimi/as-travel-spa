@@ -9,6 +9,7 @@ import { useAuthStore } from './stores/auth';
 import { usePresenceStore } from './stores/presence';
 import { useIdleStore } from './stores/idle';
 import { useNotificationsStore } from './stores/notifications';
+import { useFormOptionsStore } from './stores/formOptions';
 
 // Apply the saved/OS theme before anything renders (no flash of wrong theme).
 initTheme();
@@ -22,6 +23,7 @@ const auth = useAuthStore();
 const presence = usePresenceStore();
 const idle = useIdleStore();
 const notifications = useNotificationsStore();
+const formOptions = useFormOptionsStore();
 
 // A 401 from the API drops the token; send the user back to login.
 setUnauthenticatedHandler(() => {
@@ -42,6 +44,12 @@ auth.bootstrap().finally(() => {
             presence.join();
             notifications.subscribe();
 
+            // Load shared form options: hydrate the cache, then sync. Show the
+            // progress screen only on a cold cache (first login); otherwise sync
+            // silently in the background.
+            formOptions.hydrate();
+            formOptions.sync({ showScreen: !formOptions.loaded });
+
             // Warn then log out after a spell of inactivity. The redirect carries
             // a hint so the login page can explain why the session ended.
             idle.start(async () => {
@@ -51,6 +59,7 @@ auth.bootstrap().finally(() => {
         } else {
             presence.leave();
             notifications.unsubscribe();
+            formOptions.clear();
             idle.stop();
         }
     }, { immediate: true });
