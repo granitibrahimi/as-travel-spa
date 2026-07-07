@@ -63,10 +63,17 @@ export const workspaces = [
                 ],
             },
             {
+                label: 'Announcements',
+                items: [
+                    { label: 'List', to: '/announcements', can: 'announcements.list' },
+                    { label: 'Create', to: '/announcements/create', can: 'announcements.create' },
+                ],
+            },
+            {
                 label: 'Hotels',
                 items: [
-                    { label: 'All Hotels', to: '/hotels', can: 'hotels.list' },
-                    { label: 'New Hotel', to: '/hotels/create', can: 'hotels.create' },
+                    { label: 'List', to: '/hotels', can: 'hotels.list' },
+                    { label: 'Create', to: '/hotels/create', can: 'hotels.create' },
                 ],
             },
             {
@@ -93,6 +100,20 @@ export const workspaces = [
                 items: [
                     { label: 'All Messages', to: '/messages', can: 'messages.list' },
                     { label: 'New Message', to: '/messages/create', can: 'messages.create' },
+                ],
+            },
+            {
+                label: 'Announcements',
+                items: [
+                    { label: 'All Announcements', to: '/announcements', can: 'announcements.list' },
+                    { label: 'New Announcement', to: '/announcements/create', can: 'announcements.create' },
+                ],
+            },
+            {
+                label: 'Support',
+                items: [
+                    { label: 'Support Tickets', to: '/support', can: 'supportTickets.list' },
+                    { label: 'New Ticket', to: '/support/create', can: 'supportTickets.create' },
                 ],
             },
         ],
@@ -124,7 +145,6 @@ export const workspaces = [
                     { label: 'All Requests', to: '/vacations', can: 'vacation.viewAllUsers' },
                     { label: 'Apply for Vacation', to: '/vacations/apply', can: 'vacations.applyForm' },
                     { label: 'Official Holidays', to: '/official-holidays', can: 'officialHolidays.list' },
-                    { label: 'Work Schedule', to: '/work-schedule', can: 'workSchedule.index' },
                 ],
             },
             {
@@ -132,6 +152,13 @@ export const workspaces = [
                 items: [
                     { label: 'All Messages', to: '/messages', can: 'messages.list' },
                     { label: 'New Message', to: '/messages/create', can: 'messages.create' },
+                ],
+            },
+            {
+                label: 'Work Schedule',
+                items: [
+                    { label: 'Work Schedule', to: '/work-schedule', can: 'workSchedule.calendar' },
+                    { label: 'Edit Work Schedule', to: '/work-schedule/edit', can: 'workSchedule.index' },
                 ],
             },
         ],
@@ -216,6 +243,21 @@ export const workspaces = [
         can: 'administration.access',
         home: '/',
         groups: [
+            {
+                label: 'Products',
+                items: [
+                    { label: 'All Products', to: '/products', can: 'products.list' },
+                    { label: 'New Product', to: '/products/create', can: 'products.create' },
+                ],
+            },
+            {
+                label: 'Projects',
+                items: [
+                    { label: 'Active', to: '/projects', can: 'customerProjects.list' },
+                    { label: 'Finished', to: '/projects/finished', can: 'customerProjects.finished' },
+                    { label: 'Create', to: '/projects/create', can: 'customerProjects.create' },
+                ],
+            },
             {
                 label: 'Online Users',
                 items: [

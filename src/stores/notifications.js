@@ -60,8 +60,8 @@ export const useNotificationsStore = defineStore('notifications', {
             // Convenience: a custom broadcast event named ".notification".
             channel.listen('.notification', (payload) => this.fromBroadcast(payload));
 
-            // Custom app events → purpose-built toasts.
-            channel.listen('.task.assigned', (payload) => this.fromTaskAssigned(payload));
+            // Custom app events carry the same notification payload shape.
+            channel.listen('.task.assigned', (payload) => this.fromBroadcast(payload));
 
             // Swallow authorization failures (CORS / missing permission) so a
             // misconfigured server doesn't spam the console — nothing to show.
@@ -73,39 +73,34 @@ export const useNotificationsStore = defineStore('notifications', {
         // Map a server payload onto a toast, tolerating field-name variations.
         fromBroadcast(payload = {}) {
             this.unread++;
-            this.push({
-                type: payload.type ?? payload.level ?? 'info',
-                title: payload.title ?? payload.subject ?? null,
-                message: payload.message ?? payload.body ?? payload.text ?? '',
-                timeout: payload.timeout,
-                notificationId: payload.notification_id ?? null,
-            });
+            this.push(payload);
         },
 
-        // task.assigned event. Note `type` here is the task type name (not a
-        // toast severity), so it's folded into the detail line.
-        fromTaskAssigned(payload = {}) {
-            this.unread++;
-            const line = [
-                payload.reference ? `#${payload.reference}` : null,
-                payload.type,
-                payload.customer,
-                payload.assigned_by ? `by ${payload.assigned_by}` : null,
-            ].filter(Boolean).join(' · ');
-
-            this.push({
-                type: 'info',
-                title: payload.message ?? 'New task assigned',
-                message: line || 'A new task was assigned to you.',
-                notificationId: payload.notification_id ?? null,
-            });
-        },
-
-        // Add a toast. Also usable directly for local (non-realtime) toasts,
-        // e.g. notifications.push({ type: 'success', message: 'Saved.' }).
-        push({ type = 'info', title = null, message = '', timeout = DEFAULT_TIMEOUT, notificationId = null } = {}) {
+        // Add a toast. Accepts the broadcast notification payload shape
+        // (type, title, body, by, url, notificationId, timeout) and is also
+        // usable for local toasts, e.g. push({ type: 'success', message: 'Saved.' }).
+        push({
+            type = 'info',
+            title = null,
+            message = '',
+            body = null,
+            by = null,
+            url = null,
+            timeout = DEFAULT_TIMEOUT,
+            notificationId = null,
+        } = {}) {
             const id = ++seq;
-            this.toasts.push({ id, type, title, message, notificationId });
+
+            this.toasts.push({
+                id,
+                type,
+                title,
+                // Server sends `body`; local callers may send `message`.
+                message: message || body || '',
+                by,
+                url,
+                notificationId,
+            });
 
             if (timeout > 0) {
                 // Auto-dismiss does NOT mark the notification seen.

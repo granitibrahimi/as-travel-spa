@@ -86,7 +86,7 @@ async function submit() {
 </script>
 
 <template>
-    <AppLayout :title="isEdit ? 'Edit hotel' : 'New hotel'">
+    <AppLayout :title="isEdit ? 'Edit Hotel' : 'Create new Hotel'">
         <form class="space-y-6" @submit.prevent="submit">
             <FullWidthBox title="Hotel details">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">

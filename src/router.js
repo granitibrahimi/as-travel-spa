@@ -47,6 +47,9 @@ import InvoicesIndex from './pages/Customers/Invoices/Index.vue';
 import InvoicesDue from './pages/Customers/Invoices/Due.vue';
 import CreditNotesIndex from './pages/Customers/CreditNotes/Index.vue';
 import ProInvoiceCreate from './pages/Customers/ProInvoices/Create.vue';
+import ProjectsList from './pages/Customers/Projects/List.vue';
+import ProjectsCreate from './pages/Customers/Projects/Create.vue';
+import ProjectsShow from './pages/Customers/Projects/Show.vue';
 import AccountTransactionsJournal from './pages/Finance/AccountTransactions/Journal.vue';
 import JournalsIndex from './pages/Finance/Journals/Index.vue';
 import JournalsManage from './pages/Finance/Journals/Manage.vue';
@@ -65,6 +68,7 @@ import RolesIndex from './pages/Users/Roles/Index.vue';
 import RolesManage from './pages/Users/Roles/Manage.vue';
 import RolesPermissions from './pages/Users/Roles/Permissions.vue';
 import PermissionsIndex from './pages/Users/Permissions/Index.vue';
+import WorkScheduleCalendar from './pages/Users/WorkSchedule/Calendar.vue';
 import WorkScheduleIndex from './pages/Users/WorkSchedule/Index.vue';
 import OfficialHolidaysIndex from './pages/OfficialHolidays/Index.vue';
 import OfficialHolidaysManage from './pages/OfficialHolidays/Manage.vue';
@@ -87,6 +91,9 @@ import TasksShow from './pages/Tasks/Show.vue';
 import NotificationsIndex from './pages/Base/Notifications/Index.vue';
 import NotificationsShow from './pages/Base/Notifications/Show.vue';
 import OnlineUsers from './pages/Users/OnlineUsers.vue';
+import SupportIndex from './pages/Support/Index.vue';
+import SupportCreate from './pages/Support/Create.vue';
+import SupportShow from './pages/Support/Show.vue';
 import Me from './pages/Me.vue';
 
 const routes = [
@@ -101,6 +108,10 @@ const routes = [
     { path: '/customers/invoices/due', name: 'customerInvoices.due', component: InvoicesDue },
     { path: '/customers/credit-notes', name: 'customerCreditNotes.index', component: CreditNotesIndex },
     { path: '/customers/:customer/pro-invoices/create', name: 'customerProInvoices.create', component: ProInvoiceCreate },
+    { path: '/projects', name: 'customerProjects.index', component: ProjectsList, props: { mode: 'active' } },
+    { path: '/projects/finished', name: 'customerProjects.finished', component: ProjectsList, props: { mode: 'finished' } },
+    { path: '/projects/create', name: 'customerProjects.create', component: ProjectsCreate },
+    { path: '/projects/:id', name: 'customerProjects.show', component: ProjectsShow },
     { path: '/customers/:id', name: 'customers.show', component: CustomersShow },
     { path: '/finance/account-transactions/journal/:type/:reference', name: 'accountTransactions.journal', component: AccountTransactionsJournal },
     { path: '/departures', name: 'departures.index', component: DeparturesIndex },
@@ -161,7 +172,8 @@ const routes = [
     { path: '/roles/:id/edit', name: 'roles.edit', component: RolesManage },
     { path: '/roles/:id/permissions', name: 'roles.permissions', component: RolesPermissions },
     { path: '/permissions', name: 'permissions.index', component: PermissionsIndex },
-    { path: '/work-schedule', name: 'workSchedule.index', component: WorkScheduleIndex },
+    { path: '/work-schedule', name: 'workSchedule.calendar', component: WorkScheduleCalendar },
+    { path: '/work-schedule/edit', name: 'workSchedule.index', component: WorkScheduleIndex },
     { path: '/official-holidays', name: 'officialHolidays.index', component: OfficialHolidaysIndex },
     { path: '/official-holidays/create', name: 'officialHolidays.create', component: OfficialHolidaysManage },
     { path: '/official-holidays/:id/edit', name: 'officialHolidays.edit', component: OfficialHolidaysManage },
@@ -190,6 +202,9 @@ const routes = [
     { path: '/notifications', name: 'notifications.index', component: NotificationsIndex },
     { path: '/notifications/:id', name: 'notifications.show', component: NotificationsShow },
     { path: '/online-users', name: 'online-users', component: OnlineUsers },
+    { path: '/support', name: 'support.index', component: SupportIndex },
+    { path: '/support/create', name: 'support.create', component: SupportCreate },
+    { path: '/support/:id', name: 'support.show', component: SupportShow },
     { path: '/me', name: 'me', component: Me },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
 ];
