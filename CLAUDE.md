@@ -45,6 +45,9 @@ bearer token. This file documents conventions to follow when working here.
 
 - The sidebar/workspaces are defined in `src/config/workspaces.js` and filtered
   by permissions (`can` / `canAny`). Add nav items there, not in the layout.
+- To split a workspace's groups into sections, add a `{ separator: true }` entry
+  to its `groups` array — it renders a line in the sidebar. Stray separators
+  (leading/trailing/back-to-back after permission filtering) are auto-removed.
 - Navigation currently keys off **path strings** (`to: '/foo'`), and
   `AppLayout.vue` matches the active item via `route.path`. Routes are named in
   `src/router.js`; you may navigate by name (`router.push({ name })`), but if you
@@ -76,12 +79,52 @@ Decide the actions UI by the **number of actions available for that row**:
   `src/components/ActionsOverlay.vue`: a ⋯ button sets the selected row and the
   overlay lists the actions.
 
+Row actions are **defined in the SPA, not served by the API** (we can't build
+routes from there). Define them as a local list (e.g. a `rowActions(row)` /
+`supplierActions` returning `[{ label, to?/href?, action?, danger?, can }]`) and
+filter by `auth.can(action.can)`. Each entry is either a link (`to`/`href`) or a
+local handler (`action`), with destructive ones going through `ConfirmDialog`.
+Do not read `record.actions` from API responses. See
+`src/pages/Suppliers/Suppliers/Index.vue` (overlay) and
+`src/pages/Suppliers/Payments/Index.vue` (dropdown).
+
 Count only the actions the user can actually see (after permission filtering).
 
 ## Code style
 
 - 4-space indentation. Vue SFCs use `<script setup>`.
 - Match surrounding patterns: stores in `src/stores/`, shared UI in
-  `src/components/`, pages in `src/pages/<Feature>/`. Reuse existing components
-  (`FullWidthBox`, `Loader`, `InputText`, `ApiPagination`, etc.) over new markup.
+  `src/components/`, pages in `src/pages/<Domain>/<Feature>/`. Reuse existing
+  components (`FullWidthBox`, `Loader`, `InputText`, `ApiPagination`, etc.) over
+  new markup.
+
+## Migrating a platform feature into the SPA (playbook)
+
+The platform repo is `~/Documents/as/as-travel-invoicing-platform` (Laravel
+modular monolith). When moving a feature here:
+
+- **Reference implementation to mirror 1:1**: platform
+  `modules/Suppliers/Http/Controllers/API/SupplierDepositsController.php`
+  (+ its Resource/Request, `Routes/apiRoutes.php` group, factory, Pest test)
+  and SPA `src/pages/Suppliers/Deposits/{Index,Manage,Show}.vue`.
+- **Every interaction hits a dedicated platform `api/v1` endpoint** (Sanctum +
+  `->can()` gate, reusing platform actions via `Action::run()`); never call
+  platform web routes, and use proper verbs — several legacy web routes are
+  side-effecting GETs, don't copy that. If a needed endpoint is missing, add it
+  on the platform first.
+- If a platform response embeds server-built `actions`/URLs (legacy pattern,
+  e.g. supplier `actions` groups), prefer native SPA routes + `auth.can`.
+- **Dates**: platform finance endpoints validate `date_format:d.m.Y`; date
+  inputs speak `Y-m-d`. Convert with the `toApiDate`/`toInputDate` helpers as in
+  `Deposits/Manage.vue`.
+- **Router wiring** (`src/router.js`): static imports grouped by domain; route
+  names mirror platform route names (`supplierDeposits.list`); order matters —
+  `/x/create` and `/x/:id/edit` before `/x/:id`, and nested creates like
+  `/suppliers/:supplierId/deposits/create` before `/suppliers/:id`.
+- One Manage.vue handles create + edit (`route.params.id` ⇒ edit, hydrate in
+  `onMounted`); nested create passes the parent id via the route param.
+- PDFs/exports stay server-rendered; download with
+  `api.get(url, { responseType: 'blob' })` (see `Support/Show.vue`).
+- Backend tests (Pest) live on the platform; run them there. After SPA changes,
+  verify with `npm run build`.
 </content>

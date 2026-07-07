@@ -55,12 +55,24 @@ export const useLayoutStore = defineStore('layout', {
                 return [];
             }
 
-            return workspace.groups
-                .map((group) => ({
-                    label: group.label,
-                    items: group.items.filter((item) => canSee(auth, item)),
-                }))
-                .filter((group) => group.items.length > 0);
+            const groups = workspace.groups
+                .map((group) => (group.separator
+                    ? { separator: true }
+                    : { label: group.label, items: group.items.filter((item) => canSee(auth, item)) }))
+                .filter((group) => group.separator || group.items.length > 0);
+
+            // Drop separators that would render at the very top/bottom or back to
+            // back once permission filtering has removed neighbouring groups.
+            return groups.filter((group, i) => {
+                if (!group.separator) {
+                    return true;
+                }
+
+                const prev = groups[i - 1];
+                const next = groups[i + 1];
+
+                return prev && next && !prev.separator;
+            });
         },
 
         userMenuItems() {

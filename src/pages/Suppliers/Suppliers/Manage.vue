@@ -1,14 +1,18 @@
 <script setup>
-import { reactive, ref } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
-import api from '../../helpers/api';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Button from '../../components/Button.vue';
-import InputText from '../../components/Form/InputText.vue';
-import Textarea from '../../components/Form/Textarea.vue';
+import { onMounted, reactive, ref } from 'vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
+import api from '../../../helpers/api.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Button from '../../../components/Button.vue';
+import InputText from '../../../components/Form/InputText.vue';
+import Textarea from '../../../components/Form/Textarea.vue';
 
+const route = useRoute();
 const router = useRouter();
+
+const supplierId = route.params.id ?? null;
+const isEdit = Boolean(supplierId);
 
 const form = reactive({
     name: '',
@@ -22,8 +26,31 @@ const form = reactive({
 
 const errors = ref({});
 const processing = ref(false);
+const loaded = ref(!isEdit);
 
-// Creation goes through the JSON API; on success we route to the new supplier.
+// Edit mode hydrates from the API; create starts blank.
+onMounted(async () => {
+    if (!isEdit) {
+        return;
+    }
+
+    const { data } = await api.get(`/suppliers/${supplierId}`);
+    const supplier = data.data ?? data;
+
+    Object.assign(form, {
+        name: supplier.name ?? '',
+        unique_id: supplier.unique_id ?? '',
+        company_name: supplier.company_name ?? '',
+        vat_nr: supplier.vat_nr ?? '',
+        address: supplier.address ?? '',
+        email: supplier.email ?? '',
+        phone: supplier.phone ?? '',
+    });
+
+    loaded.value = true;
+});
+
+// Both modes go through the JSON API; on success we route to the supplier.
 async function submit() {
     if (processing.value) {
         return;
@@ -33,8 +60,13 @@ async function submit() {
     errors.value = {};
 
     try {
-        const { data } = await api.post('/suppliers', form);
-        router.push(`/suppliers/${data.id}`);
+        if (isEdit) {
+            await api.put(`/suppliers/${supplierId}`, form);
+            router.push(`/suppliers/${supplierId}`);
+        } else {
+            const { data } = await api.post('/suppliers', form);
+            router.push(`/suppliers/${data.id}`);
+        }
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -47,10 +79,12 @@ async function submit() {
         processing.value = false;
     }
 }
+
+const cancelTo = isEdit ? `/suppliers/${supplierId}` : '/suppliers';
 </script>
 
 <template>
-    <AppLayout title="New supplier">
+    <AppLayout :title="isEdit ? 'Edit supplier' : 'New supplier'">
         <form class="space-y-6" @submit.prevent="submit">
             <FullWidthBox title="Supplier details" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -68,11 +102,11 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink to="/suppliers" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="cancelTo" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
-                <Button type="submit" variant="primary" :disabled="processing">
-                    {{ processing ? 'Saving…' : 'Create supplier' }}
+                <Button type="submit" variant="primary" :disabled="processing || ! loaded">
+                    {{ processing ? 'Saving…' : (isEdit ? 'Update supplier' : 'Create supplier') }}
                 </Button>
             </footer>
         </form>

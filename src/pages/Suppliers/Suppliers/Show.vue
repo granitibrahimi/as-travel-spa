@@ -1,17 +1,21 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
-import { money } from '../../helpers/money';
-import api from '../../helpers/api';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Select from '../../components/Form/Select.vue';
-import InputText from '../../components/Form/InputText.vue';
-import ApiPagination from '../../components/ApiPagination.vue';
-import ActionsOverlay from '../../components/ActionsOverlay.vue';
-import Loader from '../../components/Loader.vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { money } from '../../../helpers/money.js';
+import api from '../../../helpers/api.js';
+import { useAuthStore } from '../../../stores/auth.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Select from '../../../components/Form/Select.vue';
+import InputText from '../../../components/Form/InputText.vue';
+import ApiPagination from '../../../components/ApiPagination.vue';
+import SupplierActions from './Actions.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import Loader from '../../../components/Loader.vue';
 
 const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
 const id = route.params.id;
 
 const actionsOpen = ref(false);
@@ -89,6 +93,26 @@ watch(filters, () => {
         fetchTransactions();
     }
 });
+
+// Native delete through the JSON API (DELETE api/v1/suppliers/{id}).
+const confirmingDelete = ref(false);
+const deleting = ref(false);
+
+async function deleteSupplier() {
+    if (deleting.value) {
+        return;
+    }
+
+    deleting.value = true;
+
+    try {
+        await api.delete(`/suppliers/${id}`);
+        router.push('/suppliers');
+    } finally {
+        deleting.value = false;
+        confirmingDelete.value = false;
+    }
+}
 
 const details = (record) => [
     ['ID', record.id],
@@ -174,19 +198,46 @@ const details = (record) => [
                 </div>
 
                 <template #footer>
-                    <RouterLink to="/suppliers" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
-                        Back to list
-                    </RouterLink>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <RouterLink to="/suppliers" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                            Back to list
+                        </RouterLink>
+                        <RouterLink
+                            v-if="supplier && auth.can('suppliers.edit')"
+                            :to="`/suppliers/${id}/edit`"
+                            class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
+                        >
+                            Edit
+                        </RouterLink>
+                        <button
+                            v-if="supplier && auth.can('suppliers.delete')"
+                            type="button"
+                            class="rounded border border-red-200 bg-red-50 px-3 py-1 text-sm text-red-700 hover:bg-red-100"
+                            @click="confirmingDelete = true"
+                        >
+                            Delete
+                        </button>
+                    </div>
                 </template>
             </FullWidthBox>
 
-            <ActionsOverlay
+            <SupplierActions
+                :supplier="supplier"
                 :show="actionsOpen"
-                :title="supplier?.full_name"
-                :subtitle="supplier ? `#${supplier.id} · ${supplier.unique_id ?? ''}` : ''"
-                :groups="supplier?.actions ?? []"
-                :delete-message="supplier ? `${supplier.full_name} will be permanently deleted.` : ''"
+                :show-view-action="false"
                 @close="actionsOpen = false"
+                @deleted="router.push('/suppliers')"
+            />
+
+            <ConfirmDialog
+                :show="confirmingDelete"
+                title="Delete supplier?"
+                :message="supplier ? `${supplier.full_name} will be permanently deleted.` : ''"
+                confirm-label="Yes, delete"
+                confirm-variant="danger"
+                :processing="deleting"
+                @confirm="deleteSupplier"
+                @cancel="confirmingDelete = false"
             />
 
             <FullWidthBox title="List of all transactions" :collapsible="false">

@@ -240,10 +240,13 @@ async function signOut() {
             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
         >
             <nav class="space-y-4">
-                <div v-for="group in navigation" :key="group.label">
+                <div v-for="(group, i) in navigation" :key="group.separator ? `sep-${i}` : group.label">
+                    <!-- Section divider, declared as { separator: true } in workspaces.js. -->
+                    <hr v-if="group.separator" class="border-t border-gray-200" />
+
                     <!-- Single-item group renders as a plain top-level link (no accordion). -->
                     <RouterLink
-                        v-if="group.items.length === 1"
+                        v-else-if="group.items.length === 1"
                         :to="group.items[0].to"
                         class="block px-2 text-xs font-semibold uppercase tracking-wide"
                         :class="isActive(group.items[0].to) ? 'text-red-700' : 'text-gray-400 hover:text-gray-600'"

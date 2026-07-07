@@ -6,6 +6,11 @@
  *
  * `to` values are SPA router paths. Some routes are not migrated yet, so their
  * links resolve to the NotFound page until the page exists.
+ *
+ * A `groups` entry of `{ separator: true }` renders a horizontal line in the
+ * sidebar, letting you split a workspace's groups into sections. Separators
+ * that would end up at the top/bottom or back-to-back (after permission
+ * filtering hides neighbouring groups) are dropped automatically.
  */
 export const workspaces = [
     {
@@ -15,10 +20,28 @@ export const workspaces = [
         home: '/',
         groups: [
             {
-                label: 'Static Offers',
+                label: 'Departures',
                 items: [
-                    { label: 'All Offers', to: '/offers', can: 'staticOffers.list' },
-                    { label: 'New Offer', to: '/offers/create', can: 'staticOffers.create' },
+                    { label: 'Departure Info', to: '/departures/overview', can: 'departureInfo.overview' },
+                    { label: 'All Departures', to: '/departures', can: 'departureInfo.list' },
+                ],
+            },
+            {
+                label: 'Work Schedule',
+                items: [
+                    { label: 'Work Schedule', to: '/work-schedule', can: 'workSchedule.list' },
+                ],
+            },
+            {
+                label: 'New Announcement',
+                items: [
+                    { label: 'New Announcement', to: '/announcements/create', can: 'announcements.create' },
+                ],
+            },
+            {
+                label: 'New Support Ticket',
+                items: [
+                    { label: 'New Support Ticket', to: '/support/create', can: 'support.create' },
                 ],
             },
             {
@@ -29,11 +52,23 @@ export const workspaces = [
                     { label: 'New Task', to: '/tasks/create', can: 'tasks.create' },
                 ],
             },
+            { separator: true },
             {
-                label: 'Travelers',
+                label: 'Invoices',
                 items: [
-                    { label: 'All Travelers', to: '/travelers', can: 'persons.list' },
-                    { label: 'New Traveler', to: '/travelers/create', can: 'persons.create' },
+                    { label: 'Invoices', to: '/customers/invoices', can: 'customerInvoices.list' },
+                ],
+            },
+            {
+                label: 'Due Invoices',
+                items: [
+                    { label: 'Invoices', to: '/customers/invoices/due', can: 'customerInvoices.due' },
+                ],
+            },
+            {
+                label: 'Credit Notes',
+                items: [
+                    { label: 'Credit Notes', to: '/customers/credit-notes', can: 'customerCreditNotes.list' },
                 ],
             },
             {
@@ -46,11 +81,20 @@ export const workspaces = [
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
                 ],
             },
+            { separator: true },
             {
-                label: 'Departures',
+                label: 'Static Offers',
                 items: [
-                    { label: 'Departure Info', to: '/departures/overview', can: 'departureInfo.overview' },
-                    { label: 'All Departures', to: '/departures', can: 'departureInfo.list' },
+                    { label: 'All Offers', to: '/offers', can: 'staticOffers.list' },
+                    { label: 'New Offer', to: '/offers/create', can: 'staticOffers.create' },
+                ],
+            },
+
+            {
+                label: 'Travelers',
+                items: [
+                    { label: 'All Travelers', to: '/travelers', can: 'persons.list' },
+                    { label: 'New Traveler', to: '/travelers/create', can: 'persons.create' },
                 ],
             },
             {
@@ -192,6 +236,10 @@ export const workspaces = [
                 items: [
                     { label: 'All Suppliers', to: '/suppliers', can: 'suppliers.list' },
                     { label: 'New Supplier', to: '/suppliers/create', can: 'suppliers.create' },
+                    { label: 'Deposits', to: '/supplier-deposits', can: 'supplierDeposits.list' },
+                    { label: 'Payments', to: '/supplier-payments', can: 'supplierPayments.list' },
+                    { label: 'Gift Cards', to: '/supplier-gift-cards', can: 'supplierGiftCards.list' },
+                    { label: 'Refunds', to: '/supplier-refunds', can: 'supplierRefunds.list' },
                 ],
             },
             {

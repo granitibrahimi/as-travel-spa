@@ -1,14 +1,14 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import api from '../../helpers/api';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Button from '../../components/Button.vue';
-import InputText from '../../components/Form/InputText.vue';
-import ApiPagination from '../../components/ApiPagination.vue';
-import ActionsOverlay from '../../components/ActionsOverlay.vue';
-import Loader from '../../components/Loader.vue';
+import api from '../../../helpers/api.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Button from '../../../components/Button.vue';
+import InputText from '../../../components/Form/InputText.vue';
+import ApiPagination from '../../../components/ApiPagination.vue';
+import SupplierActions from './Actions.vue';
+import Loader from '../../../components/Loader.vue';
 
 // All data comes from the platform JSON API (bearer token). Paths are relative
 // to the api client's base (VITE_API_URL, e.g. https://csrm.test/api/v1).
@@ -46,6 +46,12 @@ async function fetchSuppliers(page = 1) {
 }
 
 onMounted(() => fetchSuppliers());
+
+// After a delete from the actions overlay, refresh the current page.
+function onSupplierDeleted() {
+    selected.value = null;
+    fetchSuppliers(suppliers.value?.current_page ?? 1);
+}
 </script>
 
 <template>
@@ -119,33 +125,12 @@ onMounted(() => fetchSuppliers());
             </template>
         </FullWidthBox>
 
-        <!-- Per-supplier actions (legacy #side-overlay equivalent) -->
-        <ActionsOverlay
+        <!-- Per-supplier actions — defined locally and permission-gated (Actions.vue). -->
+        <SupplierActions
+            :supplier="selected"
             :show="Boolean(selected)"
-            :title="selected?.name"
-            :subtitle="selected ? `#${selected.id} · ${selected.unique_id ?? ''}` : ''"
-            :groups="selected?.actions ?? []"
-            :delete-message="selected ? `${selected.name} will be permanently deleted.` : ''"
             @close="selected = null"
-        >
-            <div v-if="selected" class="space-y-3">
-                <RouterLink
-                    :to="`/suppliers/${selected.id}`"
-                    class="block w-full rounded border border-gray-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-gray-50"
-                >
-                    View supplier
-                </RouterLink>
-                <dl class="space-y-1 text-sm">
-                    <div v-if="selected.email" class="flex gap-2">
-                        <dt class="w-14 shrink-0 text-gray-400">Email</dt>
-                        <dd class="break-all text-gray-700">{{ selected.email }}</dd>
-                    </div>
-                    <div v-if="selected.phone" class="flex gap-2">
-                        <dt class="w-14 shrink-0 text-gray-400">Phone</dt>
-                        <dd class="text-gray-700">{{ selected.phone }}</dd>
-                    </div>
-                </dl>
-            </div>
-        </ActionsOverlay>
+            @deleted="onSupplierDeleted"
+        />
     </AppLayout>
 </template>
