@@ -31,6 +31,32 @@ export default defineConfig({
     build: {
         outDir: 'public',
         emptyOutDir: true,
+        rollupOptions: {
+            output: {
+                // Split heavy third-party libs into their own long-term-cacheable
+                // chunks. chart.js is only imported by the (lazy) report pages, so
+                // its chunk is fetched only when a report is opened.
+                manualChunks(id) {
+                    if (! id.includes('node_modules')) {
+                        return undefined;
+                    }
+
+                    if (id.includes('chart.js')) {
+                        return 'chart';
+                    }
+
+                    if (id.includes('pusher-js') || id.includes('laravel-echo')) {
+                        return 'realtime';
+                    }
+
+                    if (id.includes('vue-router') || id.includes('/pinia/') || /node_modules\/@?vue\//.test(id)) {
+                        return 'vue';
+                    }
+
+                    return 'vendor';
+                },
+            },
+        },
     },
     server: {
         host: 'localhost',

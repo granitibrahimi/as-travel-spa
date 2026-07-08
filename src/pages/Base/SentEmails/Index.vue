@@ -1,14 +1,14 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import api from '../../helpers/api';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Button from '../../components/Button.vue';
-import InputText from '../../components/Form/InputText.vue';
-import Select from '../../components/Form/Select.vue';
-import ApiPagination from '../../components/ApiPagination.vue';
-import Loader from '../../components/Loader.vue';
+import api from '../../../helpers/api.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Button from '../../../components/Button.vue';
+import InputText from '../../../components/Form/InputText.vue';
+import Select from '../../../components/Form/Select.vue';
+import ApiPagination from '../../../components/ApiPagination.vue';
+import Loader from '../../../components/Loader.vue';
 
 // Fixed enums (mirror SentEmailTypeEnum + the statuses on the platform).
 const types = [

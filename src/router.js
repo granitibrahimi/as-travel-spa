@@ -1,116 +1,156 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from './stores/auth';
-import Login from './pages/Login.vue';
-import Home from './pages/Home.vue';
-import NotFound from './pages/NotFound.vue';
-import SuppliersIndex from './pages/Suppliers/Suppliers/Index.vue';
-import SuppliersManage from './pages/Suppliers/Suppliers/Manage.vue';
-import SuppliersShow from './pages/Suppliers/Suppliers/Show.vue';
-import SuppliersStatements from './pages/Suppliers/Suppliers/Statements.vue';
-import SuppliersCredentials from './pages/Suppliers/Suppliers/Credentials.vue';
-import SupplierBillsManage from './pages/Suppliers/Bills/Manage.vue';
-import SupplierCreditNotesManage from './pages/Suppliers/CreditNotes/Manage.vue';
-import CustomersIndex from './pages/Customers/Customers/Index.vue';
-import CustomersManage from './pages/Customers/Customers/Manage.vue';
-import CustomersShow from './pages/Customers/Customers/Show.vue';
-import DeparturesIndex from './pages/Departures/Index.vue';
-import DeparturesOverview from './pages/Departures/Overview.vue';
-import MealTypesIndex from './pages/MealTypes/Index.vue';
-import MealTypesManage from './pages/MealTypes/Manage.vue';
-import CountriesIndex from './pages/Base/Countries/Index.vue';
-import CountriesManage from './pages/Base/Countries/Manage.vue';
-import SentEmailsIndex from './pages/SentEmails/Index.vue';
-import SentEmailsShow from './pages/SentEmails/Show.vue';
-import QuickBooksSyncIndex from './pages/QuickBooksSync/Index.vue';
-import QuickBooksSyncShow from './pages/QuickBooksSync/Show.vue';
-import ProductsIndex from './pages/Base/Products/Index.vue';
-import ProductsManage from './pages/Base/Products/Manage.vue';
-import HotelsIndex from './pages/Base/Hotels/Index.vue';
-import HotelsManage from './pages/Base/Hotels/Manage.vue';
-import DestinationsIndex from './pages/Base/Destinations/Index.vue';
-import DestinationsManage from './pages/Base/Destinations/Manage.vue';
-import DestinationsMerge from './pages/Base/Destinations/Merge.vue';
-import DestinationsParent from './pages/Base/Destinations/Parent.vue';
-import ParentDestinationsIndex from './pages/Base/ParentDestinations/Index.vue';
-import ParentDestinationsManage from './pages/Base/ParentDestinations/Manage.vue';
-import ParentDestinationsChildren from './pages/Base/ParentDestinations/ChildDestinations.vue';
-import AnnouncementsIndex from './pages/Base/Announcements/Index.vue';
-import AnnouncementsManage from './pages/Base/Announcements/Manage.vue';
-import AnnouncementsNew from './pages/Base/Announcements/New.vue';
-import AnnouncementsStatistics from './pages/Base/Announcements/Statistics.vue';
-import MessagesIndex from './pages/Base/Messages/Index.vue';
-import MessagesCreate from './pages/Base/Messages/Create.vue';
-import MessagesShow from './pages/Base/Messages/Show.vue';
-import OnlineCredentialsIndex from './pages/OnlineSystemCredentials/Index.vue';
-import OnlineCredentialsShow from './pages/OnlineSystemCredentials/Show.vue';
-import PaymentMethodsIndex from './pages/Finance/PaymentMethods/Index.vue';
-import PaymentMethodsManage from './pages/Finance/PaymentMethods/Manage.vue';
-import TaxTypesIndex from './pages/Finance/TaxTypes/Index.vue';
-import TaxTypesManage from './pages/Finance/TaxTypes/Manage.vue';
-import InvoicesIndex from './pages/Customers/Invoices/Index.vue';
-import InvoicesDue from './pages/Customers/Invoices/Due.vue';
-import CreditNotesIndex from './pages/Customers/CreditNotes/Index.vue';
-import ProInvoiceCreate from './pages/Customers/ProInvoices/Create.vue';
-import ProjectsList from './pages/Customers/Projects/List.vue';
-import ProjectsCreate from './pages/Customers/Projects/Create.vue';
-import ProjectsShow from './pages/Customers/Projects/Show.vue';
-import AccountTransactionsJournal from './pages/Finance/AccountTransactions/Journal.vue';
-import JournalsIndex from './pages/Finance/Journals/Index.vue';
-import JournalsManage from './pages/Finance/Journals/Manage.vue';
-import JournalsShow from './pages/Finance/Journals/Show.vue';
-import ZReportsIndex from './pages/Finance/ZReports/Index.vue';
-import ZReportsCreate from './pages/Finance/ZReports/Create.vue';
-import ZReportsShow from './pages/Finance/ZReports/Show.vue';
-import AccountsIndex from './pages/Finance/Accounts/Index.vue';
-import AccountsTypes from './pages/Finance/Accounts/Types.vue';
-import AccountsMapping from './pages/Finance/Accounts/Mapping.vue';
-import UsersIndex from './pages/Users/Users/Index.vue';
-import UsersManage from './pages/Users/Users/Manage.vue';
-import UsersShow from './pages/Users/Users/Show.vue';
-import UsersLogs from './pages/Users/Users/Logs.vue';
-import RolesIndex from './pages/Users/Roles/Index.vue';
-import RolesManage from './pages/Users/Roles/Manage.vue';
-import RolesPermissions from './pages/Users/Roles/Permissions.vue';
-import PermissionsIndex from './pages/Users/Permissions/Index.vue';
-import WorkScheduleCalendar from './pages/Users/WorkSchedule/Calendar.vue';
-import WorkScheduleIndex from './pages/Users/WorkSchedule/Index.vue';
-import OfficialHolidaysIndex from './pages/OfficialHolidays/Index.vue';
-import OfficialHolidaysManage from './pages/OfficialHolidays/Manage.vue';
-import VacationsOverview from './pages/Users/Vacations/Overview.vue';
-import VacationsApply from './pages/Users/Vacations/Apply.vue';
-import VacationsRequests from './pages/Users/Vacations/Requests.vue';
-import VacationsShow from './pages/Users/Vacations/Show.vue';
-import VacationsEdit from './pages/Users/Vacations/Edit.vue';
-import VacationsEditBalance from './pages/Users/Vacations/EditBalance.vue';
-import PersonsIndex from './pages/Persons/Index.vue';
-import PersonsManage from './pages/Persons/Manage.vue';
-import PersonsShow from './pages/Persons/Show.vue';
-import StaticOffersIndex from './pages/StaticOffers/Index.vue';
-import StaticOffersManage from './pages/StaticOffers/Manage.vue';
-import StaticOffersShow from './pages/StaticOffers/Show.vue';
-import TasksIndex from './pages/Tasks/Index.vue';
-import TasksDashboard from './pages/Tasks/Dashboard.vue';
-import TasksCreate from './pages/Tasks/Create.vue';
-import TasksShow from './pages/Tasks/Show.vue';
-import NotificationsIndex from './pages/Base/Notifications/Index.vue';
-import NotificationsShow from './pages/Base/Notifications/Show.vue';
-import OnlineUsers from './pages/Users/OnlineUsers.vue';
-import SupportIndex from './pages/Support/Index.vue';
-import SupportCreate from './pages/Support/Create.vue';
-import SupportShow from './pages/Support/Show.vue';
-import SupplierDepositsIndex from './pages/Suppliers/Deposits/Index.vue';
-import SupplierDepositsManage from './pages/Suppliers/Deposits/Manage.vue';
-import SupplierDepositsShow from './pages/Suppliers/Deposits/Show.vue';
-import SupplierPaymentsIndex from './pages/Suppliers/Payments/Index.vue';
-import SupplierPaymentsManage from './pages/Suppliers/Payments/Manage.vue';
-import SupplierPaymentsShow from './pages/Suppliers/Payments/Show.vue';
-import SupplierGiftCardsIndex from './pages/Suppliers/GiftCards/Index.vue';
-import SupplierGiftCardsManage from './pages/Suppliers/GiftCards/Manage.vue';
-import SupplierGiftCardsShow from './pages/Suppliers/GiftCards/Show.vue';
-import SupplierRefundsIndex from './pages/Suppliers/Refunds/Index.vue';
-import SupplierRefundsManage from './pages/Suppliers/Refunds/Manage.vue';
-import SupplierRefundsShow from './pages/Suppliers/Refunds/Show.vue';
-import Me from './pages/Me.vue';
+
+// Route components are lazy-loaded: each page (and its unique deps) is split
+// into its own chunk fetched on first navigation, so the initial bundle stays
+// small. Shared UI/vendor code is hoisted into common chunks automatically.
+const Login = () => import('./pages/Login.vue');
+const Home = () => import('./pages/Home.vue');
+const NotFound = () => import('./pages/NotFound.vue');
+const SuppliersIndex = () => import('./pages/Suppliers/Suppliers/Index.vue');
+const SuppliersManage = () => import('./pages/Suppliers/Suppliers/Manage.vue');
+const SuppliersShow = () => import('./pages/Suppliers/Suppliers/Show.vue');
+const SuppliersReconcile = () => import('./pages/Suppliers/Suppliers/Reconcile.vue');
+const SupplierBillShow = () => import('./pages/Suppliers/Bills/Show.vue');
+const SupplierCreditNoteShow = () => import('./pages/Suppliers/CreditNotes/Show.vue');
+const SuppliersStatements = () => import('./pages/Suppliers/Suppliers/Statements.vue');
+const SuppliersCredentials = () => import('./pages/Suppliers/Suppliers/Credentials.vue');
+const SupplierBillsManage = () => import('./pages/Suppliers/Bills/Manage.vue');
+const SupplierCreditNotesManage = () => import('./pages/Suppliers/CreditNotes/Manage.vue');
+const CustomersIndex = () => import('./pages/Customers/Customers/Index.vue');
+const CustomersManage = () => import('./pages/Customers/Customers/Manage.vue');
+const CustomersShow = () => import('./pages/Customers/Customers/Show.vue');
+const CustomersReconcile = () => import('./pages/Customers/Customers/Reconcile.vue');
+const CustomersStatistics = () => import('./pages/Customers/Customers/Statistics.vue');
+const CustomersStatements = () => import('./pages/Customers/Customers/Statements.vue');
+const CustomerInvoiceShow = () => import('./pages/Customers/Invoices/Show.vue');
+const CustomerCreditNoteShow = () => import('./pages/Customers/CreditNotes/Show.vue');
+const CustomerPaymentShow = () => import('./pages/Customers/Payments/Show.vue');
+const CustomerGiftCardShow = () => import('./pages/Customers/GiftCards/Show.vue');
+const CustomerGiftCardsIndex = () => import('./pages/Customers/GiftCards/Index.vue');
+const CustomerGiftCardsManage = () => import('./pages/Customers/GiftCards/Manage.vue');
+const CustomerReconciliationsIndex = () => import('./pages/Customers/Reconciliations/Index.vue');
+const CustomerReconciliationShow = () => import('./pages/Customers/Reconciliations/Show.vue');
+const CustomerTransactionLinksIndex = () => import('./pages/Customers/TransactionLinks/Index.vue');
+const CustomerRefundShow = () => import('./pages/Customers/Refunds/Show.vue');
+const DeparturesIndex = () => import('./pages/Departures/Index.vue');
+const DeparturesOverview = () => import('./pages/Departures/Overview.vue');
+const MealTypesIndex = () => import('./pages/MealTypes/Index.vue');
+const MealTypesManage = () => import('./pages/MealTypes/Manage.vue');
+const CountriesIndex = () => import('./pages/Base/Countries/Index.vue');
+const CountriesManage = () => import('./pages/Base/Countries/Manage.vue');
+const SentEmailsIndex = () => import('./pages/Base/SentEmails/Index.vue');
+const SentEmailsShow = () => import('./pages/Base/SentEmails/Show.vue');
+const QuickBooksSyncIndex = () => import('./pages/QuickBooksSync/Index.vue');
+const QuickBooksSyncShow = () => import('./pages/QuickBooksSync/Show.vue');
+const ProductsIndex = () => import('./pages/Base/Products/Index.vue');
+const ProductsManage = () => import('./pages/Base/Products/Manage.vue');
+const HotelsIndex = () => import('./pages/Base/Hotels/Index.vue');
+const HotelsManage = () => import('./pages/Base/Hotels/Manage.vue');
+const DestinationsIndex = () => import('./pages/Base/Destinations/Index.vue');
+const DestinationsManage = () => import('./pages/Base/Destinations/Manage.vue');
+const DestinationsMerge = () => import('./pages/Base/Destinations/Merge.vue');
+const DestinationsParent = () => import('./pages/Base/Destinations/Parent.vue');
+const ParentDestinationsIndex = () => import('./pages/Base/ParentDestinations/Index.vue');
+const ParentDestinationsManage = () => import('./pages/Base/ParentDestinations/Manage.vue');
+const ParentDestinationsChildren = () => import('./pages/Base/ParentDestinations/ChildDestinations.vue');
+const AnnouncementsIndex = () => import('./pages/Base/Announcements/Index.vue');
+const AnnouncementsManage = () => import('./pages/Base/Announcements/Manage.vue');
+const AnnouncementsNew = () => import('./pages/Base/Announcements/New.vue');
+const AnnouncementsStatistics = () => import('./pages/Base/Announcements/Statistics.vue');
+const MessagesIndex = () => import('./pages/Base/Messages/Index.vue');
+const MessagesCreate = () => import('./pages/Base/Messages/Create.vue');
+const MessagesShow = () => import('./pages/Base/Messages/Show.vue');
+const OnlineCredentialsIndex = () => import('./pages/Suppliers/OnlineSystemCredentials/Index.vue');
+const OnlineCredentialsShow = () => import('./pages/Suppliers/OnlineSystemCredentials/Show.vue');
+const PaymentMethodsIndex = () => import('./pages/Finance/PaymentMethods/Index.vue');
+const PaymentMethodsManage = () => import('./pages/Finance/PaymentMethods/Manage.vue');
+const TaxTypesIndex = () => import('./pages/Finance/TaxTypes/Index.vue');
+const TaxTypesManage = () => import('./pages/Finance/TaxTypes/Manage.vue');
+const InvoicesIndex = () => import('./pages/Customers/Invoices/Index.vue');
+const InvoicesDue = () => import('./pages/Customers/Invoices/Due.vue');
+const CreditNotesIndex = () => import('./pages/Customers/CreditNotes/Index.vue');
+const ProInvoiceCreate = () => import('./pages/Customers/ProInvoices/Create.vue');
+const ProjectsList = () => import('./pages/Customers/Projects/List.vue');
+const ProjectsCreate = () => import('./pages/Customers/Projects/Create.vue');
+const ProjectsShow = () => import('./pages/Customers/Projects/Show.vue');
+const AccountTransactionsJournal = () => import('./pages/Finance/AccountTransactions/Journal.vue');
+const JournalsIndex = () => import('./pages/Finance/Journals/Index.vue');
+const JournalsManage = () => import('./pages/Finance/Journals/Manage.vue');
+const JournalsShow = () => import('./pages/Finance/Journals/Show.vue');
+const ZReportsIndex = () => import('./pages/Finance/ZReports/Index.vue');
+const ZReportsCreate = () => import('./pages/Finance/ZReports/Create.vue');
+const ZReportsShow = () => import('./pages/Finance/ZReports/Show.vue');
+const AccountsIndex = () => import('./pages/Finance/Accounts/Index.vue');
+const AccountsTypes = () => import('./pages/Finance/Accounts/Types.vue');
+const AccountsMapping = () => import('./pages/Finance/Accounts/Mapping.vue');
+const ExpensesIndex = () => import('./pages/Finance/Expenses/Index.vue');
+const ExpensesManage = () => import('./pages/Finance/Expenses/Manage.vue');
+const ExpensesShow = () => import('./pages/Finance/Expenses/Show.vue');
+const BankDepositsIndex = () => import('./pages/Finance/BankDeposits/Index.vue');
+const BankDepositsCreate = () => import('./pages/Finance/BankDeposits/Create.vue');
+const BankDepositsShow = () => import('./pages/Finance/BankDeposits/Show.vue');
+const AccountTransfersIndex = () => import('./pages/Finance/AccountTransfers/Index.vue');
+const AccountTransfersManage = () => import('./pages/Finance/AccountTransfers/Manage.vue');
+const AccountTransfersShow = () => import('./pages/Finance/AccountTransfers/Show.vue');
+const PettyCashTransfers = () => import('./pages/Finance/PettyCash/TransfersList.vue');
+const PettyCashDailyDeposit = () => import('./pages/Finance/PettyCash/DepositFromDailyCash.vue');
+const PettyCashBankDeposit = () => import('./pages/Finance/PettyCash/DepositFromBank.vue');
+const UsersIndex = () => import('./pages/Users/Users/Index.vue');
+const UsersManage = () => import('./pages/Users/Users/Manage.vue');
+const UsersShow = () => import('./pages/Users/Users/Show.vue');
+const UsersLogs = () => import('./pages/Users/Users/Logs.vue');
+const RolesIndex = () => import('./pages/Users/Roles/Index.vue');
+const RolesManage = () => import('./pages/Users/Roles/Manage.vue');
+const RolesPermissions = () => import('./pages/Users/Roles/Permissions.vue');
+const PermissionsIndex = () => import('./pages/Users/Permissions/Index.vue');
+const WorkScheduleCalendar = () => import('./pages/Users/WorkSchedule/Calendar.vue');
+const WorkScheduleIndex = () => import('./pages/Users/WorkSchedule/Index.vue');
+const OfficialHolidaysIndex = () => import('./pages/OfficialHolidays/Index.vue');
+const OfficialHolidaysManage = () => import('./pages/OfficialHolidays/Manage.vue');
+const VacationsOverview = () => import('./pages/Users/Vacations/Overview.vue');
+const VacationsApply = () => import('./pages/Users/Vacations/Apply.vue');
+const VacationsRequests = () => import('./pages/Users/Vacations/Requests.vue');
+const VacationsShow = () => import('./pages/Users/Vacations/Show.vue');
+const VacationsEdit = () => import('./pages/Users/Vacations/Edit.vue');
+const VacationsEditBalance = () => import('./pages/Users/Vacations/EditBalance.vue');
+const PersonsIndex = () => import('./pages/Persons/Index.vue');
+const PersonsManage = () => import('./pages/Persons/Manage.vue');
+const PersonsShow = () => import('./pages/Persons/Show.vue');
+const StaticOffersIndex = () => import('./pages/StaticOffers/Index.vue');
+const StaticOffersManage = () => import('./pages/StaticOffers/Manage.vue');
+const StaticOffersShow = () => import('./pages/StaticOffers/Show.vue');
+const TasksIndex = () => import('./pages/Tasks/Index.vue');
+const TasksDashboard = () => import('./pages/Tasks/Dashboard.vue');
+const TasksCreate = () => import('./pages/Tasks/Create.vue');
+const TasksShow = () => import('./pages/Tasks/Show.vue');
+const NotificationsIndex = () => import('./pages/Base/Notifications/Index.vue');
+const NotificationsShow = () => import('./pages/Base/Notifications/Show.vue');
+const OnlineUsers = () => import('./pages/Users/OnlineUsers.vue');
+const SupportIndex = () => import('./pages/Support/Index.vue');
+const SupportCreate = () => import('./pages/Support/Create.vue');
+const SupportShow = () => import('./pages/Support/Show.vue');
+const SupplierDepositsIndex = () => import('./pages/Suppliers/Deposits/Index.vue');
+const SupplierDepositsManage = () => import('./pages/Suppliers/Deposits/Manage.vue');
+const SupplierDepositsShow = () => import('./pages/Suppliers/Deposits/Show.vue');
+const SupplierPaymentsIndex = () => import('./pages/Suppliers/Payments/Index.vue');
+const SupplierPaymentsManage = () => import('./pages/Suppliers/Payments/Manage.vue');
+const SupplierPaymentsShow = () => import('./pages/Suppliers/Payments/Show.vue');
+const SupplierGiftCardsIndex = () => import('./pages/Suppliers/GiftCards/Index.vue');
+const SupplierGiftCardsManage = () => import('./pages/Suppliers/GiftCards/Manage.vue');
+const SupplierGiftCardsShow = () => import('./pages/Suppliers/GiftCards/Show.vue');
+const SupplierRefundsIndex = () => import('./pages/Suppliers/Refunds/Index.vue');
+const SupplierRefundsManage = () => import('./pages/Suppliers/Refunds/Manage.vue');
+const SupplierRefundsShow = () => import('./pages/Suppliers/Refunds/Show.vue');
+const Me = () => import('./pages/Me.vue');
+const ReportCountInvoices = () => import('./pages/Statistics/CountInvoices.vue');
+const ReportSalesWithSvc = () => import('./pages/Statistics/SalesWithSvc.vue');
+const ReportDaysBeforeEvent = () => import('./pages/Statistics/DaysBeforeEvent.vue');
+const ReportEmployeeContribution = () => import('./pages/Statistics/EmployeeContribution.vue');
+const ReportMonthConcentration = () => import('./pages/Statistics/MonthConcentration.vue');
+const ReportRanking = () => import('./pages/Statistics/EmployeeRanking.vue');
+const ReportCustomers = () => import('./pages/Statistics/Customers.vue');
+const ReportAllCounts = () => import('./pages/Statistics/AllCounts.vue');
 
 const routes = [
     { path: '/login', name: 'login', component: Login, meta: { public: true } },
@@ -126,7 +166,10 @@ const routes = [
     { path: '/suppliers/:id/statements', name: 'suppliers.statements', component: SuppliersStatements },
     { path: '/suppliers/:id/credentials', name: 'suppliers.credentials', component: SuppliersCredentials },
     { path: '/suppliers/:id/edit', name: 'suppliers.edit', component: SuppliersManage },
+    { path: '/suppliers/:id/reconcile', name: 'suppliers.reconcile', component: SuppliersReconcile },
     { path: '/suppliers/:id', name: 'suppliers.show', component: SuppliersShow },
+    { path: '/supplier-bills/:id', name: 'supplierBills.show', component: SupplierBillShow },
+    { path: '/supplier-credit-notes/:id', name: 'supplierCreditNotes.show', component: SupplierCreditNoteShow },
     { path: '/supplier-deposits', name: 'supplierDeposits.list', component: SupplierDepositsIndex },
     { path: '/supplier-deposits/:id/edit', name: 'supplierDeposits.edit', component: SupplierDepositsManage },
     { path: '/supplier-deposits/:id', name: 'supplierDeposits.show', component: SupplierDepositsShow },
@@ -149,7 +192,20 @@ const routes = [
     { path: '/projects/finished', name: 'customerProjects.finished', component: ProjectsList, props: { mode: 'finished' } },
     { path: '/projects/create', name: 'customerProjects.create', component: ProjectsCreate },
     { path: '/projects/:id', name: 'customerProjects.show', component: ProjectsShow },
+    { path: '/customers/:id/reconcile', name: 'customers.reconcile', component: CustomersReconcile },
+    { path: '/customers/:id/statistics', name: 'customers.statistics', component: CustomersStatistics },
+    { path: '/customers/:id/statements', name: 'customers.statements', component: CustomersStatements },
     { path: '/customers/:id', name: 'customers.show', component: CustomersShow },
+    { path: '/customer-invoices/:id', name: 'customerInvoices.show', component: CustomerInvoiceShow },
+    { path: '/customer-credit-notes/:id', name: 'customerCreditNotes.show', component: CustomerCreditNoteShow },
+    { path: '/customer-payments/:id', name: 'customerPayments.show', component: CustomerPaymentShow },
+    { path: '/customer-gift-cards', name: 'customerGiftCards.list', component: CustomerGiftCardsIndex },
+    { path: '/customer-reconciliations', name: 'customerReconciliations.list', component: CustomerReconciliationsIndex },
+    { path: '/customer-reconciliations/:id', name: 'customerReconciliations.show', component: CustomerReconciliationShow },
+    { path: '/customer-transaction-links', name: 'customerTransactionLinks.list', component: CustomerTransactionLinksIndex },
+    { path: '/customer-gift-cards/:id/edit', name: 'customerGiftCards.edit', component: CustomerGiftCardsManage },
+    { path: '/customer-gift-cards/:id', name: 'customerGiftCards.show', component: CustomerGiftCardShow },
+    { path: '/customer-refunds/:id', name: 'customerRefunds.show', component: CustomerRefundShow },
     { path: '/finance/account-transactions/journal/:type/:reference', name: 'accountTransactions.journal', component: AccountTransactionsJournal },
     { path: '/departures', name: 'departures.list', component: DeparturesIndex },
     { path: '/departures/overview', name: 'departures.overview', component: DeparturesOverview },
@@ -196,6 +252,20 @@ const routes = [
     { path: '/z-reports', name: 'zReports.list', component: ZReportsIndex },
     { path: '/z-reports/create', name: 'zReports.create', component: ZReportsCreate },
     { path: '/z-reports/:id', name: 'zReports.show', component: ZReportsShow },
+    { path: '/expenses', name: 'expenses.list', component: ExpensesIndex },
+    { path: '/expenses/create', name: 'expenses.create', component: ExpensesManage },
+    { path: '/expenses/:id/edit', name: 'expenses.edit', component: ExpensesManage },
+    { path: '/expenses/:id', name: 'expenses.show', component: ExpensesShow },
+    { path: '/bank-deposits', name: 'bankDeposits.list', component: BankDepositsIndex },
+    { path: '/bank-deposits/create', name: 'bankDeposits.create', component: BankDepositsCreate },
+    { path: '/bank-deposits/:id', name: 'bankDeposits.show', component: BankDepositsShow },
+    { path: '/account-transfers', name: 'accountTransfers.list', component: AccountTransfersIndex },
+    { path: '/account-transfers/create', name: 'accountTransfers.create', component: AccountTransfersManage },
+    { path: '/account-transfers/:id/edit', name: 'accountTransfers.edit', component: AccountTransfersManage },
+    { path: '/account-transfers/:id', name: 'accountTransfers.show', component: AccountTransfersShow },
+    { path: '/petty-cash', name: 'pettyCash.list', component: PettyCashTransfers },
+    { path: '/petty-cash/deposit', name: 'pettyCash.deposit', component: PettyCashDailyDeposit },
+    { path: '/petty-cash/deposit-from-bank', name: 'pettyCash.depositFromBank', component: PettyCashBankDeposit },
     { path: '/accounts', name: 'accounts.list', component: AccountsIndex },
     { path: '/accounts/types', name: 'accounts.types', component: AccountsTypes },
     { path: '/accounts/mapping', name: 'accounts.mapping', component: AccountsMapping },
@@ -231,6 +301,14 @@ const routes = [
     { path: '/tasks', name: 'tasks.list', component: TasksIndex },
     { path: '/tasks/dashboard', name: 'tasks.dashboard', component: TasksDashboard },
     { path: '/tasks/create', name: 'tasks.create', component: TasksCreate },
+    { path: '/statistics/count-invoices', name: 'statistics.countInvoices', component: ReportCountInvoices },
+    { path: '/statistics/sales-with-svc', name: 'statistics.salesWithSvc', component: ReportSalesWithSvc },
+    { path: '/statistics/days-before-event', name: 'statistics.daysBeforeEvent', component: ReportDaysBeforeEvent },
+    { path: '/statistics/employee-contribution', name: 'statistics.employeeContribution', component: ReportEmployeeContribution },
+    { path: '/statistics/month-concentration', name: 'statistics.monthConcentration', component: ReportMonthConcentration },
+    { path: '/statistics/ranking', name: 'statistics.ranking', component: ReportRanking },
+    { path: '/statistics/customers', name: 'statistics.customers', component: ReportCustomers },
+    { path: '/statistics/all-counts', name: 'statistics.allCounts', component: ReportAllCounts },
     { path: '/tasks/:id', name: 'tasks.show', component: TasksShow },
     { path: '/sent-emails', name: 'sentEmails.list', component: SentEmailsIndex },
     { path: '/sent-emails/:id', name: 'sentEmails.show', component: SentEmailsShow },

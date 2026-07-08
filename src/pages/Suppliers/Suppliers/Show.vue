@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
+import { supplierTransactionPath } from '../../../helpers/supplierTransactions.js';
 import api from '../../../helpers/api.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -131,6 +132,14 @@ const details = (record) => [
         <div class="space-y-6">
             <FullWidthBox :title="title ? `Supplier: ${title}` : 'Supplier'" :collapsible="false">
                 <template #actions>
+                    <div class="flex items-center gap-2">
+                    <RouterLink
+                        v-if="supplier && auth.can('suppliers.reconcile')"
+                        :to="`/suppliers/${id}/reconcile`"
+                        class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                        Reconcile
+                    </RouterLink>
                     <button
                         v-if="supplier"
                         type="button"
@@ -144,6 +153,7 @@ const details = (record) => [
                             <circle cx="12" cy="19" r="1.8" />
                         </svg>
                     </button>
+                    </div>
                 </template>
 
                 <Loader v-if="! supplier" />
@@ -277,7 +287,10 @@ const details = (record) => [
                             <template v-if="! loadingTransactions && transactions">
                                 <tr v-for="transaction in transactions.data" :key="`${transaction.type}-${transaction.id}`" class="hover:bg-gray-50">
                                     <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ transaction.date }}</td>
-                                    <td class="border border-gray-300 px-2 py-2 font-medium">{{ transaction.id }} | {{ transaction.reference }}</td>
+                                    <td class="border border-gray-300 px-2 py-2 font-medium">
+                                        <RouterLink v-if="supplierTransactionPath(transaction)" :to="supplierTransactionPath(transaction)" class="text-red-600 hover:underline">{{ transaction.id }} | {{ transaction.reference }}</RouterLink>
+                                        <span v-else>{{ transaction.id }} | {{ transaction.reference }}</span>
+                                    </td>
                                     <td class="border border-gray-300 px-2 py-2">{{ transaction.type }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(transaction.open_amount) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(transaction.amount) }}</td>

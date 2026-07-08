@@ -14,6 +14,7 @@ export const CATEGORIES = [
     { key: 'announcement_priorities', label: 'Announcement Priorities' },
     { key: 'customer_types', label: 'Customer Types' },
     { key: 'task_types', label: 'Task Types' },
+    { key: 'user_roles', label: 'User Roles' },
 ];
 
 // OPTIONS: GET /form-options?only=<key> -> resource collection { data: [ ...options ] }
@@ -71,6 +72,7 @@ export const useFormOptionsStore = defineStore('formOptions', {
         announcementPriorities: (state) => state.data.announcement_priorities ?? [],
         customerTypes: (state) => state.data.customer_types ?? [],
         taskTypes: (state) => state.data.task_types ?? [],
+        userRoles: (state) => state.data.user_roles ?? [],
         // Generic accessor: formOptions.options('payment_methods').
         options: (state) => (key) => state.data[key] ?? [],
     },
@@ -162,3 +164,6 @@ export const useFormOptionsStore = defineStore('formOptions', {
         },
     },
 });
+
+
+//TODO: FormOptions are loading on every page load (need to fix it).

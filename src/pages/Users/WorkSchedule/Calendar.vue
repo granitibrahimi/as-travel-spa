@@ -17,9 +17,19 @@ const parse = (value) => {
     return new Date(y, m - 1, d);
 };
 
+const VACATION_COLOR = '#495057';
+const HOLIDAY_COLOR = '#df4444';
+
 const events = ref([]);
 const shifts = ref([]);
 const ready = ref(false);
+
+// Legend color the calendar is currently filtered to (null = show everything).
+const activeColor = ref(null);
+
+function toggleFilter(color) {
+    activeColor.value = activeColor.value === color ? null : color;
+}
 
 onMounted(async () => {
     const { data } = await api.get('/work-schedule');
@@ -28,11 +38,26 @@ onMounted(async () => {
     ready.value = true;
 });
 
+// Events matching the active legend filter (all of them when none is picked).
+const visibleEvents = computed(() => (
+    activeColor.value
+        ? events.value.filter((event) => event.color === activeColor.value)
+        : events.value
+));
+
+// Class for a footer legend item: dim the others while a filter is active,
+// and highlight the selected one.
+const legendClass = (color) => [
+    'flex cursor-pointer items-center gap-2 rounded px-1.5 py-0.5 text-xs transition',
+    activeColor.value === color ? 'bg-gray-100 ring-1 ring-gray-300' : 'hover:bg-gray-50',
+    activeColor.value && activeColor.value !== color ? 'opacity-40' : '',
+];
+
 // Expand each event across its inclusive date range into a per-day lookup.
 const eventsByDay = computed(() => {
     const map = {};
 
-    events.value.forEach((event) => {
+    visibleEvents.value.forEach((event) => {
         const cursor = parse(event.start);
         const end = parse(event.end);
 
@@ -133,20 +158,49 @@ function goToday() {
             </div>
 
             <template #footer>
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                    <div v-for="shift in shifts" :key="shift.value" class="flex items-center gap-2 text-xs">
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                    <button
+                        v-for="shift in shifts"
+                        :key="shift.value"
+                        type="button"
+                        :class="legendClass(shift.color)"
+                        :aria-pressed="activeColor === shift.color"
+                        :title="`Filter by ${shift.label}`"
+                        @click="toggleFilter(shift.color)"
+                    >
                         <span class="inline-block h-3 w-3 rounded" :style="{ backgroundColor: shift.color }" />
                         <span class="font-medium">{{ shift.label }}</span>
                         <span class="text-gray-400">{{ shift.time }}</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-xs">
-                        <span class="inline-block h-3 w-3 rounded" style="background-color: #495057" />
+                    </button>
+                    <button
+                        type="button"
+                        :class="legendClass(VACATION_COLOR)"
+                        :aria-pressed="activeColor === VACATION_COLOR"
+                        title="Filter by Vacation"
+                        @click="toggleFilter(VACATION_COLOR)"
+                    >
+                        <span class="inline-block h-3 w-3 rounded" :style="{ backgroundColor: VACATION_COLOR }" />
                         <span class="font-medium">Vacation</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-xs">
-                        <span class="inline-block h-3 w-3 rounded" style="background-color: #df4444" />
+                    </button>
+                    <button
+                        type="button"
+                        :class="legendClass(HOLIDAY_COLOR)"
+                        :aria-pressed="activeColor === HOLIDAY_COLOR"
+                        title="Filter by Official holiday"
+                        @click="toggleFilter(HOLIDAY_COLOR)"
+                    >
+                        <span class="inline-block h-3 w-3 rounded" :style="{ backgroundColor: HOLIDAY_COLOR }" />
                         <span class="font-medium">Official holiday</span>
-                    </div>
+                    </button>
+
+                    <button
+                        v-if="activeColor"
+                        type="button"
+                        class="ml-1 rounded px-1.5 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                        @click="activeColor = null"
+                    >
+                        Clear filter
+                    </button>
                 </div>
             </template>
         </FullWidthBox>

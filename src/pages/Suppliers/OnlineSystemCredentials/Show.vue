@@ -1,13 +1,13 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import api from '../../helpers/api';
-import { useAuthStore } from '../../stores/auth';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Button from '../../components/Button.vue';
-import ApiPagination from '../../components/ApiPagination.vue';
-import Loader from '../../components/Loader.vue';
+import api from '../../../helpers/api.js';
+import { useAuthStore } from '../../../stores/auth.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Button from '../../../components/Button.vue';
+import ApiPagination from '../../../components/ApiPagination.vue';
+import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 const route = useRoute();

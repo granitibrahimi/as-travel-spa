@@ -4,10 +4,11 @@ import { RouterLink } from 'vue-router';
 
 defineProps({
     /**
-     * Menu entries: { label, href?, action?, danger? }.
-     * `href` renders a link; `action` is called on click.
-     * Internal paths (starting with "/") route client-side via RouterLink;
-     * absolute URLs (http…) render as a plain anchor (new document).
+     * Menu entries: { label, to?, href?, action?, danger? }.
+     * `to` renders a client-side RouterLink — pass a path string or a named
+     * route object ({ name, params }). `href` renders a link: internal paths
+     * (starting with "/") route via RouterLink, absolute URLs (http…) render as
+     * a plain anchor (new document). `action` is called on click.
      */
     items: { type: Array, required: true },
 });
@@ -91,7 +92,16 @@ onBeforeUnmount(close);
             >
                 <template v-for="(item, i) in items" :key="i">
                     <RouterLink
-                        v-if="item.href && isInternal(item.href)"
+                        v-if="item.to"
+                        :to="item.to"
+                        class="block px-4 py-1.5 text-sm hover:bg-gray-50"
+                        :class="item.danger ? 'text-red-600' : 'text-gray-700'"
+                        @click="close"
+                    >
+                        {{ item.label }}
+                    </RouterLink>
+                    <RouterLink
+                        v-else-if="item.href && isInternal(item.href)"
                         :to="item.href"
                         class="block px-4 py-1.5 text-sm hover:bg-gray-50"
                         :class="item.danger ? 'text-red-600' : 'text-gray-700'"

@@ -76,6 +76,9 @@ export const workspaces = [
                 items: [
                     { label: 'All Customers', to: '/customers', can: 'customers.list' },
                     { label: 'New Customer', to: '/customers/create', can: 'customers.create' },
+                    { label: 'Gift Cards', to: '/customer-gift-cards', can: 'customerGiftCards.list' },
+                    { label: 'Reconciliations', to: '/customer-reconciliations', can: 'customerReconciliations.list' },
+                    { label: 'Customer Transactions', to: '/customer-transaction-links', can: 'customerTransactionsLinks.list' },
                     { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
@@ -229,6 +232,9 @@ export const workspaces = [
                     { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
+                    { label: 'Gift Cards', to: '/customer-gift-cards', can: 'customerGiftCards.list' },
+                    { label: 'Reconciliations', to: '/customer-reconciliations', can: 'customerReconciliations.list' },
+                    { label: 'Customer Transactions', to: '/customer-transaction-links', can: 'customerTransactionsLinks.list' },
                 ],
             },
             {
@@ -257,10 +263,39 @@ export const workspaces = [
                 ],
             },
             {
+                label: 'Account Transfers',
+                items: [
+                    { label: 'All Transfers', to: '/account-transfers', can: 'accountTransfers.list' },
+                    { label: 'New Transfer', to: '/account-transfers/create', can: 'accountTransfers.create' },
+                ],
+            },
+            {
+                label: 'Petty Cash',
+                items: [
+                    { label: 'Transfers List', to: '/petty-cash', can: 'pettyCash.list' },
+                    { label: 'Daily Cash to Petty Cash', to: '/petty-cash/deposit', can: 'pettyCash.deposit' },
+                    { label: 'Bank to Petty Cash', to: '/petty-cash/deposit-from-bank', can: 'pettyCash.depositFromBank' },
+                ],
+            },
+            {
                 label: 'Z-Reports',
                 items: [
                     { label: 'All Z-Reports', to: '/z-reports', can: 'zReports.list' },
                     { label: 'New Z-Report', to: '/z-reports/create', can: 'zReports.create' },
+                ],
+            },
+            {
+                label: 'Bank Deposits',
+                items: [
+                    { label: 'All Bank Deposits', to: '/bank-deposits', can: 'bankDeposits.list' },
+                    { label: 'New Bank Deposit', to: '/bank-deposits/create', can: 'bankDeposits.create' },
+                ],
+            },
+            {
+                label: 'Expenses',
+                items: [
+                    { label: 'All Expenses', to: '/expenses', can: 'expenses.list' },
+                    { label: 'New Expense', to: '/expenses/create', can: 'expenses.create' },
                 ],
             },
             {
@@ -291,6 +326,19 @@ export const workspaces = [
         can: 'administration.access',
         home: '/',
         groups: [
+            {
+                label: 'Reports',
+                items: [
+                    { label: 'Count Invoices', to: '/statistics/count-invoices', can: 'statistics.countInvoices' },
+                    { label: 'Sales with SVC', to: '/statistics/sales-with-svc', can: 'statistics.salesWithSvc' },
+                    { label: 'Days Before Event', to: '/statistics/days-before-event', can: 'statistics.daysBeforeEventStats' },
+                    { label: 'Employee Contribution', to: '/statistics/employee-contribution', can: 'statistics.employeeContribution' },
+                    { label: 'Month Concentration', to: '/statistics/month-concentration', can: 'statistics.monthConcentrationSales' },
+                    { label: 'Employee Ranking', to: '/statistics/ranking', can: 'statistics.ranking' },
+                    { label: 'Customers', to: '/statistics/customers', can: 'statistics.customers' },
+                    { label: 'All Counts', to: '/statistics/all-counts', can: 'statistics.allCounts' },
+                ],
+            },
             {
                 label: 'Products',
                 items: [

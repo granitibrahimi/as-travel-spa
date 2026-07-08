@@ -1,12 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
-import Button from '../../../components/Button.vue';
+import ShowActions from '../../../components/ShowActions.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 
@@ -20,6 +20,20 @@ const title = computed(() => report.value?.report_id ?? `Z-Report #${id}`);
 
 const showDelete = ref(false);
 const deleting = ref(false);
+
+const actions = computed(() => {
+    if (! report.value) {
+        return [];
+    }
+
+    const items = [];
+
+    if (auth.can('zReports.delete')) {
+        items.push({ label: 'Delete', danger: true, action: () => (showDelete.value = true) });
+    }
+
+    return items;
+});
 
 onMounted(async () => {
     const { data } = await api.get(`/z-reports/${id}`);
@@ -46,8 +60,13 @@ async function confirmDelete() {
 <template>
     <AppLayout :title="title" fluid>
         <FullWidthBox :title="`Z-Report ${title}`" :collapsible="false">
-            <template v-if="report && auth.can('zReports.delete')" #actions>
-                <Button variant="danger" size="sm" @click="showDelete = true">Delete</Button>
+            <template #actions>
+                <ShowActions
+                    :items="report ? actions : []"
+                    back-to="/z-reports"
+                    back-label="Z-Reports"
+                    :title="`Z-Report ${title}`"
+                />
             </template>
 
             <Loader v-if="! report" />
@@ -64,10 +83,12 @@ async function confirmDelete() {
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase text-gray-500">
+                                <th class="border border-gray-300 px-2 py-2" style="width: 40px;">Status</th>
                                 <th class="border border-gray-300 px-2 py-2">Invoice</th>
                                 <th class="border border-gray-300 px-2 py-2">Customer</th>
-                                <th class="border border-gray-300 px-2 py-2 text-center" style="width: 90px;">In report</th>
+                                <th class="border border-gray-300 px-2 py-2">Agent</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 140px;">Amount</th>
+                                <th class="border border-gray-300 px-2 py-2">Date ant time</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -75,21 +96,20 @@ async function confirmDelete() {
                                 <td colspan="4" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No linked invoices.</td>
                             </tr>
                             <tr v-for="invoice in (report.invoices ?? [])" :key="invoice.id" class="hover:bg-gray-50">
+                                <td class="border border-gray-300 px-2 py-2 text-center">
+                                    <span :class="invoice.in_report ? 'text-green-600' : 'text-red-500'">{{ invoice.in_report ? '✓' : '✗' }}</span>
+                                </td>
                                 <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ invoice.gen_id }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ invoice.customer }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-center">{{ invoice.in_report ? 'Yes' : 'No' }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ invoice.user }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(invoice.amount) }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ invoice.created_at }}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </template>
 
-            <template #footer>
-                <RouterLink to="/z-reports" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
-                    Back to Z-Reports
-                </RouterLink>
-            </template>
         </FullWidthBox>
 
         <ConfirmDialog

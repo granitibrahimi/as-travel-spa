@@ -85,13 +85,20 @@ function fetchResults() {
 }
 
 watch(search, (value) => {
-    // Typing away from the current selection clears it until a new pick.
-    if (value !== selectedLabel.value && props.modelValue !== null) {
-        emit('update:modelValue', null);
-        emit('change', null);
+    // Editing (or clearing) the query away from the current selection reopens
+    // the list and drops the previous pick until a new one is chosen.
+    if (value !== selectedLabel.value) {
+        if (props.modelValue !== null) {
+            emit('update:modelValue', null);
+            emit('change', null);
+        }
+
+        open.value = true;
     }
 
-    if (value.length < props.minChars) {
+    // Below the minimum length we wait for more input — unless the field is
+    // now empty, in which case we refetch so the full list shows again.
+    if (value.length && value.length < props.minChars) {
         results.value = [];
         return;
     }

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -9,10 +9,14 @@ import Select from '../../../components/Form/Select.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
-import ActionsOverlay from '../../../components/ActionsOverlay.vue';
+import CustomerActions from './Actions.vue';
 import Loader from '../../../components/Loader.vue';
+import { useAuthStore } from '../../../stores/auth.js';
+import { customerTransactionPath } from '../../../helpers/customerTransactions.js';
 
 const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
 const id = route.params.id;
 
 const actionsOpen = ref(false);
@@ -95,6 +99,14 @@ watch(filters, () => {
         <div class="space-y-6">
             <FullWidthBox :title="title ? `Customer: ${title}` : 'Customer'" :collapsible="false">
                 <template #actions>
+                    <div class="flex items-center gap-2">
+                    <RouterLink
+                        v-if="customer && auth.can('customers.reconcile')"
+                        :to="`/customers/${id}/reconcile`"
+                        class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                        Reconcile
+                    </RouterLink>
                     <button
                         v-if="customer"
                         type="button"
@@ -108,6 +120,7 @@ watch(filters, () => {
                             <circle cx="12" cy="19" r="1.8" />
                         </svg>
                     </button>
+                    </div>
                 </template>
 
                 <Loader v-if="! customer" />
@@ -151,13 +164,12 @@ watch(filters, () => {
                 </template>
             </FullWidthBox>
 
-            <ActionsOverlay
+            <CustomerActions
+                :customer="customer"
                 :show="actionsOpen"
-                :title="customer?.full_name"
-                :subtitle="customer ? `#${customer.id} · ${customer.unique_id ?? ''}` : ''"
-                :groups="customer?.actions ?? []"
-                :delete-message="customer ? `${customer.full_name} will be permanently deleted.` : ''"
+                :show-view-action="false"
                 @close="actionsOpen = false"
+                @deleted="router.push('/customers')"
             />
 
             <FullWidthBox title="List of all transactions" :collapsible="false">
@@ -197,7 +209,10 @@ watch(filters, () => {
                             <template v-if="! loadingTransactions && transactions">
                                 <tr v-for="transaction in transactions.data" :key="`${transaction.type}-${transaction.id}`" class="hover:bg-gray-50">
                                     <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ transaction.date }}</td>
-                                    <td class="border border-gray-300 px-2 py-2 font-medium">{{ transaction.id }} | {{ transaction.reference }}</td>
+                                    <td class="border border-gray-300 px-2 py-2 font-medium">
+                                        <RouterLink v-if="customerTransactionPath(transaction)" :to="customerTransactionPath(transaction)" class="text-red-600 hover:underline">{{ transaction.id }} | {{ transaction.reference }}</RouterLink>
+                                        <span v-else>{{ transaction.id }} | {{ transaction.reference }}</span>
+                                    </td>
                                     <td class="border border-gray-300 px-2 py-2">{{ transaction.type }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(transaction.open_amount) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(transaction.amount) }}</td>

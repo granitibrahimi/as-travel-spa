@@ -17,7 +17,15 @@ const props = defineProps({
     href: { type: String, default: null },
     type: { type: String, default: 'button' },
     disabled: { type: Boolean, default: false },
+    // Shows an inline spinner and blocks interaction while an action runs.
+    loading: { type: Boolean, default: false },
 });
+
+// Spinner inherits the button's text color (border-current) and matches its size.
+const spinnerClass = computed(() => [
+    'inline-block animate-spin rounded-full border-2 border-current border-t-transparent',
+    props.size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4',
+]);
 
 const classes = computed(() => [
     'inline-flex items-center justify-center gap-1.5 rounded font-normal transition-colors disabled:opacity-60 disabled:pointer-events-none',
@@ -35,9 +43,11 @@ const classes = computed(() => [
 
 <template>
     <a v-if="href" :href="href" :class="classes">
+        <span v-if="loading" :class="spinnerClass" aria-hidden="true" />
         <slot />
     </a>
-    <button v-else :type="type" :disabled="disabled" :class="classes">
+    <button v-else :type="type" :disabled="disabled || loading" :class="classes">
+        <span v-if="loading" :class="spinnerClass" aria-hidden="true" />
         <slot />
     </button>
 </template>
