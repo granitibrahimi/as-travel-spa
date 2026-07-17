@@ -3,12 +3,14 @@ import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../../stores/auth.js';
 import api from '../../../helpers/api.js';
+import { todayApiDate } from '../../../helpers/date.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputNumber from '../../../components/Form/InputNumber.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import SuccessDialog from '../../../components/SuccessDialog.vue';
 import Loader from '../../../components/Loader.vue';
 
@@ -18,15 +20,11 @@ const auth = useAuthStore();
 
 const customerId = route.params.customer;
 
-// The customer details lookup lives under /api/base (sibling of the api client's
-// /api/v1 base) so it's addressed with an absolute URL off the same origin.
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-
 const customer = ref(null);
 
 const form = reactive({
     amount: null,
-    on_date: new Date().toISOString().slice(0, 10),
+    on_date: todayApiDate(),
     flight_info: '',
     hotel_info: '',
 });
@@ -36,7 +34,7 @@ const processing = ref(false);
 const success = ref(false);
 
 onMounted(async () => {
-    const { data } = await api.get(`${apiOrigin}/api/base/customers/${customerId}/details`);
+    const { data } = await api.get('customers/' + customerId);
     customer.value = data.data ?? data;
 });
 
@@ -77,7 +75,7 @@ function done() {
         <Loader v-else-if="! customer" />
 
         <form v-else class="space-y-6" @submit.prevent="submit">
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-[40%_60%]">
                 <FullWidthBox title="Customer" :collapsible="false">
                     <CustomerDetails :customer="customer" />
                 </FullWidthBox>
@@ -85,15 +83,7 @@ function done() {
                 <FullWidthBox :title="`Pro-invoice for ${customer.full_name}`" :collapsible="false">
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <InputNumber v-model="form.amount" label="Amount *" :min="0" step="0.01" :error="errors.amount" />
-                        <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">Date *</label>
-                            <input
-                                v-model="form.on_date"
-                                type="date"
-                                class="w-full rounded border border-gray-300 px-3 py-1.5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                            >
-                            <p v-if="errors.on_date" class="mt-1 text-xs text-red-600">{{ errors.on_date }}</p>
-                        </div>
+                        <DateInput v-model="form.on_date" label="Date *" :error="errors.on_date" />
                     </div>
 
                     <div class="mt-4 space-y-4">

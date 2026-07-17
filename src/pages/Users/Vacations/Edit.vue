@@ -6,6 +6,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import Select from '../../../components/Form/Select.vue';
 import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
@@ -16,7 +17,6 @@ const router = useRouter();
 const id = route.params.id;
 
 // The update endpoint validates dates as d.m.Y.
-const toDmy = (value) => (value ? value.split('-').reverse().join('.') : value);
 
 const vacationTypes = ref([]);
 const userId = ref(null);
@@ -57,8 +57,8 @@ async function submit() {
     try {
         await api.put(`/vacations/${id}`, {
             type: form.type,
-            from: toDmy(form.from),
-            to: toDmy(form.to),
+            from: form.from,
+            to: form.to,
             working_weekend: form.working_weekend ? 1 : 0,
             description: form.description,
         });
@@ -85,8 +85,8 @@ async function submit() {
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Select v-model="form.type" :options="vacationTypes" label="Type *" :placeholder="null" :error="errors.type" />
                     <div class="hidden md:block" />
-                    <InputText v-model="form.from" type="date" label="From *" :error="errors.from" />
-                    <InputText v-model="form.to" type="date" label="To *" :error="errors.to" />
+                    <DateInput v-model="form.from" label="From *" :error="errors.from" />
+                    <DateInput v-model="form.to" label="To *" :error="errors.to" />
                 </div>
                 <NiceCheckbox v-model="form.working_weekend" label="Includes a working weekend" class="mt-4" />
                 <div class="mt-4">

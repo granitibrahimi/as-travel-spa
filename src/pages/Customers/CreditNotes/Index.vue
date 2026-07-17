@@ -30,7 +30,7 @@ async function fetchCreditNotes(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        creditNotes.value = { data: data.data, ...data.meta };
+        creditNotes.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;

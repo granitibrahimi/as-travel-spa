@@ -1,6 +1,7 @@
 <script setup>
-import { computed, reactive, ref } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import api from '../../../helpers/api.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -8,17 +9,17 @@ import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import Select from '../../../components/Form/Select.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
+import Loader from '../../../components/Loader.vue';
 
+const route = useRoute();
 const router = useRouter();
+const formOptions = useFormOptionsStore();
 
-// Fixed customer type enum (mirrors CustomerTypeEnum on the platform).
-const types = [
-    { value: 1, label: 'Company' },
-    { value: 2, label: 'Private' },
-    { value: 3, label: 'Agency' },
-    { value: 5, label: 'AQP' },
-];
-const PRIVATE_TYPE = 2;
+const customerId = route.params.id;
+
+// Customer types come from the shared form-options store.
+const types = computed(() => toOptions(formOptions.customerTypes));
+const PRIVATE_TYPE = 2; // mirrors CustomerTypeEnum::Private on the platform
 
 const form = reactive({
     type: null,
@@ -37,6 +38,25 @@ const isPrivate = computed(() => form.type === PRIVATE_TYPE);
 
 const errors = ref({});
 const processing = ref(false);
+const loaded = ref(false);
+
+onMounted(async () => {
+    const { data } = await api.get(`/customers/${customerId}`);
+    const customer = data.data ?? data;
+    Object.assign(form, {
+        type: customer.type ?? null,
+        name: customer.name ?? '',
+        first_name: customer.first_name ?? '',
+        last_name: customer.last_name ?? '',
+        unique_id: customer.unique_id ?? '',
+        email: customer.email ?? '',
+        phone: customer.phone ?? '',
+        working_info: customer.working_info ?? '',
+        vat_nr: customer.vat_nr ?? '',
+        address: customer.address ?? '',
+    });
+    loaded.value = true;
+});
 
 async function submit() {
     if (processing.value) {
@@ -47,8 +67,8 @@ async function submit() {
     errors.value = {};
 
     try {
-        const { data } = await api.post('/customers', form);
-        router.push(`/customers/${data.id}`);
+        await api.put(`/customers/${customerId}`, form);
+        router.push(`/customers/${customerId}`);
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -64,8 +84,10 @@ async function submit() {
 </script>
 
 <template>
-    <AppLayout title="New customer">
-        <form class="space-y-6" @submit.prevent="submit">
+    <AppLayout title="Edit customer">
+        <Loader v-if="! loaded" />
+
+        <form v-else class="space-y-6" @submit.prevent="submit">
             <FullWidthBox title="Customer details" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Select v-model="form.type" :options="types" label="Type *" :error="errors.type" />
@@ -76,7 +98,7 @@ async function submit() {
                         <InputText v-model="form.last_name" label="Last name *" :error="errors.last_name" />
                     </template>
 
-                    <InputText v-model="form.name" :label="isPrivate ? 'Name' : 'Name *'" :error="errors.name" />
+                    <InputText v-if="!isPrivate" v-model="form.name" label="Name *" :error="errors.name" />
                     <InputText v-model="form.vat_nr" label="VAT number" :error="errors.vat_nr" />
                     <InputText v-model="form.email" type="email" label="Email *" :error="errors.email" />
                     <InputText v-model="form.phone" label="Phone *" :error="errors.phone" />
@@ -89,11 +111,11 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink to="/customers" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="`/customers/${customerId}`" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
-                <Button type="submit" variant="primary" :disabled="processing">
-                    {{ processing ? 'Saving…' : 'Create customer' }}
+                <Button type="submit" variant="primary" :disabled="processing || ! loaded">
+                    {{ processing ? 'Saving…' : 'Update customer' }}
                 </Button>
             </footer>
         </form>

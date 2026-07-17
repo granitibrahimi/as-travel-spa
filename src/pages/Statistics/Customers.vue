@@ -5,7 +5,9 @@ import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
 import InputText from '../../components/Form/InputText.vue';
+import DateInput from '../../components/Form/DateInput.vue';
 import Select from '../../components/Form/Select.vue';
+import { todayApiDate } from '../../helpers/date.js';
 import Loader from '../../components/Loader.vue';
 import { useReport } from '../../composables/useReport.js';
 import { useFormOptionsStore } from '../../stores/formOptions.js';
@@ -38,15 +40,16 @@ const typeOptions = computed(() => {
     }));
 });
 
-function isoMonthsAgo(months) {
+function apiMonthsAgo(months) {
     const date = new Date();
     date.setMonth(date.getMonth() - months, 1);
+    const pad = (n) => String(n).padStart(2, '0');
 
-    return date.toISOString().slice(0, 10);
+    return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
 }
 
-const from = ref(isoMonthsAgo(12));
-const to = ref(new Date().toISOString().slice(0, 10));
+const from = ref(apiMonthsAgo(12));
+const to = ref(todayApiDate());
 const type = ref(null);
 
 function apply() {
@@ -68,8 +71,8 @@ onMounted(apply);
             <FullWidthBox title="Filters" :collapsible="false">
                 <div class="space-y-3">
                     <div class="flex flex-wrap items-end gap-3">
-                        <InputText v-model="from" type="date" label="From" />
-                        <InputText v-model="to" type="date" label="To" />
+                        <DateInput v-model="from" label="From" />
+                        <DateInput v-model="to" label="To" />
                         <Select v-model="type" :options="typeOptions" label="Type" placeholder="All types" class="min-w-[180px]" />
                         <Button type="button" variant="primary" :loading="loading" @click="apply">Apply</Button>
                     </div>

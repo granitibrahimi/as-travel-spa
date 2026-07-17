@@ -25,7 +25,7 @@ async function fetchParentDestinations(page = 1) {
 
     try {
         const { data } = await api.get('/parent-destinations', { params: { q: search.value || undefined, page } });
-        parentDestinations.value = { data: data.data, ...data.meta };
+        parentDestinations.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

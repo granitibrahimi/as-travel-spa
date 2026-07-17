@@ -7,6 +7,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 
 const router = useRouter();
 
@@ -97,7 +98,7 @@ async function submit() {
             <FullWidthBox title="Z-Report" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <InputText v-model="form.report_id" label="Report ID *" :error="errors.report_id" />
-                    <InputText v-model="dateFilter" type="date" label="Date *" :error="errors.date" />
+                    <DateInput v-model="dateFilter" label="Date *" :error="errors.date" />
                     <InputText v-model="form.notes" label="Notes" :error="errors.notes" />
                 </div>
 

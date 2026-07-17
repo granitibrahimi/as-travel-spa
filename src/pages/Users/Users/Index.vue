@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -12,22 +13,18 @@ import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
+const formOptions = useFormOptionsStore();
 const users = ref(null);
 const loading = ref(false);
 const search = ref('');
 const status = ref('');
 const roleId = ref('');
-const roles = ref([]);
+const roles = computed(() => toOptions(formOptions.userRoles));
 const toDelete = ref(null);
 const deleting = ref(false);
 const toggling = ref(null);
 
 let request = null;
-
-async function fetchOptions() {
-    const { data } = await api.get('/users/form-options');
-    roles.value = data.roles;
-}
 
 async function fetchUsers(page = 1) {
     request?.abort();
@@ -45,7 +42,7 @@ async function fetchUsers(page = 1) {
                 page,
             },
         });
-        users.value = { data: data.data, ...data.meta };
+        users.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -58,7 +55,6 @@ async function fetchUsers(page = 1) {
 }
 
 onMounted(() => {
-    fetchOptions();
     fetchUsers();
 });
 

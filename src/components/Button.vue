@@ -28,7 +28,9 @@ const spinnerClass = computed(() => [
 ]);
 
 const classes = computed(() => [
-    'inline-flex items-center justify-center gap-1.5 rounded font-normal transition-colors disabled:opacity-60 disabled:pointer-events-none',
+    // Transparent border on the base so borderless variants (primary/danger)
+    // are the same height as bordered ones and the 38px form controls.
+    'inline-flex items-center justify-center gap-1.5 rounded border border-transparent font-normal transition-colors disabled:opacity-60 disabled:pointer-events-none',
     {
         md: 'px-4 py-1.5 text-base leading-normal',
         sm: 'px-3 py-1 text-sm',

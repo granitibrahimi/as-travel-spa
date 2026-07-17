@@ -23,7 +23,7 @@ async function fetchDeposits(page = 1) {
 
     try {
         const { data } = await api.get('/supplier-deposits', { params: { q: search.value || undefined, page } });
-        deposits.value = { data: data.data, ...data.meta };
+        deposits.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

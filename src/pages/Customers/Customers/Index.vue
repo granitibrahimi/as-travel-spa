@@ -30,7 +30,7 @@ async function fetchCustomers(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        customers.value = { data: data.data, ...data.meta };
+        customers.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -86,7 +86,7 @@ function onCustomerDeleted() {
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ customer.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ customer.unique_id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="`/customers/${customer.id}`" class="hover:text-red-700 hover:underline">{{ customer.name }}</RouterLink>
+                                <RouterLink :to="`/customers/${customer.id}`" class="hover:text-red-700 hover:underline">{{ customer.full_name }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ customer.email ?? '-' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ customer.phone ?? '-' }}</td>

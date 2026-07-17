@@ -60,6 +60,22 @@ export function connectEcho() {
         },
     });
 
+    // pusher-js reconnects forever with backoff. We don't want that noise: let
+    // it retry a few times, then give up and stay down until the next page load
+    // (which calls connectEcho() again via boot/login).
+    const MAX_RETRIES = 3;
+    let retries = 0;
+
+    echo.connector.pusher.connection.bind('state_change', ({ current }) => {
+        if (current === 'connected') {
+            retries = 0;
+        } else if (current === 'unavailable' || current === 'failed') {
+            if (++retries >= MAX_RETRIES) {
+                echo.connector.pusher.disconnect();
+            }
+        }
+    });
+
     return echo;
 }
 

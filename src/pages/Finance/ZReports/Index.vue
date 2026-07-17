@@ -8,6 +8,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
@@ -44,7 +45,7 @@ async function fetchReports(page = 1) {
                 page,
             },
         });
-        reports.value = { data: data.data, ...data.meta };
+        reports.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -92,8 +93,8 @@ const rowActions = (report) => [
         <FullWidthBox title="Z-Reports" :collapsible="false">
             <form class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="fetchReports()">
                 <InputText v-model="filters.q" label="Search" placeholder="Report ID…" />
-                <InputText v-model="filters.date_from" type="date" label="Date from" />
-                <InputText v-model="filters.date_to" type="date" label="Date to" />
+                <DateInput v-model="filters.date_from" label="Date from" />
+                <DateInput v-model="filters.date_to" label="Date to" />
                 <div class="flex items-end gap-2">
                     <Button type="submit" variant="primary">Filter</Button>
                     <Button type="button" @click="clear">Clear</Button>

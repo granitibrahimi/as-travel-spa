@@ -31,7 +31,7 @@ async function fetchPayments(page = 1) {
                 page,
             },
         });
-        payments.value = { data: data.data, ...data.meta };
+        payments.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

@@ -33,7 +33,7 @@ async function fetchProducts(page = 1) {
             params: { q: search.value || undefined, page },
         });
         // Resource collection envelope: rows in `data`, paginator in `meta`.
-        products.value = { data: data.data, ...data.meta };
+        products.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;

@@ -38,7 +38,7 @@ async function fetchEmails(page = 1) {
                 page,
             },
         });
-        emails.value = { data: data.data, ...data.meta };
+        emails.value = { data: data.data.items, ...data.data.pagination };
     } finally {
         loading.value = false;
     }

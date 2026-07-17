@@ -9,6 +9,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Select from '../../../components/Form/Select.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import SupplierActions from './Actions.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
@@ -64,7 +65,7 @@ async function fetchTransactions(page = 1) {
                 page,
             },
         });
-        transactions.value = { data: data.data, ...data.meta };
+        transactions.value = { data: data.data, ...data.pagination };
         totalAmount.value = data.total_amount;
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
@@ -252,8 +253,8 @@ const details = (record) => [
 
             <FullWidthBox title="List of all transactions" :collapsible="false">
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <InputText v-model="filters.from" type="date" label="From date" />
-                    <InputText v-model="filters.to" type="date" label="To date" />
+                    <DateInput v-model="filters.from" label="From date" />
+                    <DateInput v-model="filters.to" label="To date" />
                     <Select v-model="filters.status" :options="statusOptions" label="Type" :placeholder="null" />
                 </div>
 

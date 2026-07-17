@@ -35,7 +35,7 @@ async function fetchDestinations(page = 1) {
             params: { q: search.value || undefined, page },
         });
         // Resource collection envelope: rows in `data`, paginator in `meta`.
-        destinations.value = { data: data.data, ...data.meta };
+        destinations.value = { data: data.data, ...data.pagination };
     } catch (e) {
         if (e.code !== 'ERR_CANCELED') {
             throw e;

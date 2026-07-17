@@ -1,18 +1,22 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
+import { todayApiDate } from '../../../helpers/date';
 import Textarea from '../../../components/Form/Textarea.vue';
 import SearchSelect from '../../../components/Form/SearchSelect.vue';
 import Loader from '../../../components/Loader.vue';
 
 const router = useRouter();
 
-const paymentMethods = ref([]);
+const formOptions = useFormOptionsStore();
+const paymentMethods = computed(() => toOptions(formOptions.paymentMethods));
 const ready = ref(false);
 const errors = ref({});
 const processing = ref(false);
@@ -20,13 +24,11 @@ const processing = ref(false);
 const form = reactive({
     payment_method_id: null,
     amount: null,
-    date: new Date().toISOString().slice(0, 10),
+    date: todayApiDate(),
     notes: '',
 });
 
-onMounted(async () => {
-    const { data } = await api.get('/petty-cash/deposit-from-bank/form-options');
-    paymentMethods.value = data.paymentMethods;
+onMounted(() => {
     ready.value = true;
 });
 
@@ -63,7 +65,7 @@ async function submit() {
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <SearchSelect v-model="form.payment_method_id" :options="paymentMethods" placeholder="Bank account…" label="From bank account *" :error="errors.payment_method_id" />
                     <InputText v-model="form.amount" type="number" step="0.01" label="Amount *" :error="errors.amount" />
-                    <InputText v-model="form.date" type="date" label="Date *" :error="errors.date" />
+                    <DateInput v-model="form.date" label="Date *" :error="errors.date" />
                     <div class="md:col-span-3">
                         <Textarea v-model="form.notes" label="Notes" :error="errors.notes" />
                     </div>

@@ -18,7 +18,8 @@ const pageLabels = (() => {
 
     workspaces.forEach((workspace) => {
         workspace.groups.forEach((group) => {
-            group.items.forEach((item) => {
+            // Groups may be separators ({ separator: true }) with no items.
+            group.items?.forEach((item) => {
                 map[item.to] = item.label;
             });
         });

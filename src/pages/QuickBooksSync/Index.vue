@@ -44,7 +44,7 @@ async function fetchRows(page = 1) {
                 page,
             },
         });
-        rows.value = { data: data.data, ...data.meta };
+        rows.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

@@ -27,8 +27,8 @@ const name = computed(() => props.customer?.full_name ?? props.customer?.name ??
 // Grouped, permission-filtered actions. Each item is a link (`to`), an external
 // link (`href`) or a local handler (`action`, e.g. delete). Empty groups drop.
 // Only actions with a matching SPA route are wired up here; platform actions
-// without a SPA page yet (Invoice/Payment/Gift Card creates, Edit) are
-// intentionally omitted until those routes exist.
+// without a SPA page yet (Gift Card create, Edit) are intentionally omitted
+// until those routes exist.
 const groups = computed(() => {
     const customer = props.customer;
 
@@ -41,6 +41,9 @@ const groups = computed(() => {
     // "Create"
     const creates = [
         { label: 'Pro Invoice', to: `/customers/${customer.id}/pro-invoices/create`, can: 'customerProInvoices.create' },
+        { label: 'Invoice', to: `/customers/${customer.id}/invoices/create`, can: 'customerInvoices.create' },
+        { label: 'Payment', to: `/customers/${customer.id}/payments/create`, can: 'customerPayments.create' },
+        { label: 'GiftCard', to: `/customers/${customer.id}/gift-cards/create`, can: 'customerGiftCards.create' },
     ].filter((action) => auth.can(action.can));
 
     if (creates.length) {
@@ -50,6 +53,7 @@ const groups = computed(() => {
     // "Pages"
     const pages = [
         ...(props.showViewAction ? [{ label: 'View', to: `/customers/${customer.id}`, can: 'customers.show' }] : []),
+        { label: 'Edit', to: `/customers/${customer.id}/edit`, can: 'customers.edit' },
         { label: 'Statistics', to: `/customers/${customer.id}/statistics`, can: 'customers.invoices' },
         { label: 'Statements', to: `/customers/${customer.id}/statements`, can: 'customers.statements' },
         { label: 'Reconcile', to: `/customers/${customer.id}/reconcile`, can: 'customers.reconcile' },
@@ -140,17 +144,6 @@ const dangerClass = 'block w-full rounded border border-red-200 px-3 py-2 text-l
             </div>
 
             <p v-if="groups.length === 0" class="text-sm text-gray-400">No actions available.</p>
-
-            <dl class="space-y-1 border-t border-gray-100 pt-4 text-sm">
-                <div v-if="customer.email" class="flex gap-2">
-                    <dt class="w-14 shrink-0 text-gray-400">Email</dt>
-                    <dd class="break-all text-gray-700">{{ customer.email }}</dd>
-                </div>
-                <div v-if="customer.phone" class="flex gap-2">
-                    <dt class="w-14 shrink-0 text-gray-400">Phone</dt>
-                    <dd class="text-gray-700">{{ customer.phone }}</dd>
-                </div>
-            </dl>
         </div>
     </ActionsOverlay>
 

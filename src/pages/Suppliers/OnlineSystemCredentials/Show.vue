@@ -39,7 +39,7 @@ async function reveal() {
 
 async function fetchLogs(page = 1) {
     const { data } = await api.get(`/online-system-credentials/${id}/logs`, { params: { page } });
-    logs.value = { data: data.data, ...(data.meta ?? data) };
+    logs.value = { data: data.data, ...(data.pagination ?? data) };
 }
 
 function copyPassword() {

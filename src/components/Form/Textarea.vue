@@ -8,7 +8,7 @@ const props = defineProps({
     label: { type: String, default: '' },
     error: { type: String, default: '' },
     // Minimum visible rows; the field still auto-grows beyond this.
-    rows: { type: Number, default: 1 },
+    rows: { type: Number, default: 2 },
 });
 
 const emit = defineEmits(['update:modelValue']);

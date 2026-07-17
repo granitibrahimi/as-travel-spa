@@ -12,13 +12,13 @@ import { useReport } from '../../composables/useReport.js';
 const { loading, error, data, load } = useReport('/statistics/count-invoices');
 
 const countChart = computed(() => ({
-    labels: data.value?.labels ?? [],
-    datasets: [{ label: 'Invoices', data: data.value?.series?.count ?? [], backgroundColor: color(1) }],
+    labels: data.data.value?.labels ?? [],
+    datasets: [{ label: 'Invoices', data: data.data.value?.series?.count ?? [], backgroundColor: color(1) }],
 }));
 
 const totalChart = computed(() => ({
-    labels: data.value?.labels ?? [],
-    datasets: [{ label: 'Total amount (€)', data: data.value?.series?.total ?? [], backgroundColor: color(2) }],
+    labels: data.data.value?.labels ?? [],
+    datasets: [{ label: 'Total amount (€)', data: data.data.value?.series?.total ?? [], backgroundColor: color(2) }],
 }));
 </script>
 

@@ -3,10 +3,13 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
+import { todayApiDate } from '../../../helpers/date';
 import SearchSelect from '../../../components/Form/SearchSelect.vue';
 import Loader from '../../../components/Loader.vue';
 
@@ -15,9 +18,10 @@ const router = useRouter();
 const id = route.params.id ?? null;
 const isEdit = Boolean(id);
 
-const paymentMethods = ref([]);
-const accounts = ref([]);
-const taxTypes = ref([]);
+const formOptions = useFormOptionsStore();
+const paymentMethods = computed(() => toOptions(formOptions.paymentMethods));
+const accounts = computed(() => toOptions(formOptions.accounts));
+const taxTypes = computed(() => toOptions(formOptions.taxTypes));
 const errors = ref({});
 const processing = ref(false);
 const ready = ref(false);
@@ -27,25 +31,20 @@ const blankLine = () => ({ account: null, amount: null, description: '', tax_typ
 
 const form = reactive({
     payment_method_id: null,
-    date: new Date().toISOString().slice(0, 10),
+    date: todayApiDate(),
     notes: '',
     entries: [blankLine(), blankLine(), blankLine()],
 });
 
 onMounted(async () => {
-    const [{ data: options }, expense] = await Promise.all([
-        api.get('/expenses/form-options'),
-        isEdit ? api.get(`/expenses/${id}`).then((r) => r.data.data ?? r.data) : Promise.resolve(null),
-    ]);
-
-    paymentMethods.value = options.paymentMethods;
-    accounts.value = options.accounts;
-    taxTypes.value = options.taxTypes;
+    const expense = isEdit
+        ? await api.get(`/expenses/${id}`).then((r) => r.data.data ?? r.data)
+        : null;
 
     if (expense) {
         genId.value = expense.gen_id;
         form.payment_method_id = expense.payment_method_id;
-        form.date = expense.on_date_input;
+        form.date = expense.on_date;
         form.notes = expense.notes ?? '';
         form.entries = expense.lines?.length
             ? expense.lines.map((line) => ({
@@ -117,7 +116,7 @@ async function submit() {
             <FullWidthBox title="Expense" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <SearchSelect v-model="form.payment_method_id" :options="paymentMethods" placeholder="Payment method…" label="Payment method *" :error="errors.payment_method_id" />
-                    <InputText v-model="form.date" type="date" label="Date *" :error="errors.date" />
+                    <DateInput v-model="form.date" label="Date *" :error="errors.date" />
                     <InputText v-model="form.notes" label="Notes" :error="errors.notes" />
                 </div>
             </FullWidthBox>

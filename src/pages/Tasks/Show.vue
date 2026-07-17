@@ -8,6 +8,7 @@ import ConfirmDialog from '../../components/ConfirmDialog.vue';
 import DropdownMenu from '../../components/DropdownMenu.vue';
 import AsyncSelect from '../../components/Form/AsyncSelect.vue';
 import InputNumber from '../../components/Form/InputNumber.vue';
+import DateInput from '../../components/Form/DateInput.vue';
 import SearchSelect from '../../components/Form/SearchSelect.vue';
 import Select from '../../components/Form/Select.vue';
 import Loader from '../../components/Loader.vue';
@@ -383,18 +384,8 @@ const tabs = [
                             </div>
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div>
-                                    <label class="mb-1 block text-sm font-medium text-gray-700">Travel from</label>
-                                    <input v-model="requestForm.travel_from" type="date"
-                                           class="w-full rounded border border-gray-300 px-3 py-1.5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500">
-                                    <p v-if="requestErrors.travel_from" class="mt-1 text-xs text-red-600">{{ requestErrors.travel_from }}</p>
-                                </div>
-                                <div>
-                                    <label class="mb-1 block text-sm font-medium text-gray-700">Travel to</label>
-                                    <input v-model="requestForm.travel_to" type="date"
-                                           class="w-full rounded border border-gray-300 px-3 py-1.5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500">
-                                    <p v-if="requestErrors.travel_to" class="mt-1 text-xs text-red-600">{{ requestErrors.travel_to }}</p>
-                                </div>
+                                <DateInput v-model="requestForm.travel_from" label="Travel from" :error="requestErrors.travel_from" />
+                                <DateInput v-model="requestForm.travel_to" label="Travel to" :error="requestErrors.travel_to" />
                                 <InputNumber v-model="requestForm.adults_nr" label="Adults *" min="1" :error="requestErrors.adults_nr" />
                                 <InputNumber v-model="requestForm.children_nr" label="Children *" min="0" :error="requestErrors.children_nr" />
                                 <InputNumber v-model="requestForm.budget" label="Budget (€)" min="0" step="0.01" :error="requestErrors.budget" />

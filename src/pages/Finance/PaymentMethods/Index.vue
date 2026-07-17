@@ -32,7 +32,7 @@ async function fetchPaymentMethods(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        paymentMethods.value = { data: data.data, ...data.meta };
+        paymentMethods.value = { data: data.data.items, ...data.data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;

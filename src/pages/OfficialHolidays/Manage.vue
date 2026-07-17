@@ -6,6 +6,7 @@ import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
 import InputText from '../../components/Form/InputText.vue';
+import DateInput from '../../components/Form/DateInput.vue';
 import Textarea from '../../components/Form/Textarea.vue';
 
 const route = useRoute();
@@ -14,7 +15,6 @@ const id = route.params.id ?? null;
 const isEdit = Boolean(id);
 
 // The API stores dates in d.m.Y; the date input works in Y-m-d.
-const toDmy = (value) => (value ? value.split('-').reverse().join('.') : value);
 
 const form = reactive({
     name: '',
@@ -44,7 +44,7 @@ async function submit() {
     processing.value = true;
     errors.value = {};
 
-    const payload = { ...form, holiday_date: toDmy(form.holiday_date) };
+    const payload = { ...form };
 
     try {
         await (isEdit ? api.put(`/official-holidays/${id}`, payload) : api.post('/official-holidays', payload));
@@ -69,7 +69,7 @@ async function submit() {
             <FullWidthBox title="Holiday details" :collapsible="false">
                 <div class="space-y-4">
                     <InputText v-model="form.name" label="Name *" :error="errors.name" />
-                    <InputText v-model="form.holiday_date" type="date" label="Date *" :error="errors.holiday_date" />
+                    <DateInput v-model="form.holiday_date" label="Date *" :error="errors.holiday_date" />
                     <Textarea v-model="form.description" label="Description" :error="errors.description" />
                 </div>
             </FullWidthBox>

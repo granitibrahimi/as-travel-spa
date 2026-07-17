@@ -1,7 +1,9 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -26,26 +28,22 @@ const form = reactive({
     notes: '',
 });
 
-const paymentMethods = ref([]);
+const formOptions = useFormOptionsStore();
+const paymentMethods = computed(() => toOptions(formOptions.paymentMethods));
 const errors = ref({});
 const processing = ref(false);
 const loaded = ref(false);
 
 // Backend speaks d.m.Y; the date input speaks Y-m-d.
-const toApiDate = (ymd) => (ymd ? ymd.split('-').reverse().join('.') : '');
-const toInputDate = (dmy) => (dmy ? dmy.split('.').reverse().join('-') : '');
 
 onMounted(async () => {
-    const { data: options } = await api.get('/supplier-deposits/form-options');
-    paymentMethods.value = options.payment_methods ?? [];
-
     if (isEdit) {
         const { data } = await api.get(`/supplier-deposits/${depositId}`);
         const deposit = data.data ?? data;
         Object.assign(form, {
             payment_method_id: deposit.payment_method_id,
             amount: deposit.amount,
-            on_date: toInputDate(deposit.on_date),
+            on_date: deposit.on_date ?? '',
             reference: deposit.reference ?? '',
             transaction_nr: deposit.transaction_nr ?? '',
             notes: deposit.notes ?? '',
@@ -63,7 +61,7 @@ async function submit() {
     processing.value = true;
     errors.value = {};
 
-    const payload = { ...form, on_date: toApiDate(form.on_date) };
+    const payload = { ...form };
 
     try {
         if (isEdit) {
@@ -96,7 +94,7 @@ const cancelTo = isEdit ? `/supplier-deposits/${depositId}` : `/suppliers/${supp
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Select v-model="form.payment_method_id" :options="paymentMethods" label="Payment method *" :error="errors.payment_method_id" />
                     <InputNumber v-model="form.amount" label="Amount *" :error="errors.amount" />
-                    <InputText v-model="form.on_date" type="date" label="Date *" :error="errors.on_date" />
+                    <DateInput v-model="form.on_date" label="Date *" :error="errors.on_date" />
                     <InputText v-model="form.transaction_nr" label="Transaction #" :error="errors.transaction_nr" />
                     <InputText v-model="form.reference" label="Reference" :error="errors.reference" />
                 </div>

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
@@ -41,8 +42,6 @@ const processing = ref(false);
 const loaded = ref(false);
 
 // Backend speaks d.m.Y; the date input speaks Y-m-d.
-const toApiDate = (ymd) => (ymd ? ymd.split('-').reverse().join('.') : '');
-const toInputDate = (dmy) => (dmy ? dmy.split('.').reverse().join('-') : '');
 
 onMounted(async () => {
     let optionsSupplierId = supplierId;
@@ -55,7 +54,7 @@ onMounted(async () => {
             payment_method_id: refund.payment_method_id,
             amount: refund.amount,
             transaction_nr: refund.transaction_nr ?? '',
-            on_date: toInputDate(refund.on_date),
+            on_date: refund.on_date ?? '',
             notes: refund.notes ?? '',
         });
     }
@@ -79,7 +78,7 @@ async function submit() {
     processing.value = true;
     errors.value = {};
 
-    const payload = { ...form, on_date: toApiDate(form.on_date) };
+    const payload = { ...form };
 
     try {
         if (isEdit) {
@@ -121,7 +120,7 @@ const cancelTo = isEdit ? `/supplier-refunds/${refundId}` : `/suppliers/${suppli
                     <SearchSelect v-model="form.payment_method_id" :options="paymentMethods" label="Payment method *" :error="errors.payment_method_id" />
                     <InputNumber v-model="form.amount" label="Amount *" :error="errors.amount" min="0" :max="availableAmount ?? undefined" />
                     <InputText v-model="form.transaction_nr" label="Transaction # *" :error="errors.transaction_nr" />
-                    <InputText v-model="form.on_date" type="date" label="Date *" :error="errors.on_date" />
+                    <DateInput v-model="form.on_date" label="Date *" :error="errors.on_date" />
                 </div>
                 <div class="mt-4">
                     <Textarea v-model="form.notes" label="Notes" :error="errors.notes" />

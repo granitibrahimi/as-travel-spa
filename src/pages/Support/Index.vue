@@ -29,7 +29,7 @@ async function fetchTickets(page = 1) {
         const { data } = await api.get('/support-tickets', {
             params: { status: filter.value === 'all' ? undefined : filter.value, page },
         });
-        tickets.value = { data: data.data, ...data.meta };
+        tickets.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

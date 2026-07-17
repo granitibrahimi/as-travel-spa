@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -27,8 +28,6 @@ const processing = ref(false);
 const loaded = ref(false);
 
 // Backend speaks d.m.Y; the date input speaks Y-m-d.
-const toApiDate = (ymd) => (ymd ? ymd.split('-').reverse().join('.') : '');
-const toInputDate = (dmy) => (dmy ? dmy.split('.').reverse().join('-') : '');
 
 onMounted(async () => {
     if (isEdit) {
@@ -36,7 +35,7 @@ onMounted(async () => {
         const giftCard = data.data ?? data;
         Object.assign(form, {
             amount: giftCard.amount,
-            on_date: toInputDate(giftCard.on_date),
+            on_date: giftCard.on_date ?? '',
             notes: giftCard.notes ?? '',
         });
     }
@@ -52,7 +51,7 @@ async function submit() {
     processing.value = true;
     errors.value = {};
 
-    const payload = { ...form, on_date: toApiDate(form.on_date) };
+    const payload = { ...form };
 
     try {
         if (isEdit) {
@@ -84,7 +83,7 @@ const cancelTo = isEdit ? `/supplier-gift-cards/${giftCardId}` : `/suppliers/${s
             <FullWidthBox title="Gift card details" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <InputNumber v-model="form.amount" label="Amount *" :error="errors.amount" />
-                    <InputText v-model="form.on_date" type="date" label="Date *" :error="errors.on_date" :disabled="isEdit" />
+                    <DateInput v-model="form.on_date" label="Date *" :error="errors.on_date" :disabled="isEdit" />
                 </div>
                 <div class="mt-4">
                     <Textarea v-model="form.notes" label="Notes *" :error="errors.notes" />

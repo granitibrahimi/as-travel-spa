@@ -35,7 +35,7 @@ async function fetchTasks(page = 1) {
                 page,
             },
         });
-        tasks.value = { data: data.data, ...data.meta };
+        tasks.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;

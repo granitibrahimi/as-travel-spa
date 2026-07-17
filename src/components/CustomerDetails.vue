@@ -25,7 +25,6 @@ const rows = computed(() => [
         : `${props.customer.due_days} → ${props.customer.due_days_type}`],
 ]);
 </script>
-
 <template>
     <table class="w-full border-collapse border border-gray-300 text-sm">
         <tbody>

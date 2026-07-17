@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -27,20 +28,17 @@ const form = reactive({
     allow_withdraw: false,
     allow_deposit: false,
 });
-const types = ref([]);
-const accounts = ref([]);
+const formOptions = useFormOptionsStore();
+const types = computed(() => toOptions(formOptions.paymentMethodTypes));
+const accounts = computed(() => toOptions(formOptions.accounts));
 const errors = ref({});
 const processing = ref(false);
 const ready = ref(false);
 
 onMounted(async () => {
-    const [{ data: options }, method] = await Promise.all([
-        api.get('/payment-methods/form-options'),
-        isEdit ? api.get(`/payment-methods/${id}`).then((r) => r.data.data ?? r.data) : Promise.resolve(null),
-    ]);
-
-    types.value = options.types;
-    accounts.value = options.accounts;
+    const method = isEdit
+        ? await api.get(`/payment-methods/${id}`).then((r) => r.data.data ?? r.data)
+        : null;
 
     if (method) {
         Object.assign(form, {

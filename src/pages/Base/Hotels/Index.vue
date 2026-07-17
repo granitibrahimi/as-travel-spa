@@ -31,7 +31,7 @@ async function fetchHotels(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        hotels.value = { data: data.data, ...data.meta };
+        hotels.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;

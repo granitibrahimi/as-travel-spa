@@ -16,7 +16,7 @@ async function fetchReconciliations(page = 1) {
 
     try {
         const { data } = await api.get('/customer-reconciliations', { params: { q: search.value || undefined, page } });
-        reconciliations.value = { data: data.data, ...data.meta };
+        reconciliations.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

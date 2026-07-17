@@ -29,7 +29,7 @@ async function fetchRequests(page = 1) {
 
     try {
         const { data } = await api.get(`/vacations/requests/${userId}`, { params: { page } });
-        requests.value = { data: data.data, ...data.meta };
+        requests.value = { data: data.data, ...data.pagination };
         user.value = data.user;
     } finally {
         loading.value = false;

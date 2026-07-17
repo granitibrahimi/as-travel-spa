@@ -44,7 +44,7 @@ async function fetchOffers(page = 1) {
                 page,
             },
         });
-        offers.value = { data: data.data, ...data.meta };
+        offers.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;

@@ -6,6 +6,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import Select from '../../../components/Form/Select.vue';
 import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
@@ -14,7 +15,6 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 
 // The apply endpoint validates dates as d.m.Y.
-const toDmy = (value) => (value ? value.split('-').reverse().join('.') : value);
 
 const vacationTypes = ref([]);
 const balances = ref([]);
@@ -54,8 +54,8 @@ async function submit() {
     try {
         await api.post('/vacations/apply', {
             type: form.type,
-            from: toDmy(form.from),
-            to: toDmy(form.to),
+            from: form.from,
+            to: form.to,
             description: form.description,
             my_working_weekend: form.my_working_weekend ? 1 : 0,
         });
@@ -141,8 +141,8 @@ async function cancelActive() {
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <Select v-model="form.type" :options="vacationTypes" label="Type *" :placeholder="null" :error="errors.type" />
                         <div class="hidden md:block" />
-                        <InputText v-model="form.from" type="date" label="From *" :error="errors.from" />
-                        <InputText v-model="form.to" type="date" label="To *" :error="errors.to" />
+                        <DateInput v-model="form.from" label="From *" :error="errors.from" />
+                        <DateInput v-model="form.to" label="To *" :error="errors.to" />
                     </div>
                     <NiceCheckbox v-model="form.my_working_weekend" label="Includes a working weekend" class="mt-4" />
                     <div class="mt-4">

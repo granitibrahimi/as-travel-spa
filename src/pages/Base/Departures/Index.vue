@@ -1,21 +1,26 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
-import api from '../../helpers/api';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Button from '../../components/Button.vue';
-import InputText from '../../components/Form/InputText.vue';
-import Loader from '../../components/Loader.vue';
+import { RouterLink } from 'vue-router';
+import api from '../../../helpers/api.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Button from '../../../components/Button.vue';
+import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
+import { todayApiDate } from '../../../helpers/date';
+import Loader from '../../../components/Loader.vue';
 
-const isoDaysAgo = (days) => {
+// API date (d.m.Y) N days back.
+const apiDaysAgo = (days) => {
     const d = new Date();
     d.setDate(d.getDate() - days);
-    return d.toISOString().slice(0, 10);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
 };
 
 const filters = reactive({
-    from: isoDaysAgo(90),
-    to: new Date().toISOString().slice(0, 10),
+    from: apiDaysAgo(90),
+    to: todayApiDate(),
     q: '',
 });
 
@@ -59,8 +64,8 @@ onMounted(fetchDepartures);
         <div class="space-y-6">
             <FullWidthBox title="Filters" :collapsible="false">
                 <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="fetchDepartures">
-                    <InputText v-model="filters.from" type="date" label="From date" />
-                    <InputText v-model="filters.to" type="date" label="To date" />
+                    <DateInput v-model="filters.from" label="From date" />
+                    <DateInput v-model="filters.to" label="To date" />
                     <InputText v-model="filters.q" label="Name" placeholder="Customer name…" />
                     <div class="flex items-end gap-2">
                         <Button type="submit" variant="primary">View report</Button>
@@ -88,7 +93,9 @@ onMounted(fetchDepartures);
                                 <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No departures found.</td>
                             </tr>
                             <tr v-for="departure in (loading ? [] : departures ?? [])" :key="`${departure.invoice_id}-${departure.start_date}`" class="hover:bg-gray-50">
-                                <td class="border border-gray-300 px-2 py-2 font-medium">{{ departure.invoice_gen_id }}</td>
+                                <td class="border border-gray-300 px-2 py-2 font-medium">
+                                    <RouterLink :to="`/customer-invoices/${departure.invoice_id}`" class="text-red-700 hover:underline">{{ departure.invoice_gen_id }}</RouterLink>
+                                </td>
                                 <td class="border border-gray-300 px-2 py-2 font-medium whitespace-nowrap">{{ departure.start_date }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ departure.destination }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ departure.customer }}</td>

@@ -78,7 +78,7 @@ export const workspaces = [
                     { label: 'New Customer', to: '/customers/create', can: 'customers.create' },
                     { label: 'Gift Cards', to: '/customer-gift-cards', can: 'customerGiftCards.list' },
                     { label: 'Reconciliations', to: '/customer-reconciliations', can: 'customerReconciliations.list' },
-                    { label: 'Customer Transactions', to: '/customer-transaction-links', can: 'customerTransactionsLinks.list' },
+                    { label: 'Customer Transaction Links', to: '/customer-transaction-links', can: 'customerTransactionsLinks.list' },
                     { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
@@ -114,6 +114,12 @@ export const workspaces = [
                 items: [
                     { label: 'List', to: '/announcements', can: 'announcements.list' },
                     { label: 'Create', to: '/announcements/create', can: 'announcements.create' },
+                ],
+            },
+            {
+                label: 'Charter Flights',
+                items: [
+                    { label: 'Charter Flights', to: '/flight-search', can: 'charterFlights.search' },
                 ],
             },
             {
@@ -177,6 +183,7 @@ export const workspaces = [
                     { label: 'Users', to: '/users', can: 'users.list' },
                     { label: 'New User', to: '/users/create', can: 'users.create' },
                     { label: 'User Logs', to: '/users/logs', can: 'users.logs' },
+                    { label: 'Activity Logs', to: '/users/activity-logs', can: 'users.logs' },
                 ],
             },
             {
@@ -234,7 +241,7 @@ export const workspaces = [
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
                     { label: 'Gift Cards', to: '/customer-gift-cards', can: 'customerGiftCards.list' },
                     { label: 'Reconciliations', to: '/customer-reconciliations', can: 'customerReconciliations.list' },
-                    { label: 'Customer Transactions', to: '/customer-transaction-links', can: 'customerTransactionsLinks.list' },
+                    { label: 'Customer Transaction Links', to: '/customer-transaction-links', can: 'customerTransactionsLinks.list' },
                 ],
             },
             {
@@ -355,6 +362,14 @@ export const workspaces = [
                 ],
             },
             {
+                label: 'Charter Flights',
+                items: [
+                    { label: 'Search Flights', to: '/flight-search', can: 'charterFlights.search' },
+                    { label: 'Flight Destinations', to: '/flight-destinations', can: 'flights.search' },
+                    { label: 'Travel Options', to: '/travel-options', can: 'flights.search' },
+                ],
+            },
+            {
                 label: 'Online Users',
                 items: [
                     { label: 'All Users', to: '/online-users', can: 'onlineUsers.list' },
@@ -375,7 +390,6 @@ export const workspaces = [
  */
 export const userMenu = [
     { label: 'Notifications', to: '/notifications', can: 'userNotifications.list' },
-    { label: 'Profile', to: '/profile', can: 'users.editProfile' },
     { label: 'Update password', to: '/password', can: 'users.editPassword' },
     { label: 'Apply for vacation', to: '/vacations/apply', can: 'vacations.applyForm' },
 ];

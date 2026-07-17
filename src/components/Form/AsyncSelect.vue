@@ -13,6 +13,10 @@ const props = defineProps({
     valueKey: { type: String, default: 'id' },
     minChars: { type: Number, default: 0 },
     disabled: { type: Boolean, default: false },
+    // "Picker" mode: on select, emit `change` only, then clear the input and
+    // re-arm the suggestions so the next pick can be typed straight away. Used
+    // by multi-add flows (e.g. adding several customers to a project).
+    clearOnSelect: { type: Boolean, default: false },
     // Extra query params merged into the request (e.g. { parent_destination_id: 5 }).
     params: { type: Object, default: () => ({}) },
     label: { type: String, default: '' },
@@ -157,6 +161,19 @@ function onKeydown(event) {
 }
 
 function select(option) {
+    if (props.clearOnSelect) {
+        emit('change', option);
+        // Empty the field and refetch so the full list is ready for the next
+        // pick; keep the dropdown open (focus stays put after mousedown).
+        search.value = '';
+        selectedLabel.value = '';
+        results.value = [];
+        highlighted.value = -1;
+        open.value = true;
+        fetchResults();
+        return;
+    }
+
     emit('update:modelValue', option.value);
     emit('change', option);
     search.value = option.label;

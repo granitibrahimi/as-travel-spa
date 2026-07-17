@@ -1,9 +1,10 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import api from '../../helpers/api';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Loader from '../../components/Loader.vue';
+import { RouterLink } from 'vue-router';
+import api from '../../../helpers/api.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Loader from '../../../components/Loader.vue';
 
 const overview = ref(null);
 
@@ -44,7 +45,9 @@ const weeks = [
                                 <td colspan="4" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No departures.</td>
                             </tr>
                             <tr v-for="departure in overview[week.key].departures" :key="`${departure.invoice_id}-${departure.start_date}`" class="hover:bg-gray-50">
-                                <td class="border border-gray-300 px-2 py-2 font-medium">{{ departure.invoice_gen_id }}</td>
+                                <td class="border border-gray-300 px-2 py-2 font-medium">
+                                    <RouterLink :to="`/customer-invoices/${departure.invoice_id}`" class="text-red-700 hover:underline">{{ departure.invoice_gen_id }}</RouterLink>
+                                </td>
                                 <td class="border border-gray-300 px-2 py-2 font-medium whitespace-nowrap">{{ departure.start_date }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ departure.destination }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ departure.customer }}</td>

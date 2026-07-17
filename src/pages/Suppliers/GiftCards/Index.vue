@@ -22,7 +22,7 @@ async function fetchGiftCards(page = 1) {
 
     try {
         const { data } = await api.get('/supplier-gift-cards', { params: { q: search.value || undefined, page } });
-        giftCards.value = { data: data.data, ...data.meta };
+        giftCards.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

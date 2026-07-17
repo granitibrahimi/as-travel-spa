@@ -44,18 +44,18 @@ onMounted(load);
 
             <FullWidthBox title="Linked transactions" :collapsible="false">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="border-b text-left text-gray-500">
-                                <th class="py-2 pr-2">Type</th>
-                                <th class="py-2 pr-2">Reference</th>
-                                <th class="py-2 pl-2 text-right">Amount</th>
+                                <th class="border border-gray-300 px-2 py-2">Type</th>
+                                <th class="border border-gray-300 px-2 py-2">Reference</th>
+                                <th class="border border-gray-300 text-right px-2 py-2">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(link, i) in reconciliation.links" :key="i" class="border-b last:border-0">
-                                <td class="py-2 pr-2">{{ link.type }}</td>
-                                <td class="py-2 pr-2">
+                                <td class="border border-gray-300 px-2 py-2">{{ link.type }}</td>
+                                <td class="border border-gray-300 px-2 py-2">
                                     <RouterLink
                                         v-if="customerTransactionPath({ type: link.type, id: link.transaction_id })"
                                         :to="customerTransactionPath({ type: link.type, id: link.transaction_id })"
@@ -63,8 +63,14 @@ onMounted(load);
                                     >{{ link.reference ?? link.transaction_id }}</RouterLink>
                                     <span v-else>{{ link.reference ?? link.transaction_id }}</span>
                                 </td>
-                                <td class="py-2 pl-2 text-right tabular-nums">{{ money(link.amount) }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(link.amount) }}</td>
                             </tr>
+
+                            <tr class="border-b last:border-0">
+                                <th class="border border-gray-300 text-right px-2 py-2" colspan="2">Total</th>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(reconciliation.links_amount) }}</td>
+                            </tr>
+
                             <tr v-if="! reconciliation.links.length">
                                 <td colspan="3" class="py-6 text-center text-gray-500">No linked transactions.</td>
                             </tr>

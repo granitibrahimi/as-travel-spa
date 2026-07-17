@@ -7,6 +7,8 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
+import { todayApiDate } from '../../../helpers/date';
 import Loader from '../../../components/Loader.vue';
 
 const router = useRouter();
@@ -17,7 +19,7 @@ const errors = ref({});
 const processing = ref(false);
 
 const form = reactive({
-    date: new Date().toISOString().slice(0, 10),
+    date: todayApiDate(),
     expected_amount: null,
     notes: '',
 });
@@ -89,7 +91,7 @@ async function submit() {
         <form v-else class="space-y-6" @submit.prevent="submit">
             <FullWidthBox title="Daily Cash → Petty Cash" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <InputText v-model="form.date" type="date" label="Date *" :error="errors.date" />
+                    <DateInput v-model="form.date" label="Date *" :error="errors.date" />
                     <InputText v-model="form.expected_amount" type="number" step="0.01" label="Deposited amount *" :error="errors.expected_amount" />
                     <InputText v-model="form.notes" label="Notes" :error="errors.notes" />
                 </div>

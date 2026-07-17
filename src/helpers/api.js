@@ -47,12 +47,24 @@ export function setUnauthenticatedHandler(handler) {
     onUnauthenticated = handler;
 }
 
+// A 403 means the user is authenticated but not allowed to perform the action —
+// send them to the "unauthorized" page. Set by main.js once the router exists.
+let onForbidden = () => {};
+
+export function setForbiddenHandler(handler) {
+    onForbidden = handler;
+}
+
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
             setToken(null);
             onUnauthenticated();
+        }
+
+        if (error.response?.status === 403) {
+            onForbidden();
         }
 
         return Promise.reject(error);

@@ -7,7 +7,7 @@ import { useReport } from '../../composables/useReport.js';
 
 const { loading, error, data, load } = useReport('/statistics/all-counts');
 
-const tablesTotal = computed(() => (data.value?.tables ?? []).reduce((sum, row) => sum + Number(row.count), 0));
+const tablesTotal = computed(() => (data.data.value?.tables ?? []).reduce((sum, row) => sum + Number(row.count), 0));
 
 onMounted(() => load());
 </script>

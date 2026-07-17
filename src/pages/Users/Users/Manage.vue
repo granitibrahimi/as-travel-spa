@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -25,20 +26,17 @@ const form = reactive({
     password: '',
     password_confirmation: '',
 });
-const roles = ref([]);
-const cashAccounts = ref([]);
+const formOptions = useFormOptionsStore();
+const roles = computed(() => toOptions(formOptions.userRoles));
+const cashAccounts = computed(() => toOptions(formOptions.cashAccounts));
 const errors = ref({});
 const processing = ref(false);
 const ready = ref(false);
 
 onMounted(async () => {
-    const [{ data: options }, user] = await Promise.all([
-        api.get('/users/form-options'),
-        isEdit ? api.get(`/users/${id}`).then((r) => r.data.data ?? r.data) : Promise.resolve(null),
-    ]);
-
-    roles.value = options.roles;
-    cashAccounts.value = options.cashAccounts;
+    const user = isEdit
+        ? await api.get(`/users/${id}`).then((r) => r.data.data ?? r.data)
+        : null;
 
     if (user) {
         Object.assign(form, {

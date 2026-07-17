@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../helpers/api';
+import { downloadFile } from '../../helpers/download';
 import { useAuthStore } from '../../stores/auth';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
@@ -73,18 +74,9 @@ async function changeStatus(status) {
 }
 
 async function downloadAttachment() {
-    const response = await api.get(`/support-tickets/${ticket.value.id}/attachment`, { responseType: 'blob' });
-
-    const disposition = response.headers['content-disposition'] ?? '';
-    const match = disposition.match(/filename="?([^"]+)"?/);
-    const filename = match ? match[1] : `ticket-${ticket.value.id}-attachment`;
-
-    const url = URL.createObjectURL(response.data);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
+    await downloadFile(`/support-tickets/${ticket.value.id}/attachment`, {
+        fallbackName: `ticket-${ticket.value.id}-attachment`,
+    });
 }
 </script>
 

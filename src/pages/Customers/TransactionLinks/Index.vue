@@ -23,7 +23,7 @@ async function fetchLinks(page = 1) {
 
     try {
         const { data } = await api.get('/customer-transaction-links', { params: { q: search.value || undefined, page } });
-        links.value = { data: data.data, ...data.meta };
+        links.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

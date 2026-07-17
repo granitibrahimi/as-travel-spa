@@ -4,7 +4,7 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import { initTheme } from './helpers/theme';
-import { setUnauthenticatedHandler } from './helpers/api';
+import { setUnauthenticatedHandler, setForbiddenHandler } from './helpers/api';
 import { useAuthStore } from './stores/auth';
 import { usePresenceStore } from './stores/presence';
 import { useIdleStore } from './stores/idle';
@@ -31,6 +31,14 @@ setUnauthenticatedHandler(() => {
     router.push({ name: 'login' });
 });
 
+// A 403 means the action is not permitted; send the user to the 403 page
+// (unless they're already there, to avoid a redundant navigation).
+setForbiddenHandler(() => {
+    if (router.currentRoute.value.name !== 'forbidden') {
+        router.push({ name: 'forbidden' });
+    }
+});
+
 // Resolve any persisted token into a user before the first render, so the
 // route guard sees the correct auth state and we don't flash the login page.
 auth.bootstrap().finally(() => {
@@ -44,11 +52,10 @@ auth.bootstrap().finally(() => {
             presence.join();
             notifications.subscribe();
 
-            // Load shared form options: hydrate the cache, then sync. Show the
-            // progress screen only on a cold cache (first login); otherwise sync
-            // silently in the background.
+            // Load shared form options from the cached snapshot (no network), so
+            // individual pages never have to and a refresh reuses the cache. The
+            // network sync runs only on an actual login (see auth.login()).
             formOptions.hydrate();
-            formOptions.sync({ showScreen: !formOptions.loaded });
 
             // Warn then log out after a spell of inactivity. The redirect carries
             // a hint so the login page can explain why the session ended.

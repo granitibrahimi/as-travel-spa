@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import api, { getToken, setToken } from '../helpers/api';
 import { connectEcho, disconnectEcho } from '../helpers/echo';
+import { useFormOptionsStore } from './formOptions';
 
 /**
  * Authentication state: the bearer token (persisted in localStorage) and the
@@ -32,13 +33,19 @@ export const useAuthStore = defineStore('auth', {
         async login(credentials) {
             const { data } = await api.post('/tokens', {
                 ...credentials,
-                device_name: 'spa',
+                device_name: 'v-app',
             });
 
             this.token = data.token;
             setToken(data.token);
             this.user = data.user;
             connectEcho();
+
+            // A real login is the one time we refresh shared form options from
+            // the network; boot/refresh reuses the cache (see main.js).
+            const formOptions = useFormOptionsStore();
+            formOptions.hydrate();
+            formOptions.sync({ showScreen: !formOptions.loaded });
         },
 
         /**

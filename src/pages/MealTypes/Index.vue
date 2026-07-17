@@ -24,7 +24,7 @@ async function fetchMealTypes(page = 1) {
 
     try {
         const { data } = await api.get('/meal-types', { params: { q: search.value || undefined, page } });
-        mealTypes.value = { data: data.data, ...data.meta };
+        mealTypes.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

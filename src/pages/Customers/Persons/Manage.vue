@@ -1,19 +1,28 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import api from '../../helpers/api';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Button from '../../components/Button.vue';
-import AsyncSelect from '../../components/Form/AsyncSelect.vue';
-import InputText from '../../components/Form/InputText.vue';
-import Select from '../../components/Form/Select.vue';
-import Loader from '../../components/Loader.vue';
+import api from '../../../helpers/api.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Button from '../../../components/Button.vue';
+import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
+import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
+import Select from '../../../components/Form/Select.vue';
+import Loader from '../../../components/Loader.vue';
 
 const route = useRoute();
 const router = useRouter();
+const formOptions = useFormOptionsStore();
 const id = route.params.id ?? null;
 const isEdit = Boolean(id);
+
+// Dropdown data comes from the shared form-options store (synced reference
+// data), normalized to the { value, label } shape the Select expects.
+const genders = computed(() => toOptions(formOptions.personGenders));
+const classifications = computed(() => toOptions(formOptions.personClassifications));
+const contactReferenceTypes = computed(() => toOptions(formOptions.personContractReferenceTypes));
 
 const selectClass = 'w-full rounded border border-gray-300 px-3 py-1.5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500';
 
@@ -31,9 +40,6 @@ const form = reactive({
     contact_references: [],
 });
 
-const genders = ref([]);
-const classifications = ref([]);
-const contactReferenceTypes = ref([]);
 const countryInitial = ref(null);
 
 const errors = ref({});
@@ -48,14 +54,9 @@ const addContactReference = () => form.contact_references.push({
 const removeContactReference = (index) => form.contact_references.splice(index, 1);
 
 onMounted(async () => {
-    const [{ data: options }, person] = await Promise.all([
-        api.get('/persons/form-options'),
-        isEdit ? api.get(`/persons/${id}`).then((r) => r.data.data ?? r.data) : Promise.resolve(null),
-    ]);
-
-    genders.value = options.genders;
-    classifications.value = options.classifications;
-    contactReferenceTypes.value = options.contact_reference_types;
+    const person = isEdit
+        ? await api.get(`/persons/${id}`).then((r) => r.data.data ?? r.data)
+        : null;
 
     if (person) {
         Object.assign(form, {
@@ -133,21 +134,13 @@ async function submit() {
                         :error="errors.country_id"
                     />
 
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Date of birth</label>
-                        <input v-model="form.dob" type="date" :class="selectClass">
-                        <p v-if="errors.dob" class="mt-1 text-xs text-red-600">{{ errors.dob }}</p>
-                    </div>
+                    <DateInput v-model="form.dob" label="Date of birth" :error="errors.dob" />
 
                     <Select v-model="form.classification" :options="classifications" label="Classification" placeholder="—" :error="errors.classification" />
 
                     <InputText v-model="form.passport_number" label="Passport number" :error="errors.passport_number" />
 
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Passport expiry date</label>
-                        <input v-model="form.passport_expiry_date" type="date" :class="selectClass">
-                        <p v-if="errors.passport_expiry_date" class="mt-1 text-xs text-red-600">{{ errors.passport_expiry_date }}</p>
-                    </div>
+                    <DateInput v-model="form.passport_expiry_date" label="Passport expiry date" :error="errors.passport_expiry_date" />
 
                     <InputText v-model="form.email" label="Email" type="email" :error="errors.email" />
 

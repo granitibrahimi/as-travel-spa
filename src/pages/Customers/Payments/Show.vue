@@ -6,6 +6,7 @@ import api from '../../../helpers/api';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
+import CustomerDetails from "../../../components/CustomerDetails.vue";
 
 const route = useRoute();
 const payment = ref(null);
@@ -23,18 +24,8 @@ onMounted(load);
 
         <template v-else>
             <FullWidthBox :title="`Payment ${payment.gen_id}`" :collapsible="false" class="mb-6">
-                <dl class="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Customer</dt><dd>{{ payment.customer.name ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Date</dt><dd>{{ payment.on_date }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Amount</dt><dd class="tabular-nums">{{ money(payment.amount) }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Open amount</dt><dd class="tabular-nums" :class="payment.open_amount > 0 ? 'text-amber-600' : 'text-green-600'">{{ money(payment.open_amount) }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Method</dt><dd>{{ payment.payment_method ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Transaction nr</dt><dd>{{ payment.transaction_nr ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Reference</dt><dd>{{ payment.reference ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Created</dt><dd>{{ payment.agent ?? '—' }} · {{ payment.created_at ?? '—' }}</dd></div>
-                    <div v-if="payment.approved.at" class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Approved</dt><dd>{{ payment.approved.by ?? '—' }} · {{ payment.approved.at }}</dd></div>
-                    <div class="flex gap-2 sm:col-span-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Notes</dt><dd class="whitespace-pre-line">{{ payment.notes ?? '—' }}</dd></div>
-                </dl>
+                <CustomerDetails :customer="payment.customer" />
+
 
                 <template #footer>
                     <RouterLink :to="`/customers/${payment.customer.id}`" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to customer</RouterLink>
@@ -43,19 +34,23 @@ onMounted(load);
 
             <FullWidthBox v-if="payment.connected.length" title="Connected transactions" :collapsible="false">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="border-b text-left text-gray-500">
-                                <th class="py-2 pr-2">Type</th>
-                                <th class="py-2 pr-2">Date</th>
-                                <th class="py-2 pl-2 text-right">Amount</th>
+                                <th class="border border-gray-300 px-2 py-2">Type</th>
+                                <th class="border border-gray-300 px-2 py-2">Date</th>
+                                <th class="border border-gray-300 px-2 py-2 text-right">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(link, i) in payment.connected" :key="i" class="border-b last:border-0">
-                                <td class="py-2 pr-2">{{ link.type }}</td>
-                                <td class="py-2 pr-2">{{ link.date }}</td>
-                                <td class="py-2 pl-2 text-right tabular-nums">{{ money(link.amount) }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ link.type }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ link.date }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(link.amount) }}</td>
+                            </tr>
+                            <tr class="border-b last:border-0">
+                                <th class="border border-gray-300 text-right px-2 py-2" colspan="2">Total</th>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(payment.links_amount) }}</td>
                             </tr>
                         </tbody>
                     </table>

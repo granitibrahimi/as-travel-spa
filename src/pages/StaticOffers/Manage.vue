@@ -7,6 +7,7 @@ import AppLayout from '../../layouts/AppLayout.vue';
 import Button from '../../components/Button.vue';
 import AsyncSelect from '../../components/Form/AsyncSelect.vue';
 import InputText from '../../components/Form/InputText.vue';
+import DateInput from '../../components/Form/DateInput.vue';
 import InputNumber from '../../components/Form/InputNumber.vue';
 import ServiceRows from '../../components/ServiceRows.vue';
 import Alert from '../../components/Alert.vue';
@@ -517,16 +518,18 @@ async function submit() {
                     <InputText v-model="form.name" label="Offer name *" placeholder="e.g. Maldives 7n · AI · couple" :error="errors.name" />
 
                     <div class="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-                        <div v-for="field in [
-                            { key: 'valid_from', label: 'Valid from' },
-                            { key: 'valid_to', label: 'Valid to' },
-                            { key: 'travel_from', label: 'Travel from' },
-                            { key: 'travel_to', label: 'Travel to' },
-                        ]" :key="field.key">
-                            <label class="mb-1 block text-sm font-medium text-gray-700">{{ field.label }}</label>
-                            <input v-model="form[field.key]" type="date" class="w-full rounded border border-gray-300 px-3 py-1.5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500">
-                            <p v-if="errors[field.key]" class="mt-1 text-xs text-red-600">{{ errors[field.key] }}</p>
-                        </div>
+                        <DateInput
+                            v-for="field in [
+                                { key: 'valid_from', label: 'Valid from' },
+                                { key: 'valid_to', label: 'Valid to' },
+                                { key: 'travel_from', label: 'Travel from' },
+                                { key: 'travel_to', label: 'Travel to' },
+                            ]"
+                            :key="field.key"
+                            v-model="form[field.key]"
+                            :label="field.label"
+                            :error="errors[field.key]"
+                        />
                     </div>
 
                     <div class="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3">

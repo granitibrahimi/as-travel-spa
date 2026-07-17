@@ -26,9 +26,22 @@ bearer token. This file documents conventions to follow when working here.
   e.g. `api.get('/messages')`, not a full URL.
 - The bearer token is attached automatically; a `401` clears it and bounces to
   login. Don't re-implement auth headers per request.
-- List endpoints use a resource-collection envelope: rows in `data`, paginator
-  in `meta`. Normalize as `{ data: data.data, ...data.meta }` and render with
+- List endpoints use a paginated envelope: rows in `data`, paginator in
+  `pagination` (see platform `Base/Http/Responses/PaginatedResponse.php`).
+  Normalize as `{ data: data.data, ...data.pagination }` and render with
   `ApiPagination`. Cancel in-flight requests with `AbortController` on re-fetch.
+  Single resources are still `data`-wrapped (API Resource), so unwrap with
+  `data.data ?? data`.
+- **Dates (standard)**: dates are `d.m.Y` (e.g. `15.07.2026`) **everywhere** —
+  received from the API, sent to the API, held in component models, and shown to
+  the user. Do **not** convert per-page. Bind every date field with the
+  **`DateInput`** component (`src/components/Form/DateInput.vue`): its `v-model`
+  is `d.m.Y`, and it hides the native `<input type="date">` (`Y-m-d`) boundary
+  internally. Send/receive that model value verbatim. For a "defaults to today"
+  field use `todayApiDate()`; to parse an API string into a `Date` (sorting,
+  comparisons) use `parseApiDate()` — both in `src/helpers/date.js`. The
+  `toInputDate`/`toApiDate`/`toInputDateTime`/`toApiDateTime` helpers are used
+  only inside `DateInput`; page code should not call them.
 
 ## Auth, permissions & user snapshot
 
@@ -127,9 +140,10 @@ modular monolith). When moving a feature here:
   an API controller).
 - If a platform response embeds server-built `actions`/URLs (legacy pattern,
   e.g. supplier `actions` groups), prefer native SPA routes + `auth.can`.
-- **Dates**: platform finance endpoints validate `date_format:d.m.Y`; date
-  inputs speak `Y-m-d`. Convert with the `toApiDate`/`toInputDate` helpers as in
-  `Deposits/Manage.vue`.
+- **Dates**: everything is `d.m.Y` end-to-end (platform finance endpoints
+  validate `date_format:d.m.Y`). Bind date fields with the `DateInput` component
+  (v-model is `d.m.Y`) and send the value verbatim — no conversion. See the
+  Dates (standard) note above.
 - **Router wiring** (`src/router.js`): static imports grouped by domain; route
   names mirror platform route names (`supplierDeposits.list`); order matters —
   `/x/create` and `/x/:id/edit` before `/x/:id`, and nested creates like

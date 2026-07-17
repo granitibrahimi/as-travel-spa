@@ -7,6 +7,7 @@ import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import Select from '../../../components/Form/Select.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 
@@ -162,7 +163,7 @@ async function confirmDelete() {
                     <form v-if="canSave" class="space-y-4" @submit.prevent="addShift">
                         <Select v-model="form.agent_id" :options="agents" label="Agent *" :error="errors.agent_id" />
                         <Select v-model="form.shift" :options="shifts" label="Shift *" :error="errors.shift" />
-                        <InputText v-model="form.date" type="date" label="Date *" :error="errors.date" />
+                        <DateInput v-model="form.date" label="Date *" :error="errors.date" />
                         <Button type="submit" variant="primary" class="w-full" :disabled="processing">
                             {{ processing ? 'Adding…' : 'Add shift' }}
                         </Button>

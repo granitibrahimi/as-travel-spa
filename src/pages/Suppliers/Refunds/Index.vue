@@ -30,7 +30,7 @@ async function fetchRefunds(page = 1) {
                 page
             }
         });
-        refunds.value = { data: data.data, ...data.meta };
+        refunds.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

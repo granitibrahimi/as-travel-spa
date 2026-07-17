@@ -65,7 +65,7 @@ async function fetchDebit(page = 1) {
                 page,
             },
         });
-        debitRows.value = { data: data.data, ...data.meta };
+        debitRows.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -92,7 +92,7 @@ async function fetchCredit(page = 1) {
                 page,
             },
         });
-        creditRows.value = { data: data.data, ...data.meta };
+        creditRows.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;

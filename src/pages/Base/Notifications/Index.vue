@@ -12,7 +12,6 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 const store = useNotificationsStore();
 const canView = auth.can('userNotifications.show');
-
 const notifications = ref(null);
 const loading = ref(false);
 
@@ -29,7 +28,7 @@ async function fetchNotifications(page = 1) {
             signal: controller.signal,
             params: { page },
         });
-        notifications.value = { data: data.data, ...data.meta };
+        notifications.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -97,6 +96,7 @@ async function open(notification) {
                                     class="inline-block h-2.5 w-2.5 rounded-full bg-red-500"
                                     aria-label="Unread"
                                 />
+                                {{ notification.id}}
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-500">{{ notification.type_label || '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2">

@@ -1,14 +1,17 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import api from '../../helpers/api.js';
+import { downloadFile } from '../../helpers/download.js';
 import { money } from '../../helpers/money.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
 import InputText from '../../components/Form/InputText.vue';
+import DateInput from '../../components/Form/DateInput.vue';
 import Loader from '../../components/Loader.vue';
 import { useReport } from '../../composables/useReport.js';
 import { useFormOptionsStore } from '../../stores/formOptions.js';
+import { todayApiDate } from '../../helpers/date.js';
 
 const { loading, error, data, load } = useReport('/statistics/ranking');
 
@@ -17,15 +20,16 @@ const formOptions = useFormOptionsStore();
 // Roles selected by default, mirroring the legacy report.
 const DEFAULT_ROLE_IDS = [2, 3, 4, 5, 6, 7];
 
-function isoMonthsAgo(months) {
+function apiMonthsAgo(months) {
     const date = new Date();
     date.setMonth(date.getMonth() - months, 1);
+    const pad = (n) => String(n).padStart(2, '0');
 
-    return date.toISOString().slice(0, 10);
+    return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
 }
 
-const from = ref(isoMonthsAgo(1));
-const to = ref(new Date().toISOString().slice(0, 10));
+const from = ref(apiMonthsAgo(1));
+const to = ref(todayApiDate());
 // Roles come from the shared form-options store (user_roles category).
 const roles = computed(() => formOptions.userRoles.map((role) => ({
     id: role.id ?? role.value,
@@ -56,15 +60,10 @@ async function downloadExcel() {
     }
     downloading.value = true;
     try {
-        const response = await api.get('/statistics/ranking/export', { responseType: 'blob', params: params() });
-        const disposition = response.headers['content-disposition'] ?? '';
-        const match = disposition.match(/filename="?([^"]+)"?/);
-        const objectUrl = URL.createObjectURL(response.data);
-        const link = document.createElement('a');
-        link.href = objectUrl;
-        link.download = match ? match[1] : 'employee-ranking.xlsx';
-        link.click();
-        URL.revokeObjectURL(objectUrl);
+        await downloadFile('/statistics/ranking/export', {
+            fallbackName: 'employee-ranking.xlsx',
+            config: { params: params() },
+        });
     } finally {
         downloading.value = false;
     }
@@ -106,8 +105,8 @@ onMounted(() => {
             <FullWidthBox title="Filters" :collapsible="false">
                 <div class="space-y-3">
                     <div class="flex flex-wrap items-end gap-3">
-                        <InputText v-model="from" type="date" label="From" />
-                        <InputText v-model="to" type="date" label="To" />
+                        <DateInput v-model="from" label="From" />
+                        <DateInput v-model="to" label="To" />
                         <Button type="button" variant="primary" :loading="loading" @click="apply">Apply</Button>
                         <Button type="button" :disabled="downloading" @click="downloadExcel">
                             {{ downloading ? 'Preparing…' : 'Download Excel' }}
@@ -124,9 +123,9 @@ onMounted(() => {
 
             <p v-if="error" class="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">{{ error }}</p>
 
-            <FullWidthBox v-else-if="data" :title="`Ranking ${data.from} – ${data.to}`" :collapsible="false">
+            <FullWidthBox v-else-if="data" :title="`Ranking ${data.data.from} – ${data.data.to}`" :collapsible="false">
                 <Loader v-if="loading"/>
-                <div class="overflow-x-auto" v-if="! loading && data.rows.length">
+                <div class="overflow-x-auto" v-if="! loading && data.data.rows.length">
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase text-gray-500">
@@ -139,7 +138,7 @@ onMounted(() => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="row in data.rows" :key="row.user_id" class="hover:bg-gray-50">
+                            <tr v-for="row in data.data.rows" :key="row.user_id" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2 font-medium">{{ row.employee }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.role }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.svc) }} <span class="text-gray-400">/ {{ percent(row.svc_percentage) }}</span></td>
@@ -147,16 +146,16 @@ onMounted(() => {
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ row.count }} <span class="text-gray-400">/ {{ percent(row.count_percentage) }}</span></td>
                                 <td class="border border-gray-300 px-2 py-2 text-right font-semibold tabular-nums">{{ percent(row.ranking_percentage) }}</td>
                             </tr>
-                            <tr v-if="! data.rows.length">
+                            <tr v-if="! data.data.rows.length">
                                 <td colspan="6" class="border border-gray-300 px-2 py-6 text-center text-gray-400">No data for this range.</td>
                             </tr>
                         </tbody>
-                        <tfoot v-if="data.rows.length">
+                        <tfoot v-if="data.data.rows.length">
                             <tr class="font-semibold">
                                 <td class="border border-gray-300 px-2 py-2" colspan="2">Total</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(data.totals.svc) }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(data.totals.sales) }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ data.totals.count }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(data.data.totals.svc) }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(data.data.totals.sales) }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ data.data.totals.count }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right">100 %</td>
                             </tr>
                         </tfoot>

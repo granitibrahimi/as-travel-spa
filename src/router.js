@@ -7,6 +7,7 @@ import { useAuthStore } from './stores/auth';
 const Login = () => import('./pages/Login.vue');
 const Home = () => import('./pages/Home.vue');
 const NotFound = () => import('./pages/NotFound.vue');
+const Forbidden = () => import('./pages/Forbidden.vue');
 const SuppliersIndex = () => import('./pages/Suppliers/Suppliers/Index.vue');
 const SuppliersManage = () => import('./pages/Suppliers/Suppliers/Manage.vue');
 const SuppliersShow = () => import('./pages/Suppliers/Suppliers/Show.vue');
@@ -18,23 +19,31 @@ const SuppliersCredentials = () => import('./pages/Suppliers/Suppliers/Credentia
 const SupplierBillsManage = () => import('./pages/Suppliers/Bills/Manage.vue');
 const SupplierCreditNotesManage = () => import('./pages/Suppliers/CreditNotes/Manage.vue');
 const CustomersIndex = () => import('./pages/Customers/Customers/Index.vue');
-const CustomersManage = () => import('./pages/Customers/Customers/Manage.vue');
+const CustomersCreate = () => import('./pages/Customers/Customers/Create.vue');
+const CustomersEdit = () => import('./pages/Customers/Customers/Edit.vue');
 const CustomersShow = () => import('./pages/Customers/Customers/Show.vue');
 const CustomersReconcile = () => import('./pages/Customers/Customers/Reconcile.vue');
 const CustomersStatistics = () => import('./pages/Customers/Customers/Statistics.vue');
 const CustomersStatements = () => import('./pages/Customers/Customers/Statements.vue');
 const CustomerInvoiceShow = () => import('./pages/Customers/Invoices/Show.vue');
+const CustomerInvoiceCreate = () => import('./pages/Customers/Invoices/Create.vue');
+const CustomerInvoiceEdit = () => import('./pages/Customers/Invoices/Edit.vue');
+const CustomerInvoiceChange = () => import('./pages/Customers/Invoices/Change.vue');
 const CustomerCreditNoteShow = () => import('./pages/Customers/CreditNotes/Show.vue');
+const CustomerCreditNoteCreate = () => import('./pages/Customers/CreditNotes/Create.vue');
+const CustomerCreditNoteEdit = () => import('./pages/Customers/CreditNotes/Edit.vue');
 const CustomerPaymentShow = () => import('./pages/Customers/Payments/Show.vue');
+const CustomerPaymentManage = () => import('./pages/Customers/Payments/Manage.vue');
 const CustomerGiftCardShow = () => import('./pages/Customers/GiftCards/Show.vue');
 const CustomerGiftCardsIndex = () => import('./pages/Customers/GiftCards/Index.vue');
-const CustomerGiftCardsManage = () => import('./pages/Customers/GiftCards/Manage.vue');
+const CustomerGiftCardsCreate = () => import('./pages/Customers/GiftCards/Create.vue');
+const CustomerGiftCardsEdit = () => import('./pages/Customers/GiftCards/Edit.vue');
 const CustomerReconciliationsIndex = () => import('./pages/Customers/Reconciliations/Index.vue');
 const CustomerReconciliationShow = () => import('./pages/Customers/Reconciliations/Show.vue');
 const CustomerTransactionLinksIndex = () => import('./pages/Customers/TransactionLinks/Index.vue');
 const CustomerRefundShow = () => import('./pages/Customers/Refunds/Show.vue');
-const DeparturesIndex = () => import('./pages/Departures/Index.vue');
-const DeparturesOverview = () => import('./pages/Departures/Overview.vue');
+const DeparturesIndex = () => import('./pages/Base/Departures/Index.vue');
+const DeparturesOverview = () => import('./pages/Base/Departures/Overview.vue');
 const MealTypesIndex = () => import('./pages/MealTypes/Index.vue');
 const MealTypesManage = () => import('./pages/MealTypes/Manage.vue');
 const CountriesIndex = () => import('./pages/Base/Countries/Index.vue');
@@ -54,6 +63,11 @@ const DestinationsParent = () => import('./pages/Base/Destinations/Parent.vue');
 const ParentDestinationsIndex = () => import('./pages/Base/ParentDestinations/Index.vue');
 const ParentDestinationsManage = () => import('./pages/Base/ParentDestinations/Manage.vue');
 const ParentDestinationsChildren = () => import('./pages/Base/ParentDestinations/ChildDestinations.vue');
+const FlightDestinationsIndex = () => import('./pages/Flights/Destinations/Index.vue');
+const FlightDestinationsManage = () => import('./pages/Flights/Destinations/Manage.vue');
+const TravelOptionsIndex = () => import('./pages/Flights/TravelOptions/Index.vue');
+const TravelOptionsManage = () => import('./pages/Flights/TravelOptions/Manage.vue');
+const FlightSearch = () => import('./pages/Flights/Search.vue');
 const AnnouncementsIndex = () => import('./pages/Base/Announcements/Index.vue');
 const AnnouncementsManage = () => import('./pages/Base/Announcements/Manage.vue');
 const AnnouncementsNew = () => import('./pages/Base/Announcements/New.vue');
@@ -100,6 +114,9 @@ const UsersIndex = () => import('./pages/Users/Users/Index.vue');
 const UsersManage = () => import('./pages/Users/Users/Manage.vue');
 const UsersShow = () => import('./pages/Users/Users/Show.vue');
 const UsersLogs = () => import('./pages/Users/Users/Logs.vue');
+const UsersActivityLogs = () => import('./pages/Users/Users/ActivityLogs.vue');
+const UsersAuditLogShow = () => import('./pages/Users/Users/AuditLogs/Show.vue');
+const UsersPassword = () => import('./pages/Users/Password.vue');
 const RolesIndex = () => import('./pages/Users/Roles/Index.vue');
 const RolesManage = () => import('./pages/Users/Roles/Manage.vue');
 const RolesPermissions = () => import('./pages/Users/Roles/Permissions.vue');
@@ -114,9 +131,9 @@ const VacationsRequests = () => import('./pages/Users/Vacations/Requests.vue');
 const VacationsShow = () => import('./pages/Users/Vacations/Show.vue');
 const VacationsEdit = () => import('./pages/Users/Vacations/Edit.vue');
 const VacationsEditBalance = () => import('./pages/Users/Vacations/EditBalance.vue');
-const PersonsIndex = () => import('./pages/Persons/Index.vue');
-const PersonsManage = () => import('./pages/Persons/Manage.vue');
-const PersonsShow = () => import('./pages/Persons/Show.vue');
+const PersonsIndex = () => import('./pages/Customers/Persons/Index.vue');
+const PersonsManage = () => import('./pages/Customers/Persons/Manage.vue');
+const PersonsShow = () => import('./pages/Customers/Persons/Show.vue');
 const StaticOffersIndex = () => import('./pages/StaticOffers/Index.vue');
 const StaticOffersManage = () => import('./pages/StaticOffers/Manage.vue');
 const StaticOffersShow = () => import('./pages/StaticOffers/Show.vue');
@@ -183,11 +200,15 @@ const routes = [
     { path: '/supplier-refunds/:id/edit', name: 'supplierRefunds.edit', component: SupplierRefundsManage },
     { path: '/supplier-refunds/:id', name: 'supplierRefunds.show', component: SupplierRefundsShow },
     { path: '/customers', name: 'customers.list', component: CustomersIndex },
-    { path: '/customers/create', name: 'customers.create', component: CustomersManage },
+    { path: '/customers/create', name: 'customers.create', component: CustomersCreate },
     { path: '/customers/invoices', name: 'customerInvoices.list', component: InvoicesIndex },
     { path: '/customers/invoices/due', name: 'customerInvoices.due', component: InvoicesDue },
     { path: '/customers/credit-notes', name: 'customerCreditNotes.list', component: CreditNotesIndex },
+    { path: '/customers/:customer/invoices/create', name: 'customerInvoices.create', component: CustomerInvoiceCreate },
+    { path: '/customers/:customer/credit-notes/create', name: 'customerCreditNotes.create', component: CustomerCreditNoteCreate },
     { path: '/customers/:customer/pro-invoices/create', name: 'customerProInvoices.create', component: ProInvoiceCreate },
+    { path: '/customers/:customer/payments/create', name: 'customerPayments.create', component: CustomerPaymentManage },
+    { path: '/customers/:customer/gift-cards/create', name: 'customerGiftCards.create', component: CustomerGiftCardsCreate },
     { path: '/projects', name: 'customerProjects.list', component: ProjectsList, props: { mode: 'active' } },
     { path: '/projects/finished', name: 'customerProjects.finished', component: ProjectsList, props: { mode: 'finished' } },
     { path: '/projects/create', name: 'customerProjects.create', component: ProjectsCreate },
@@ -195,15 +216,23 @@ const routes = [
     { path: '/customers/:id/reconcile', name: 'customers.reconcile', component: CustomersReconcile },
     { path: '/customers/:id/statistics', name: 'customers.statistics', component: CustomersStatistics },
     { path: '/customers/:id/statements', name: 'customers.statements', component: CustomersStatements },
+    { path: '/customers/:id/edit', name: 'customers.edit', component: CustomersEdit },
     { path: '/customers/:id', name: 'customers.show', component: CustomersShow },
+    { path: '/customer-invoices/:id/edit', name: 'customerInvoices.edit', component: CustomerInvoiceEdit },
+    { path: '/customer-invoices/:id/change-customer', name: 'customerInvoices.changeCustomer', component: CustomerInvoiceChange, props: { field: 'customer' } },
+    { path: '/customer-invoices/:id/change-agent', name: 'customerInvoices.changeAgent', component: CustomerInvoiceChange, props: { field: 'agent' } },
+    { path: '/customer-invoices/:id/change-date', name: 'customerInvoices.changeDate', component: CustomerInvoiceChange, props: { field: 'date' } },
+    { path: '/customer-invoices/:id/change-due-date', name: 'customerInvoices.changeDueDate', component: CustomerInvoiceChange, props: { field: 'dueDate' } },
     { path: '/customer-invoices/:id', name: 'customerInvoices.show', component: CustomerInvoiceShow },
+    { path: '/customer-credit-notes/:id/edit', name: 'customerCreditNotes.edit', component: CustomerCreditNoteEdit },
     { path: '/customer-credit-notes/:id', name: 'customerCreditNotes.show', component: CustomerCreditNoteShow },
+    { path: '/customer-payments/:id/edit', name: 'customerPayments.edit', component: CustomerPaymentManage },
     { path: '/customer-payments/:id', name: 'customerPayments.show', component: CustomerPaymentShow },
     { path: '/customer-gift-cards', name: 'customerGiftCards.list', component: CustomerGiftCardsIndex },
     { path: '/customer-reconciliations', name: 'customerReconciliations.list', component: CustomerReconciliationsIndex },
     { path: '/customer-reconciliations/:id', name: 'customerReconciliations.show', component: CustomerReconciliationShow },
     { path: '/customer-transaction-links', name: 'customerTransactionLinks.list', component: CustomerTransactionLinksIndex },
-    { path: '/customer-gift-cards/:id/edit', name: 'customerGiftCards.edit', component: CustomerGiftCardsManage },
+    { path: '/customer-gift-cards/:id/edit', name: 'customerGiftCards.edit', component: CustomerGiftCardsEdit },
     { path: '/customer-gift-cards/:id', name: 'customerGiftCards.show', component: CustomerGiftCardShow },
     { path: '/customer-refunds/:id', name: 'customerRefunds.show', component: CustomerRefundShow },
     { path: '/finance/account-transactions/journal/:type/:reference', name: 'accountTransactions.journal', component: AccountTransactionsJournal },
@@ -229,6 +258,13 @@ const routes = [
     { path: '/parent-destinations/create', name: 'parentDestinations.create', component: ParentDestinationsManage },
     { path: '/parent-destinations/:id/edit', name: 'parentDestinations.edit', component: ParentDestinationsManage },
     { path: '/parent-destinations/:id/destinations', name: 'parentDestinations.children', component: ParentDestinationsChildren },
+    { path: '/flight-destinations', name: 'flightDestinations.list', component: FlightDestinationsIndex },
+    { path: '/flight-destinations/create', name: 'flightDestinations.create', component: FlightDestinationsManage },
+    { path: '/flight-destinations/:id/edit', name: 'flightDestinations.edit', component: FlightDestinationsManage },
+    { path: '/travel-options', name: 'travelOptions.list', component: TravelOptionsIndex },
+    { path: '/travel-options/create', name: 'travelOptions.create', component: TravelOptionsManage },
+    { path: '/travel-options/:id/edit', name: 'travelOptions.edit', component: TravelOptionsManage },
+    { path: '/flight-search', name: 'flights.search', component: FlightSearch },
     { path: '/announcements', name: 'announcements.list', component: AnnouncementsIndex },
     { path: '/announcements/create', name: 'announcements.create', component: AnnouncementsManage },
     { path: '/announcements/new', name: 'announcements.new', component: AnnouncementsNew },
@@ -272,8 +308,11 @@ const routes = [
     { path: '/users', name: 'users.list', component: UsersIndex },
     { path: '/users/create', name: 'users.create', component: UsersManage },
     { path: '/users/logs', name: 'users.logs', component: UsersLogs },
+    { path: '/users/activity-logs', name: 'users.activityLogs', component: UsersActivityLogs },
+    { path: '/users/activity-logs/:id', name: 'users.activityLogAudit', component: UsersAuditLogShow },
     { path: '/users/:id/edit', name: 'users.edit', component: UsersManage },
     { path: '/users/:id', name: 'users.show', component: UsersShow },
+    { path: '/password', name: 'users.editPassword', component: UsersPassword },
     { path: '/roles', name: 'roles.list', component: RolesIndex },
     { path: '/roles/create', name: 'roles.create', component: RolesManage },
     { path: '/roles/:id/edit', name: 'roles.edit', component: RolesManage },
@@ -321,6 +360,7 @@ const routes = [
     { path: '/support/create', name: 'support.create', component: SupportCreate },
     { path: '/support/:id', name: 'support.show', component: SupportShow },
     { path: '/me', name: 'me', component: Me },
+    { path: '/403', name: 'forbidden', component: Forbidden },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
 ];
 

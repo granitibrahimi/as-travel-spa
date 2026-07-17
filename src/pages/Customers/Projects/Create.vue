@@ -6,14 +6,12 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 
 const router = useRouter();
 
-// The customers lookup lives under /api/base (sibling of the api client's
-// /api/v1 base), so it's addressed with an absolute URL off the same origin.
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-const customersUrl = `${apiOrigin}/api/base/customers`;
+const customersUrl = 'customers/autosuggest';
 
 const form = reactive({
     name: '',
@@ -24,7 +22,6 @@ const form = reactive({
 });
 
 const selectedCustomers = ref([]); // [{ id, name }]
-const customerPick = ref(null);
 const errors = ref({});
 const saving = ref(false);
 
@@ -32,8 +29,6 @@ function addCustomer(option) {
     if (option && ! selectedCustomers.value.some((c) => c.id === option.value)) {
         selectedCustomers.value.push({ id: option.value, name: option.label });
     }
-
-    customerPick.value = null;
 }
 
 function removeCustomer(id) {
@@ -55,6 +50,8 @@ async function submit() {
     try {
         await api.post('/customer-projects', {
             ...form,
+            start_date: form.start_date,
+            end_date: form.end_date,
             customers: selectedCustomers.value.map((c) => c.id),
         });
         router.push('/projects');
@@ -78,8 +75,8 @@ async function submit() {
                     <InputText v-model="form.name" label="Project Name" :error="fieldError('name')" />
                     <InputText v-model="form.reference" label="Project Reference" :error="fieldError('reference')" />
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <InputText v-model="form.start_date" label="Start date" placeholder="dd.mm.yyyy" :error="fieldError('start_date')" />
-                        <InputText v-model="form.end_date" label="End date" placeholder="dd.mm.yyyy" :error="fieldError('end_date')" />
+                        <DateInput v-model="form.start_date" label="Start date" :error="fieldError('start_date')" />
+                        <DateInput v-model="form.end_date" label="End date" :error="fieldError('end_date')" />
                     </div>
                     <InputText v-model="form.total_amount" label="Total Amount" type="number" :error="fieldError('total_amount')" />
                 </div>
@@ -94,11 +91,11 @@ async function submit() {
 
             <FullWidthBox title="Customers" :collapsible="false">
                 <AsyncSelect
-                    v-model="customerPick"
                     :url="customersUrl"
                     label="Add customer"
                     placeholder="Search customers…"
                     :error="fieldError('customers')"
+                    clear-on-select
                     @change="addCustomer"
                 />
 

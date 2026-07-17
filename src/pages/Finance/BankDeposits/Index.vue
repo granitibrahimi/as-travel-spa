@@ -33,7 +33,7 @@ async function fetchDeposits(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        deposits.value = { data: data.data, ...data.meta };
+        deposits.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;

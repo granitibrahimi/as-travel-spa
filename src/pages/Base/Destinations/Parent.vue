@@ -38,7 +38,7 @@ async function fetchDestinations(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, per_page: 50, page },
         });
-        destinations.value = { data: data.data, ...data.meta };
+        destinations.value = { data: data.data, ...data.pagination };
     } catch (e) {
         if (e.code !== 'ERR_CANCELED') {
             throw e;

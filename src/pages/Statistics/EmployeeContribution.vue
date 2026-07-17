@@ -15,12 +15,12 @@ const segmentColors = computed(() => colors((data.value?.labels ?? []).length));
 
 const totalPie = computed(() => ({
     labels: data.value?.labels ?? [],
-    datasets: [{ data: data.value?.series?.total ?? [], backgroundColor: segmentColors.value }],
+    datasets: [{ data: data.data.value?.series?.total ?? [], backgroundColor: segmentColors.value }],
 }));
 
 const countPie = computed(() => ({
-    labels: data.value?.labels ?? [],
-    datasets: [{ data: data.value?.series?.count ?? [], backgroundColor: segmentColors.value }],
+    labels: data.data.value?.labels ?? [],
+    datasets: [{ data: data.data.value?.series?.count ?? [], backgroundColor: segmentColors.value }],
 }));
 </script>
 

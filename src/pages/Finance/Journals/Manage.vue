@@ -3,10 +3,13 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
+import { todayApiDate } from '../../../helpers/date';
 import SearchSelect from '../../../components/Form/SearchSelect.vue';
 import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 import Loader from '../../../components/Loader.vue';
@@ -16,8 +19,9 @@ const router = useRouter();
 const id = route.params.id ?? null;
 const isEdit = Boolean(id);
 
-const accounts = ref([]);
-const taxTypes = ref([]);
+const formOptions = useFormOptionsStore();
+const accounts = computed(() => toOptions(formOptions.accounts));
+const taxTypes = computed(() => toOptions(formOptions.taxTypes));
 const errors = ref({});
 const processing = ref(false);
 const ready = ref(false);
@@ -34,24 +38,20 @@ const blankLine = () => ({
 });
 
 const form = reactive({
-    date: new Date().toISOString().slice(0, 10),
+    date: todayApiDate(),
     reference: '',
     notes: '',
     entries: [blankLine(), blankLine(), blankLine(), blankLine()],
 });
 
 onMounted(async () => {
-    const [{ data: options }, journal] = await Promise.all([
-        api.get('/journals/form-options'),
-        isEdit ? api.get(`/journals/${id}`).then((r) => r.data.data ?? r.data) : Promise.resolve(null),
-    ]);
-
-    accounts.value = options.accounts;
-    taxTypes.value = options.taxTypes;
+    const journal = isEdit
+        ? await api.get(`/journals/${id}`).then((r) => r.data.data ?? r.data)
+        : null;
 
     if (journal) {
         genId.value = journal.gen_id;
-        form.date = journal.on_date_input;
+        form.date = journal.on_date;
         form.reference = journal.reference ?? '';
         form.notes = journal.notes ?? '';
         form.entries = journal.lines?.length
@@ -135,7 +135,7 @@ async function submit() {
         <form v-else class="space-y-6" @submit.prevent="submit">
             <FullWidthBox title="Journal" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <InputText v-model="form.date" type="date" label="Date *" :error="errors.date" />
+                    <DateInput v-model="form.date" label="Date *" :error="errors.date" />
                     <InputText v-model="form.reference" label="Reference" maxlength="21" :error="errors.reference" />
                     <InputText v-model="form.notes" label="Notes" :error="errors.notes" />
                 </div>

@@ -1,14 +1,15 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../helpers/api';
+import { useFormOptionsStore, toOptions } from '../../stores/formOptions.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
 import AsyncSelect from '../../components/Form/AsyncSelect.vue';
 import InputText from '../../components/Form/InputText.vue';
+import DateInput from '../../components/Form/DateInput.vue';
 import InputNumber from '../../components/Form/InputNumber.vue';
-import SearchSelect from '../../components/Form/SearchSelect.vue';
 import Select from '../../components/Form/Select.vue';
 import Textarea from '../../components/Form/Textarea.vue';
 import Loader from '../../components/Loader.vue';
@@ -20,12 +21,15 @@ const router = useRouter();
 const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
 const contactsUrl = `${apiOrigin}/api/base/contact-references`;
 
+// Agent lookup is relative to the api client's /api/v1 base.
+const agentsUrl = 'users/autosuggest';
+
 const selectClass = 'w-full rounded border border-gray-300 px-3 py-1.5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500';
 
-const sources = ref([]);
-const types = ref([]);
-const destinations = ref([]);
-const agents = ref([]);
+const formOptions = useFormOptionsStore();
+const sources = computed(() => toOptions(formOptions.taskSources));
+const types = computed(() => toOptions(formOptions.taskTypes));
+const destinations = computed(() => toOptions(formOptions.destinations));
 const errors = ref({});
 const processing = ref(false);
 const ready = ref(false);
@@ -49,12 +53,7 @@ const form = reactive({
     extra_notes: '',
 });
 
-onMounted(async () => {
-    const { data } = await api.get('/tasks/form-options');
-    sources.value = data.sources ?? [];
-    types.value = data.types ?? [];
-    destinations.value = data.destinations ?? [];
-    agents.value = data.agents ?? [];
+onMounted(() => {
     form.type = types.value[0]?.value ?? 0;
     ready.value = true;
 });
@@ -174,13 +173,10 @@ async function submit() {
                 </div>
 
                 <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Travel date</label>
-                        <input v-model="form.travel_date" type="date" :class="selectClass">
-                    </div>
-                    <SearchSelect
+                    <DateInput v-model="form.travel_date" label="Travel date" />
+                    <AsyncSelect
                         v-model="form.assigned_to"
-                        :options="agents"
+                        :url="agentsUrl"
                         label="Assign Agent"
                         placeholder="Search agent…"
                         :error="errors.assigned_to"

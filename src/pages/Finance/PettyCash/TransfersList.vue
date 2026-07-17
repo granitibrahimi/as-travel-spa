@@ -8,6 +8,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import Select from '../../../components/Form/Select.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
@@ -58,7 +59,7 @@ async function fetchTransfers(page = 1) {
                 page,
             },
         });
-        transfers.value = { data: data.data, ...data.meta };
+        transfers.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -95,8 +96,8 @@ onMounted(() => fetchTransfers());
             <form class="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="fetchTransfers()">
                 <InputText v-model="filters.q" label="Search" placeholder="ID or note…" />
                 <Select v-model="filters.direction" :options="directions" label="Direction" placeholder="All" />
-                <InputText v-model="filters.date_from" type="date" label="From" />
-                <InputText v-model="filters.date_to" type="date" label="To" />
+                <DateInput v-model="filters.date_from" label="From" />
+                <DateInput v-model="filters.date_to" label="To" />
                 <div class="flex items-end gap-2">
                     <Button type="submit" variant="primary">Filter</Button>
                     <Button type="button" @click="filters.q = ''; filters.direction = null; filters.date_from = ''; filters.date_to = ''; fetchTransfers();">Clear</Button>

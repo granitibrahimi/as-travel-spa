@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
+import { RouterLink } from 'vue-router';
 import { useAuthStore } from '../../../stores/auth.js';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
@@ -7,15 +8,27 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
+import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
-import ActionsOverlay from '../../../components/ActionsOverlay.vue';
+import InvoiceActions from './Actions.vue';
 import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
+// Agent lookup is relative to the api client's /api/v1 base.
+const agentsUrl = 'users/autosuggest';
+
 const invoices = ref(null);
 const loading = ref(false);
-const search = ref('');
+
+// Date inputs speak Y-m-d; the API expects d.m.Y (see helpers/date.js).
+const filters = reactive({
+    q: '',
+    agent: null,
+    date_from: '',
+    date_to: '',
+});
 
 let request = null;
 
@@ -28,9 +41,15 @@ async function fetchInvoices(page = 1) {
     try {
         const { data } = await api.get('/customer-invoices', {
             signal: controller.signal,
-            params: { q: search.value || undefined, page },
+            params: {
+                q: filters.q || undefined,
+                agent: filters.agent || undefined,
+                date_from: filters.date_from || undefined,
+                date_to: filters.date_to || undefined,
+                page,
+            },
         });
-        invoices.value = { data: data.data, ...data.meta };
+        invoices.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -42,21 +61,38 @@ async function fetchInvoices(page = 1) {
     }
 }
 
+function clearFilters() {
+    filters.q = '';
+    filters.agent = null;
+    filters.date_from = '';
+    filters.date_to = '';
+    fetchInvoices();
+}
+
 onMounted(fetchInvoices);
 
 // Actions side overlay for the row picked via the ⋯ button.
 const selected = ref(null);
+
+// After a delete from the actions overlay, refresh the current page.
+function onInvoiceDeleted() {
+    selected.value = null;
+    fetchInvoices(invoices.value?.pagination?.current_page ?? 1);
+}
 </script>
 
 <template>
     <AppLayout title="Invoices" fluid>
         <FullWidthBox v-if="auth.canAny(['customerInvoices.listAll', 'customerInvoices.listOwn'])" title="Invoices" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchInvoices()">
-                <div class="w-full sm:w-80">
-                    <InputText v-model="search" label="Search" placeholder="Invoice ID, ticket, customer…" />
+            <form class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="fetchInvoices()">
+                <InputText v-model="filters.q" label="Search" placeholder="Invoice ID, ticket, customer…" />
+                <AsyncSelect v-model="filters.agent" :url="agentsUrl" label="Agent" placeholder="All agents" />
+                <DateInput v-model="filters.date_from" label="Date from" />
+                <DateInput v-model="filters.date_to" label="Date to" />
+                <div class="flex items-end gap-2 md:col-span-4">
+                    <Button type="submit" variant="primary" :loading="loading" @click="apply">Filter</Button>
+                    <Button type="button" @click="clearFilters">Clear</Button>
                 </div>
-                <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchInvoices();">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -82,8 +118,7 @@ const selected = ref(null);
                         </tr>
                         <tr v-for="invoice in (loading ? [] : invoices?.data ?? [])" :key="invoice.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <a v-if="invoice.show_url" :href="invoice.show_url" target="_blank" class="text-red-700 hover:underline">{{ invoice.gen_id }}</a>
-                                <span v-else>{{ invoice.gen_id }}</span>
+                                <RouterLink :to="`/customer-invoices/${invoice.id}`" class="text-red-700 hover:underline">{{ invoice.gen_id }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ invoice.on_date }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ invoice.customer ?? '-' }}</td>
@@ -110,25 +145,15 @@ const selected = ref(null);
                 </table>
             </div>
 
-            <ApiPagination v-if="invoices" :paginator="invoices" class="mt-4" @page="fetchInvoices" />
+            <ApiPagination v-if="invoices" :paginator="invoices.pagination" class="mt-4" @page="fetchInvoices" />
         </FullWidthBox>
 
-        <!-- Per-invoice actions (legacy invoice show aside) -->
-        <ActionsOverlay
+        <!-- Per-invoice actions — defined locally and permission-gated (Actions.vue). -->
+        <InvoiceActions
+            :invoice="selected"
             :show="Boolean(selected)"
-            :title="selected?.gen_id"
-            :subtitle="selected ? `${selected.customer ?? ''} · ${selected.on_date}` : ''"
-            :groups="selected?.actions ?? []"
             @close="selected = null"
-        >
-            <a
-                v-if="selected?.show_url"
-                :href="selected.show_url"
-                target="_blank"
-                class="block w-full rounded border border-gray-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-gray-50"
-            >
-                View invoice ↗
-            </a>
-        </ActionsOverlay>
+            @deleted="onInvoiceDeleted"
+        />
     </AppLayout>
 </template>

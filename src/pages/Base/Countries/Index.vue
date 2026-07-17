@@ -24,7 +24,7 @@ async function fetchCountries(page = 1) {
 
     try {
         const { data } = await api.get('/countries', { params: { q: search.value || undefined, page } });
-        countries.value = { data: data.data, ...data.meta };
+        countries.value = { data: data.data.items, ...data.data.pagination };
     } finally {
         loading.value = false;
     }

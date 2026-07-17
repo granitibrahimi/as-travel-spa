@@ -1,19 +1,21 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import api from '../../helpers/api';
-import { useAuthStore } from '../../stores/auth';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Button from '../../components/Button.vue';
-import InputText from '../../components/Form/InputText.vue';
-import Select from '../../components/Form/Select.vue';
-import ApiPagination from '../../components/ApiPagination.vue';
-import ActionsOverlay from '../../components/ActionsOverlay.vue';
-import ConfirmDialog from '../../components/ConfirmDialog.vue';
-import Loader from '../../components/Loader.vue';
+import api from '../../../helpers/api.js';
+import { useAuthStore } from '../../../stores/auth.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Button from '../../../components/Button.vue';
+import InputText from '../../../components/Form/InputText.vue';
+import Select from '../../../components/Form/Select.vue';
+import ApiPagination from '../../../components/ApiPagination.vue';
+import ActionsOverlay from '../../../components/ActionsOverlay.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
+const formOptions = useFormOptionsStore();
 
 const persons = ref(null);
 const loading = ref(false);
@@ -22,9 +24,9 @@ const search = ref('');
 const classification = ref('');
 const gender = ref('');
 
-// Enum options for the filters — loaded from the form-options endpoint.
-const classifications = ref([]);
-const genders = ref([]);
+// Enum options for the filters — from the shared form-options store.
+const classifications = computed(() => toOptions(formOptions.personClassifications));
+const genders = computed(() => toOptions(formOptions.personGenders));
 
 // Row picked via the ⋯ button — opens the actions side overlay.
 const selected = ref(null);
@@ -49,7 +51,7 @@ async function fetchPersons(page = 1) {
                 page,
             },
         });
-        persons.value = { data: data.data, ...data.meta };
+        persons.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -78,10 +80,6 @@ async function confirmDelete() {
 }
 
 onMounted(async () => {
-    const { data: options } = await api.get('/persons/form-options');
-    classifications.value = options.classifications;
-    genders.value = options.genders;
-
     await fetchPersons();
 });
 </script>

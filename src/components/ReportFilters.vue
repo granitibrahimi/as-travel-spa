@@ -6,8 +6,9 @@
  */
 import { onMounted, ref } from 'vue';
 import Button from './Button.vue';
-import InputText from './Form/InputText.vue';
+import DateInput from './Form/DateInput.vue';
 import AsyncSelect from './Form/AsyncSelect.vue';
+import { todayApiDate } from '../helpers/date';
 
 const props = defineProps({
     showDestination: { type: Boolean, default: true },
@@ -22,15 +23,16 @@ const emit = defineEmits(['apply']);
 const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
 const parentDestinationsUrl = `${apiOrigin}/api/customers/destinations`;
 
-function isoDaysFromMonths(months) {
+function apiMonthsAgo(months) {
     const date = new Date();
     date.setMonth(date.getMonth() - months, 1);
+    const pad = (n) => String(n).padStart(2, '0');
 
-    return date.toISOString().slice(0, 10);
+    return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
 }
 
-const from = ref(isoDaysFromMonths(props.monthsBack));
-const to = ref(new Date().toISOString().slice(0, 10));
+const from = ref(apiMonthsAgo(props.monthsBack));
+const to = ref(todayApiDate());
 const parentDestinationId = ref(null);
 
 function apply() {
@@ -46,8 +48,8 @@ onMounted(apply);
 
 <template>
     <div class="flex flex-wrap items-end gap-3">
-        <InputText v-model="from" type="date" label="From" />
-        <InputText v-model="to" type="date" label="To" />
+        <DateInput v-model="from" label="From" />
+        <DateInput v-model="to" label="To" />
         <AsyncSelect
             v-if="showDestination"
             v-model="parentDestinationId"

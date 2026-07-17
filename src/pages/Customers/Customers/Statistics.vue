@@ -7,6 +7,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import StatCard from '../../../components/StatCard.vue';
 import Loader from '../../../components/Loader.vue';
@@ -45,7 +46,7 @@ async function fetchStatistics(page = 1) {
             },
         });
         stats.value = data.stats;
-        invoices.value = { data: data.data, ...data.meta };
+        invoices.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -74,8 +75,8 @@ onMounted(() => {
                 </template>
 
                 <div class="flex flex-wrap items-end gap-3">
-                    <InputText v-model="from" type="date" label="From" />
-                    <InputText v-model="to" type="date" label="To" />
+                    <DateInput v-model="from" label="From" />
+                    <DateInput v-model="to" label="To" />
                     <Button type="button" variant="primary" :loading="loading" @click="fetchStatistics()">Apply</Button>
                     <Button type="button" @click="from = ''; to = ''; fetchStatistics();">Clear</Button>
                 </div>

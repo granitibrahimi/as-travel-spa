@@ -1,6 +1,8 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
 import api from '../helpers/api';
+import { useNotificationsStore } from '../stores/notifications.js';
 import AppLayout from '../layouts/AppLayout.vue';
 import FullWidthBox from './FullWidthBox.vue';
 import CustomerDetails from './CustomerDetails.vue';
@@ -24,6 +26,8 @@ const props = defineProps({
     current: { type: Object, default: () => ({}) },
 });
 
+const router = useRouter();
+const notifications = useNotificationsStore();
 const customer = ref(null);
 
 onMounted(async () => {
@@ -61,14 +65,16 @@ async function submit() {
     }[props.field];
 
     try {
-        await api.put(props.endpoints.submit, payload);
-        window.location.href = props.endpoints.redirect;
+        const { data } = await api.put(props.endpoints.submit, payload);
+        notifications.push({ type: 'success', message: data.message ?? 'Saved.' });
+        router.push(props.endpoints.redirect);
     } catch (error) {
         submitting.value = false;
 
         if (error.response?.status === 422) {
             errors.value = error.response.data.errors ?? {};
         } else {
+            notifications.push({ type: 'error', message: 'Could not save the change.' });
             throw error;
         }
     }
@@ -121,9 +127,9 @@ async function submit() {
                         >
                             {{ submitting ? 'Saving…' : 'Save' }}
                         </button>
-                        <a :href="endpoints.redirect" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <RouterLink :to="endpoints.redirect" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                             Cancel
-                        </a>
+                        </RouterLink>
                     </div>
                 </form>
             </FullWidthBox>

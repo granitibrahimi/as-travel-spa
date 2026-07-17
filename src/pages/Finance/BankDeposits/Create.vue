@@ -3,16 +3,20 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
+import { todayApiDate } from '../../../helpers/date';
 import SearchSelect from '../../../components/Form/SearchSelect.vue';
 import Loader from '../../../components/Loader.vue';
 
 const router = useRouter();
 
-const paymentMethods = ref([]);
+const formOptions = useFormOptionsStore();
+const paymentMethods = computed(() => toOptions(formOptions.paymentMethods));
 const rows = ref([]);
 const ready = ref(false);
 const errors = ref({});
@@ -20,18 +24,14 @@ const processing = ref(false);
 
 const form = reactive({
     payment_method_id: null,
-    date: new Date().toISOString().slice(0, 10),
+    date: todayApiDate(),
     expected_amount: null,
     notes: '',
 });
 
 onMounted(async () => {
-    const [{ data: options }, { data: undeposited }] = await Promise.all([
-        api.get('/bank-deposits/form-options'),
-        api.get('/bank-deposits/undeposited-payments'),
-    ]);
+    const { data: undeposited } = await api.get('/bank-deposits/undeposited-payments');
 
-    paymentMethods.value = options.paymentMethods;
     rows.value = (undeposited.payments ?? []).map((payment) => ({
         ...payment,
         included: false,
@@ -101,7 +101,7 @@ async function submit() {
             <FullWidthBox title="Bank Deposit" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
                     <SearchSelect v-model="form.payment_method_id" :options="paymentMethods" placeholder="Bank account…" label="Bank account *" :error="errors.payment_method_id" />
-                    <InputText v-model="form.date" type="date" label="Date *" :error="errors.date" />
+                    <DateInput v-model="form.date" label="Date *" :error="errors.date" />
                     <InputText v-model="form.expected_amount" type="number" step="0.01" label="Deposited amount *" :error="errors.expected_amount" />
                     <InputText v-model="form.notes" label="Notes" :error="errors.notes" />
                 </div>

@@ -1,46 +1,40 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useAuthStore } from '../../../stores/auth.js';
+import { useFormOptionsStore } from '../../../stores/formOptions.js';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import Select from '../../../components/Form/Select.vue';
 import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
+import SearchSelect from '../../../components/Form/SearchSelect.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import SideOverlay from '../../../components/SideOverlay.vue';
 import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
+const formOptions = useFormOptionsStore();
 
-// Agent + parent-destination lookups live under /api/base and /api/customers,
-// siblings of the api client's /api/v1 base, so they use absolute URLs.
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-const agentsUrl = `${apiOrigin}/api/base/agents`;
-const parentDestinationsUrl = `${apiOrigin}/api/customers/destinations`;
+// Agent lookup is relative to the api client's /api/v1 base.
+const agentsUrl = 'users/autosuggest';
 
-// Fixed option lists the platform injected as props (CustomerTypeEnum,
-// PersonContactReferenceTypeEnum).
-const customerTypes = [
-    { value: 1, label: 'Company' },
-    { value: 2, label: 'Private' },
-    { value: 3, label: 'Agency' },
-    { value: 5, label: 'AQP' },
-];
+// Dropdown reference data from the shared form-options store.
+const customerTypes = computed(() =>
+    formOptions.customerTypes.map((type) => ({ value: type.value ?? type.id, label: type.label ?? type.name })),
+);
 
-const contactTypes = [
-    { value: 1, label: 'Instagram' },
-    { value: 2, label: 'Facebook' },
-    { value: 3, label: 'Viber' },
-    { value: 4, label: 'Whatsapp' },
-    { value: 5, label: 'Phone' },
-    { value: 6, label: 'Email' },
-    { value: 7, label: 'In person (office)' },
-    { value: 8, label: 'Portal AI' },
-];
+const parentDestinationOptions = computed(() =>
+    formOptions.parentDestinations.map((pd) => ({ value: pd.value ?? pd.id, label: pd.label ?? pd.name })),
+);
+
+const contactTypes = computed(() =>
+    formOptions.personContractReferenceTypes.map((type) => ({ value: type.value ?? type.id, label: type.label ?? type.name })),
+);
 
 const filters = reactive({
     q: '',
@@ -75,7 +69,7 @@ async function fetchDue(page = 1) {
                 page,
             },
         });
-        invoices.value = { data: data.data, ...data.meta };
+        invoices.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -97,7 +91,9 @@ function clear() {
     fetchDue();
 }
 
-onMounted(() => fetchDue());
+onMounted(() => {
+    fetchDue();
+});
 
 // --- "Customer contacted" slide-over ---
 const contactInvoice = ref(null);
@@ -107,7 +103,7 @@ const savingContact = ref(false);
 
 function openContact(invoice) {
     contactInvoice.value = invoice;
-    contactForm.type = contactTypes[0]?.value ?? null;
+    contactForm.type = contactTypes.value[0]?.value ?? null;
     contactForm.comment = '';
     contactErrors.value = {};
 }
@@ -146,10 +142,11 @@ async function saveContact() {
                 <form class="grid grid-cols-1 gap-3 md:grid-cols-3" @submit.prevent="fetchDue()">
                     <InputText v-model="filters.q" label="Search" placeholder="Invoice ID or ticket…" />
                     <AsyncSelect v-model="filters.agent" :url="agentsUrl" label="Agent" placeholder="All agents" />
-                    <AsyncSelect v-model="filters.parent_destination" :url="parentDestinationsUrl" label="Parent Destination" placeholder="All" />
+
+                    <SearchSelect v-model="filters.parent_destination" :options="parentDestinationOptions" label="Parent Destination" placeholder="All" />
                     <Select v-model="filters.customer_type" :options="customerTypes" label="Customer Type" placeholder="All types" />
-                    <InputText v-model="filters.due_from" type="date" label="Due from" />
-                    <InputText v-model="filters.due_to" type="date" label="Due to" />
+                    <DateInput v-model="filters.due_from" label="Due from" />
+                    <DateInput v-model="filters.due_to" label="Due to" />
                     <div class="flex items-end gap-2 md:col-span-3">
                         <Button type="submit" variant="primary">Filter</Button>
                         <Button type="button" @click="clear">Clear</Button>

@@ -31,7 +31,7 @@ async function fetchProjects(page = 1) {
 
     try {
         const { data } = await api.get(endpoint.value, { params: { page } });
-        projects.value = { data: data.data, ...data.meta };
+        projects.value = { data: data.data, ...data.pagination };
     } finally {
         loading.value = false;
     }

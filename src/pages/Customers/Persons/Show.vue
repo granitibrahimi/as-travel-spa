@@ -1,14 +1,14 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import api from '../../helpers/api';
-import { useAuthStore } from '../../stores/auth';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Alert from '../../components/Alert.vue';
-import Button from '../../components/Button.vue';
-import ConfirmDialog from '../../components/ConfirmDialog.vue';
-import Loader from '../../components/Loader.vue';
+import api from '../../../helpers/api.js';
+import { useAuthStore } from '../../../stores/auth.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Alert from '../../../components/Alert.vue';
+import Button from '../../../components/Button.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import Loader from '../../../components/Loader.vue';
 
 const route = useRoute();
 const router = useRouter();

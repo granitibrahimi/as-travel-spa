@@ -15,12 +15,47 @@ export const CATEGORIES = [
     { key: 'customer_types', label: 'Customer Types' },
     { key: 'task_types', label: 'Task Types' },
     { key: 'user_roles', label: 'User Roles' },
+    { key: 'products', label: 'Products' },
+    { key: 'parent_destinations', label: 'Parent Destinations' },
+    { key: 'customer_transactions_types', label: 'Customer Transaction Types' },
+    { key: 'supplier_transactions_types', label: 'Supplier Transaction Types' },
+    { key: 'person_contact_reference_types', label: 'Person Contact Reference Types' },
+    { key: 'person_genders', label: 'Person Genders' },
+    { key: 'person_classifications', label: 'Person Classifications' },
+    { key: 'task_sources', label: 'Task Sources' },
+    { key: 'destinations', label: 'Destinations' },
+    { key: 'accounts', label: 'Accounts' },
+    { key: 'tax_types', label: 'Tax Types' },
+    { key: 'payment_method_types', label: 'Payment Method Types' },
+    { key: 'cash_accounts', label: 'Cash Accounts' },
+    { key: 'user_log_types', label: 'User Log Types' },
 ];
+
+// Static (non-synced) option lists shared across pages. Kept here alongside the
+// synced reference data so forms have one place to import option lists from.
+export const TRANSACTION_STATUS_OPTIONS = [
+    { value: 'all', label: 'All' },
+    { value: 'open', label: 'Open' },
+    { value: 'closed', label: 'Closed' },
+];
+
+// Normalize a raw option list into the { value, label } shape the Select /
+// AsyncSelect components expect, tolerating the API's { id, name } variants.
+export const toOptions = (list) => (list ?? []).map((option) => ({
+    value: option.value ?? option.id,
+    label: option.label ?? option.name,
+}));
 
 // OPTIONS: GET /form-options?only=<key> -> resource collection { data: [ ...options ] }
 const OPTIONS_URL = '/form-options';
 
 const STORAGE_KEY = 'as.formOptions';
+
+// How long a cached snapshot is considered fresh. Within this window the boot
+// sync is skipped so a page refresh doesn't re-download every category; after
+// it, the next boot refreshes silently in the background. The user-menu
+// "Update data" button always forces an immediate re-sync.
+const TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 function readCache() {
     try {
@@ -58,6 +93,7 @@ export const useFormOptionsStore = defineStore('formOptions', {
         userId: null,
         data: {},       // { [key]: [...options] }
         loaded: false,
+        syncedAt: null, // epoch ms of the last successful sync (for TTL/staleness)
 
         // Sync UI state, consumed by SyncScreen.vue.
         status: 'idle', // 'idle' | 'syncing' | 'done' | 'error'
@@ -73,8 +109,24 @@ export const useFormOptionsStore = defineStore('formOptions', {
         customerTypes: (state) => state.data.customer_types ?? [],
         taskTypes: (state) => state.data.task_types ?? [],
         userRoles: (state) => state.data.user_roles ?? [],
+        products: (state) => state.data.products ?? [],
+        parentDestinations: (state) => state.data.parent_destinations ?? [],
+        customerTransactionTypes: (state) => state.data.customer_transactions_types ?? [],
+        supplierTransactionTypes: (state) => state.data.supplier_transactions_types ?? [],
+        personContractReferenceTypes: (state) => state.data.person_contact_reference_types ?? [],
+        personGenders: (state) => state.data.person_genders ?? [],
+        personClassifications: (state) => state.data.person_classifications ?? [],
+        taskSources: (state) => state.data.task_sources ?? [],
+        destinations: (state) => state.data.destinations ?? [],
+        accounts: (state) => state.data.accounts ?? [],
+        taxTypes: (state) => state.data.tax_types ?? [],
+        paymentMethodTypes: (state) => state.data.payment_method_types ?? [],
+        cashAccounts: (state) => state.data.cash_accounts ?? [],
+        userLogTypes: (state) => state.data.user_log_types ?? [],
         // Generic accessor: formOptions.options('payment_methods').
         options: (state) => (key) => state.data[key] ?? [],
+        // Cache is stale when it was never synced or the TTL has elapsed.
+        isStale: (state) => !state.syncedAt || (Date.now() - state.syncedAt) > TTL_MS,
     },
 
     actions: {
@@ -87,12 +139,13 @@ export const useFormOptionsStore = defineStore('formOptions', {
             if (cache && cache.userId === auth.user?.id) {
                 this.userId = cache.userId;
                 this.data = cache.data ?? {};
+                this.syncedAt = cache.syncedAt ?? null;
                 this.loaded = Object.keys(this.data).length > 0;
             }
         },
 
         persist() {
-            writeCache({ userId: this.userId, data: this.data });
+            writeCache({ userId: this.userId, data: this.data, syncedAt: this.syncedAt });
         },
 
         /**
@@ -110,6 +163,7 @@ export const useFormOptionsStore = defineStore('formOptions', {
                 this.userId = userId;
                 this.data = {};
                 this.loaded = false;
+                this.syncedAt = null;
             }
 
             this.status = 'syncing';
@@ -136,6 +190,11 @@ export const useFormOptionsStore = defineStore('formOptions', {
 
             this.status = this.progress.some((item) => item.state === 'error') ? 'error' : 'done';
             this.loaded = Object.keys(this.data).length > 0;
+            // Only stamp a fresh sync time when everything landed, so a partial
+            // (errored) sync stays stale and is retried on the next boot.
+            if (this.status === 'done') {
+                this.syncedAt = Date.now();
+            }
             this.persist();
         },
 
@@ -152,6 +211,7 @@ export const useFormOptionsStore = defineStore('formOptions', {
             this.userId = null;
             this.data = {};
             this.loaded = false;
+            this.syncedAt = null;
             this.status = 'idle';
             this.showScreen = false;
             this.progress = [];
@@ -164,6 +224,3 @@ export const useFormOptionsStore = defineStore('formOptions', {
         },
     },
 });
-
-
-//TODO: FormOptions are loading on every page load (need to fix it).

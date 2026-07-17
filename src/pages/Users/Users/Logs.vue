@@ -1,11 +1,17 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import api from '../../../helpers/api.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
+import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
+
+// Agent lookup is relative to the api client's /api/v1 base.
+const agentsUrl = 'users/autosuggest';
 
 const logs = ref(null);
 const loading = ref(false);
@@ -14,16 +20,10 @@ const type = ref('');
 const userId = ref('');
 const from = ref('');
 const to = ref('');
-const logTypes = ref([]);
-const agents = ref([]);
+const formOptions = useFormOptionsStore();
+const logTypes = computed(() => toOptions(formOptions.userLogTypes));
 
 let request = null;
-
-async function fetchOptions() {
-    const { data } = await api.get('/users/form-options');
-    logTypes.value = data.logTypes;
-    agents.value = data.agents;
-}
 
 async function fetchLogs(page = 1) {
     request?.abort();
@@ -43,7 +43,7 @@ async function fetchLogs(page = 1) {
                 page,
             },
         });
-        logs.value = { data: data.data, ...data.meta };
+        logs.value = { data: data.data, ...data.pagination };
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -56,7 +56,6 @@ async function fetchLogs(page = 1) {
 }
 
 onMounted(() => {
-    fetchOptions();
     fetchLogs();
 });
 
@@ -79,12 +78,11 @@ function clearFilters() {
                     <option value="">All types</option>
                     <option v-for="logType in logTypes" :key="logType.value" :value="logType.value">{{ logType.label }}</option>
                 </select>
-                <select v-model="userId" class="rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500">
-                    <option value="">All users</option>
-                    <option v-for="agent in agents" :key="agent.value" :value="agent.value">{{ agent.label }}</option>
-                </select>
-                <input v-model="from" type="date" class="rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500">
-                <input v-model="to" type="date" class="rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                <div class="w-full sm:w-56">
+                    <AsyncSelect v-model="userId" :url="agentsUrl" placeholder="All agents" />
+                </div>
+                <DateInput v-model="from" />
+                <DateInput v-model="to" />
                 <Button type="submit" variant="primary">Search</Button>
                 <Button type="button" @click="clearFilters">Clear</Button>
             </form>

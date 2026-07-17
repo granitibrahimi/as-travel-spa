@@ -1,9 +1,11 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import { customerTransactionPath } from '../../../helpers/customerTransactions.js';
 import api from '../../../helpers/api.js';
+import { downloadFile } from '../../../helpers/download.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -18,8 +20,6 @@ const notifications = useNotificationsStore();
 const id = route.params.id;
 
 // Backend speaks d.m.Y; the date input speaks Y-m-d.
-const toApiDate = (ymd) => (ymd ? ymd.split('-').reverse().join('.') : '');
-const toInputDate = (dmy) => (dmy ? dmy.split('.').reverse().join('-') : '');
 
 const customer = ref(null);
 const types = ref([]);
@@ -41,8 +41,8 @@ let request = null;
 
 function apiParams() {
     return {
-        from_date: toApiDate(filters.from) || undefined,
-        to_date: toApiDate(filters.to) || undefined,
+        from_date: filters.from || undefined,
+        to_date: filters.to || undefined,
         type: filters.type ?? undefined,
         entities: filters.entities.length ? filters.entities : undefined,
     };
@@ -75,8 +75,8 @@ async function fetchStatements() {
 
         // Seed the form from the server-computed defaults on first load only.
         if (! initialised.value) {
-            filters.from = toInputDate(payload.inputs.from_date);
-            filters.to = toInputDate(payload.inputs.to_date);
+            filters.from = payload.inputs.from_date ?? '';
+            filters.to = payload.inputs.to_date ?? '';
             filters.type = payload.inputs.type;
             filters.entities = payload.inputs.entities;
             initialised.value = true;
@@ -99,18 +99,10 @@ async function download(kind, flag) {
     flag.value = true;
 
     try {
-        const response = await api.get(`/customers/${id}/statements/${kind}`, {
-            responseType: 'blob',
-            params: apiParams(),
+        await downloadFile(`/customers/${id}/statements/${kind}`, {
+            fallbackName: `statement.${kind === 'pdf' ? 'pdf' : 'xlsx'}`,
+            config: { params: apiParams() },
         });
-        const disposition = response.headers['content-disposition'] ?? '';
-        const match = disposition.match(/filename="?([^"]+)"?/);
-        const objectUrl = URL.createObjectURL(response.data);
-        const link = document.createElement('a');
-        link.href = objectUrl;
-        link.download = match ? match[1] : `statement.${kind === 'pdf' ? 'pdf' : 'xlsx'}`;
-        link.click();
-        URL.revokeObjectURL(objectUrl);
     } finally {
         flag.value = false;
     }
@@ -154,8 +146,8 @@ onMounted(() => {
                 </template>
 
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
-                    <InputText v-model="filters.from" type="date" label="From date" />
-                    <InputText v-model="filters.to" type="date" label="To date" />
+                    <DateInput v-model="filters.from" label="From date" />
+                    <DateInput v-model="filters.to" label="To date" />
                     <Select v-model="filters.type" :options="types" label="Type" :placeholder="null" />
                     <div class="flex items-end">
                         <Button type="button" variant="primary" :loading="loading" @click="fetchStatements">Apply</Button>
