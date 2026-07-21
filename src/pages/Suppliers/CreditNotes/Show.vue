@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
@@ -12,7 +14,7 @@ const creditNote = ref(null);
 
 async function load() {
     const { data } = await api.get(`/supplier-credit-notes/${route.params.id}`);
-    creditNote.value = data.data ?? data;
+    creditNote.value = castResource(data);
 }
 onMounted(load);
 </script>
@@ -33,13 +35,13 @@ onMounted(load);
                     <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Open</dt><dd class="tabular-nums" :class="creditNote.open_amount > 0 ? 'text-amber-600' : 'text-green-600'">{{ money(creditNote.open_amount) }}</dd></div>
                     <div v-if="creditNote.customer_credit_note" class="flex gap-2">
                         <dt class="w-36 shrink-0 font-medium text-gray-500">Customer credit note</dt>
-                        <dd><RouterLink :to="`/customer-credit-notes/${creditNote.customer_credit_note.id}`" class="text-red-600 hover:underline">{{ creditNote.customer_credit_note.gen_id }}</RouterLink></dd>
+                        <dd><RouterLink :to="routeUrl('customerCreditNotes.show', creditNote.customer_credit_note.id)" class="text-red-600 hover:underline">{{ creditNote.customer_credit_note.gen_id }}</RouterLink></dd>
                     </div>
                     <div class="flex gap-2 sm:col-span-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Notes</dt><dd class="whitespace-pre-line">{{ creditNote.notes ?? '—' }}</dd></div>
                 </dl>
 
                 <template #footer>
-                    <RouterLink :to="`/suppliers/${creditNote.supplier.id}`" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to supplier</RouterLink>
+                    <RouterLink :to="routeUrl('suppliers.show', creditNote.supplier.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to supplier</RouterLink>
                 </template>
             </FullWidthBox>
 

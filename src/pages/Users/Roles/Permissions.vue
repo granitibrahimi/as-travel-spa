@@ -2,30 +2,33 @@
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
 import Loader from '../../../components/Loader.vue';
+import { useNotificationsStore } from '../../../stores/notifications';
 
 const route = useRoute();
 const id = route.params.id;
+const notifications = useNotificationsStore();
 
 const role = ref(null);
 const groups = ref([]);
 const selected = ref(new Set());
 const loading = ref(true);
 const processing = ref(false);
-const saved = ref(false);
 const q = ref('');
 
 onMounted(async () => {
     try {
-        const { data } = await api.get(`/roles/${id}/permissions`);
-        role.value = data.role;
-        groups.value = data.groups;
-        selected.value = new Set(data.assigned);
+        const { data } = await api.get(`/users/roles/${id}/permissions`);
+        role.value = castResource(data).role;
+        groups.value = castResource(data).groups;
+        selected.value = new Set(castResource(data).assigned);
     } finally {
         loading.value = false;
     }
@@ -85,11 +88,14 @@ async function save() {
     }
 
     processing.value = true;
-    saved.value = false;
 
     try {
-        await api.post(`/roles/${id}/permissions`, { permissions: Array.from(selected.value) });
-        saved.value = true;
+        await api.post(`/users/roles/${id}/permissions`, { permissions: Array.from(selected.value) });
+        notifications.push({
+            type: 'success',
+            title: 'Permissions updated',
+            message: role.value ? `Permissions for ${role.value.name} were saved.` : 'Permissions were saved.',
+        });
     } finally {
         processing.value = false;
     }
@@ -106,10 +112,6 @@ async function save() {
                         <InputText v-model="q" label="Search permissions" placeholder="Key or description…" />
                     </div>
                 </div>
-
-                <p v-if="saved" class="rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-                    Permissions updated successfully.
-                </p>
 
                 <p v-if="filteredGroups.length === 0" class="text-sm text-gray-400">No permissions match “{{ q }}”.</p>
 
@@ -147,7 +149,7 @@ async function save() {
             </div>
 
             <footer class="mt-6 flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink to="/roles" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('userRoles.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Back
                 </RouterLink>
                 <Button type="button" variant="primary" :disabled="processing" @click="save">

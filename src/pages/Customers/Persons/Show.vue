@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -56,8 +57,8 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/persons/${id}`);
-        router.push('/travelers');
+        await api.delete(`/customers/persons/${id}`);
+        router.push(routeUrl('persons.list'));
     } finally {
         deleting.value = false;
         showDelete.value = false;
@@ -65,7 +66,7 @@ async function confirmDelete() {
 }
 
 onMounted(async () => {
-    const { data } = await api.get(`/persons/${id}`);
+    const { data } = await api.get(`/customers/persons/${id}`);
     person.value = data.data;
 });
 </script>
@@ -79,7 +80,7 @@ onMounted(async () => {
             <div class="flex flex-wrap justify-end gap-3">
                 <RouterLink
                     v-if="auth.can('persons.edit')"
-                    :to="`/travelers/${person.id}/edit`"
+                    :to="routeUrl('persons.edit', person.id)"
                     class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
                 >
                     Edit
@@ -134,7 +135,7 @@ onMounted(async () => {
                                     <td class="border border-gray-300 px-2 py-2">
                                         <RouterLink
                                             v-if="relation.customer"
-                                            :to="`/customers/${relation.customer.id}`"
+                                            :to="routeUrl('customers.show', relation.customer.id)"
                                             class="text-red-600 hover:underline"
                                         >
                                             {{ relation.customer.name }}
@@ -219,7 +220,7 @@ onMounted(async () => {
 
             <FullWidthBox :collapsible="false">
                 <template #footer>
-                    <RouterLink to="/travelers" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                    <RouterLink :to="routeUrl('persons.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                         Back to list
                     </RouterLink>
                 </template>

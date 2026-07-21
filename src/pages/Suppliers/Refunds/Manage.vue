@@ -4,6 +4,8 @@ import DateInput from '../../../components/Form/DateInput.vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource, castMutation } from '../../../types/responses.js';
 import { usePaymentMethodsRepository } from '../../../repositories/paymentMethods';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -48,7 +50,7 @@ onMounted(async () => {
 
     if (isEdit) {
         const { data } = await api.get(`/supplier-refunds/${refundId}`);
-        const refund = data.data ?? data;
+        const refund = castResource(data);
         optionsSupplierId = refund.supplier?.id ?? null;
         Object.assign(form, {
             payment_method_id: refund.payment_method_id,
@@ -65,7 +67,7 @@ onMounted(async () => {
     const { data } = await api.get('/supplier-refunds/available-amount', {
         params: { supplier_id: optionsSupplierId ?? undefined },
     });
-    availableAmount.value = data.available_amount;
+    availableAmount.value = castResource(data).available_amount;
 
     loaded.value = true;
 });
@@ -83,10 +85,10 @@ async function submit() {
     try {
         if (isEdit) {
             await api.put(`/supplier-refunds/${refundId}`, payload);
-            router.push(`/supplier-refunds/${refundId}`);
+            router.push(routeUrl('supplierRefunds.show', refundId));
         } else {
             const { data } = await api.post(`/suppliers/${supplierId}/refunds`, payload);
-            router.push(`/supplier-refunds/${data.id}`);
+            router.push(routeUrl('supplierRefunds.show', castMutation(data).id));
         }
     } catch (error) {
         if (error.response?.status === 422) {
@@ -101,7 +103,7 @@ async function submit() {
     }
 }
 
-const cancelTo = isEdit ? `/supplier-refunds/${refundId}` : `/suppliers/${supplierId}`;
+const cancelTo = isEdit ? routeUrl('supplierRefunds.show', refundId) : routeUrl('suppliers.show', supplierId);
 </script>
 
 <template>

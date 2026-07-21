@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -14,7 +16,7 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 const router = useRouter();
 
-const hotels = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 
@@ -31,7 +33,7 @@ async function fetchHotels(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        hotels.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -58,14 +60,14 @@ async function confirmDelete() {
     try {
         await api.delete(`/hotels/${hotelToDelete.value.id}`);
         hotelToDelete.value = null;
-        await fetchHotels(hotels.value?.current_page ?? 1);
+        await fetchHotels(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         deleting.value = false;
     }
 }
 
 const rowActions = (hotel) => [
-    ...(auth.can('hotels.edit') ? [{ label: 'Edit', action: () => router.push(`/hotels/${hotel.id}/edit`) }] : []),
+    ...(auth.can('hotels.edit') ? [{ label: 'Edit', action: () => router.push(routeUrl('hotels.edit', hotel.id)) }] : []),
     ...(auth.can('hotels.delete') ? [{ label: 'Delete', danger: true, action: () => (hotelToDelete.value = hotel) }] : []),
 ];
 </script>
@@ -92,13 +94,13 @@ const rowActions = (hotel) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! hotels">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="6" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="hotels.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No hotels found.</td>
                         </tr>
-                        <tr v-for="hotel in (loading ? [] : hotels?.data ?? [])" :key="hotel.id" class="hover:bg-gray-50">
+                        <tr v-for="hotel in (loading ? [] : apiResponse?.data ?? [])" :key="hotel.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ hotel.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ hotel.title }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ hotel.destination ?? '—' }}</td>
@@ -115,10 +117,10 @@ const rowActions = (hotel) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="hotels" :paginator="hotels" class="mt-4" @page="fetchHotels" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchHotels" />
 
             <template #footer>
-                <RouterLink v-if="auth.can('hotels.create')" to="/hotels/create" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
+                <RouterLink v-if="auth.can('hotels.create')" :to="routeUrl('hotels.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
                     + New hotel
                 </RouterLink>
             </template>

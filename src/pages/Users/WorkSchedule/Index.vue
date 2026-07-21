@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -30,10 +31,10 @@ const shifts = ref([]);
 const ready = ref(false);
 
 async function fetchSchedule() {
-    const { data } = await api.get('/work-schedule');
-    events.value = data.events ?? [];
-    agents.value = data.agents ?? [];
-    shifts.value = data.shifts ?? [];
+    const { data } = await api.get('/users/work-schedule');
+    events.value = castResource(data).events ?? [];
+    agents.value = castResource(data).agents ?? [];
+    shifts.value = castResource(data).shifts ?? [];
     ready.value = true;
 }
 

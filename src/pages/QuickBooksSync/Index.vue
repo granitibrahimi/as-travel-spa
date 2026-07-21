@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import api from '../../helpers/api';
+import { routeUrl } from '../../helpers/route.js';
+import { castPaginated } from '../../types/responses.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
@@ -14,7 +16,7 @@ import Loader from '../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const rows = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const options = reactive({ entities: [], statuses: [], actions: [] });
 const form = reactive({ entity: null, status: null, action: null, entity_id: '' });
@@ -44,7 +46,7 @@ async function fetchRows(page = 1) {
                 page,
             },
         });
-        rows.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
     }
@@ -68,7 +70,7 @@ async function retry(row) {
 
     try {
         await api.post(`/quickbooks-sync/${row.id}/retry`);
-        await fetchRows(rows.value?.current_page ?? 1);
+        await fetchRows(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         retryingId.value = null;
     }
@@ -84,7 +86,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/quickbooks-sync/${pendingDelete.value.id}`);
         pendingDelete.value = null;
-        await fetchRows(rows.value?.current_page ?? 1);
+        await fetchRows(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         processing.value = false;
     }
@@ -92,7 +94,7 @@ async function confirmDelete() {
 
 // Floating three-dots menu entries for one row, permission-filtered.
 const rowActions = (row) => [
-    ...(auth.can('quickBooksSync.show') ? [{ label: 'View', href: `/quickbooks-sync/${row.id}` }] : []),
+    ...(auth.can('quickBooksSync.show') ? [{ label: 'View', href: routeUrl('quickBooksSync.show', row.id) }] : []),
     ...(auth.can('quickBooksSync.retry') ? [{ label: retryingId.value === row.id ? 'Retrying…' : 'Retry', action: () => retry(row) }] : []),
     ...(row.can_delete && auth.can('quickBooksSync.delete') ? [{ label: 'Delete', danger: true, action: () => (pendingDelete.value = row) }] : []),
 ];
@@ -137,13 +139,13 @@ const statusClass = (status) => ({
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="loading || ! rows">
+                            <tr v-if="loading || ! apiResponse">
                                 <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
                             </tr>
-                            <tr v-else-if="rows.data.length === 0">
+                            <tr v-else-if="apiResponse.data.length === 0">
                                 <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No sync data found.</td>
                             </tr>
-                            <tr v-for="row in (loading ? [] : rows?.data ?? [])" :key="row.id" class="hover:bg-gray-50">
+                            <tr v-for="row in (loading ? [] : apiResponse?.data ?? [])" :key="row.id" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ row.id }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.entity }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.action }}</td>
@@ -168,7 +170,7 @@ const statusClass = (status) => ({
                     </table>
                 </div>
 
-                <ApiPagination v-if="rows" :paginator="rows" class="mt-4" @page="fetchRows" />
+                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchRows" />
             </FullWidthBox>
         </div>
 

@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -10,7 +12,7 @@ import ApiPagination from '../../../components/ApiPagination.vue';
 import CustomerActions from './Actions.vue';
 import Loader from '../../../components/Loader.vue';
 
-const customers = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 
@@ -26,11 +28,11 @@ async function fetchCustomers(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/customers', {
+        const { data } = await api.get('/customers/customers', {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        customers.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -47,7 +49,7 @@ onMounted(() => fetchCustomers());
 // After a delete from the actions overlay, refresh the current page.
 function onCustomerDeleted() {
     selected.value = null;
-    fetchCustomers(customers.value?.current_page ?? 1);
+    fetchCustomers(apiResponse.value?.pagination?.current_page ?? 1);
 }
 </script>
 
@@ -76,17 +78,17 @@ function onCustomerDeleted() {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! customers">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="customers.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No customers found.</td>
                         </tr>
-                        <tr v-for="customer in (loading ? [] : customers?.data ?? [])" :key="customer.id" class="hover:bg-gray-50">
+                        <tr v-for="customer in (loading ? [] : apiResponse?.data ?? [])" :key="customer.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ customer.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ customer.unique_id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="`/customers/${customer.id}`" class="hover:text-red-700 hover:underline">{{ customer.full_name }}</RouterLink>
+                                <RouterLink :to="routeUrl('customers.show', customer.id)" class="hover:text-red-700 hover:underline">{{ customer.full_name }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ customer.email ?? '-' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ customer.phone ?? '-' }}</td>
@@ -110,10 +112,10 @@ function onCustomerDeleted() {
                 </table>
             </div>
 
-            <ApiPagination v-if="customers" :paginator="customers" class="mt-4" @page="fetchCustomers" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchCustomers" />
 
             <template #footer>
-                <RouterLink to="/customers/create" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
+                <RouterLink :to="routeUrl('customers.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
                     + Customer
                 </RouterLink>
             </template>

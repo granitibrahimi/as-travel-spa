@@ -2,7 +2,8 @@
  * Workspaces + navigation for the SPA — mirrors the platform's
  * config/workspaces.php. The sidebar is built by filtering these by the
  * current user's permissions (from /me): each item shows when the user holds
- * its `can` permission or any of its `canAny` permissions (admins see all).
+ * its `can` permission (a string, or an array meaning "any of these") or any of
+ * its `canAny` permissions (admins see all).
  *
  * `to` values are SPA router paths. Some routes are not migrated yet, so their
  * links resolve to the NotFound page until the page exists.
@@ -16,7 +17,7 @@ export const workspaces = [
     {
         key: 'crm',
         label: 'CRM',
-        can: 'crm.access',
+        can: 'workspaces.crm',
         home: '/',
         groups: [
             {
@@ -56,13 +57,13 @@ export const workspaces = [
             {
                 label: 'Invoices',
                 items: [
-                    { label: 'Invoices', to: '/customers/invoices', can: 'customerInvoices.list' },
+                    { label: 'Invoices', to: '/customers/invoices', can: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
                 ],
             },
             {
                 label: 'Due Invoices',
                 items: [
-                    { label: 'Invoices', to: '/customers/invoices/due', can: 'customerInvoices.due' },
+                    { label: 'Invoices', to: '/customers/invoices/due', can: 'customerInvoices.listAllDue' },
                 ],
             },
             {
@@ -74,12 +75,13 @@ export const workspaces = [
             {
                 label: 'Customers',
                 items: [
-                    { label: 'All Customers', to: '/customers', can: 'customers.list' },
-                    { label: 'New Customer', to: '/customers/create', can: 'customers.create' },
-                    { label: 'Gift Cards', to: '/customer-gift-cards', can: 'customerGiftCards.list' },
-                    { label: 'Reconciliations', to: '/customer-reconciliations', can: 'customerReconciliations.list' },
-                    { label: 'Customer Transaction Links', to: '/customer-transaction-links', can: 'customerTransactionsLinks.list' },
+                    { label: 'All Customers', to: '/customers/customers', can: 'customers.list' },
+                    { label: 'New Customer', to: '/customers/customers/create', can: 'customers.create' },
+                    { label: 'Gift Cards', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
+                    { label: 'Reconciliations', to: '/customers/reconciliations', can: 'customerReconciliations.list' },
+                    { label: 'Customer Transaction Links', to: '/customers/transaction-links', can: 'customerTransactionsLinks.list' },
                     { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
+                    { label: 'Pro Invoices', to: '/customers/pro-invoices', can: 'customerProInvoices.list' },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
                 ],
@@ -96,8 +98,8 @@ export const workspaces = [
             {
                 label: 'Travelers',
                 items: [
-                    { label: 'All Travelers', to: '/travelers', can: 'persons.list' },
-                    { label: 'New Traveler', to: '/travelers/create', can: 'persons.create' },
+                    { label: 'All Travelers', to: '/customers/travelers', can: 'persons.list' },
+                    { label: 'New Traveler', to: '/customers/travelers/create', can: 'persons.create' },
                 ],
             },
             {
@@ -107,13 +109,6 @@ export const workspaces = [
                     { label: 'New Destination', to: '/destinations/create', can: 'destinations.create' },
                     { label: 'Parent Destinations', to: '/parent-destinations', can: 'parentDestinations.list' },
                     { label: 'New Parent Destination', to: '/parent-destinations/create', can: 'parentDestinations.create' },
-                ],
-            },
-            {
-                label: 'Announcements',
-                items: [
-                    { label: 'List', to: '/announcements', can: 'announcements.list' },
-                    { label: 'Create', to: '/announcements/create', can: 'announcements.create' },
                 ],
             },
             {
@@ -174,23 +169,29 @@ export const workspaces = [
     {
         key: 'hr',
         label: 'HR',
-        can: 'hr.access',
+        can: 'workspaces.hr',
         home: '/',
         groups: [
             {
                 label: 'Users',
                 items: [
-                    { label: 'Users', to: '/users', can: 'users.list' },
-                    { label: 'New User', to: '/users/create', can: 'users.create' },
-                    { label: 'User Logs', to: '/users/logs', can: 'users.logs' },
+                    { label: 'Users', to: '/users/users', can: 'users.list' },
+                    { label: 'New User', to: '/users/users/create', can: 'users.create' },
                     { label: 'Activity Logs', to: '/users/activity-logs', can: 'users.logs' },
                 ],
             },
             {
-                label: 'Access',
+                label: 'User Roles',
                 items: [
-                    { label: 'Roles', to: '/roles', can: 'roles.index' },
-                    { label: 'Permissions', to: '/permissions', can: 'roles.allPermissions' },
+                    { label: 'Roles', to: '/users/roles', can: 'userRoles.list' },
+                    { label: 'New Role', to: '/users/roles/create', can: 'userRoles.create' },
+                ],
+            },
+            {
+                label: 'User Permissions',
+                items: [
+                    { label: 'Permissions', to: '/users/permissions', can: 'userPermissions.list' },
+                    { label: 'New Permission', to: '/users/permissions/create', can: 'userPermissions.create' },
                 ],
             },
             {
@@ -220,7 +221,7 @@ export const workspaces = [
     {
         key: 'finance',
         label: 'Finance',
-        can: 'finance.access',
+        can: 'workspaces.finance',
         home: '/',
         groups: [
             {
@@ -234,14 +235,15 @@ export const workspaces = [
             {
                 label: 'Customers',
                 items: [
-                    { label: 'All Customers', to: '/customers', can: 'customers.list' },
-                    { label: 'New Customer', to: '/customers/create', can: 'customers.create' },
+                    { label: 'All Customers', to: '/customers/customers', can: 'customers.list' },
+                    { label: 'New Customer', to: '/customers/customers/create', can: 'customers.create' },
                     { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
+                    { label: 'Pro Invoices', to: '/customers/pro-invoices', can: 'customerProInvoices.list' },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
-                    { label: 'Gift Cards', to: '/customer-gift-cards', can: 'customerGiftCards.list' },
-                    { label: 'Reconciliations', to: '/customer-reconciliations', can: 'customerReconciliations.list' },
-                    { label: 'Customer Transaction Links', to: '/customer-transaction-links', can: 'customerTransactionsLinks.list' },
+                    { label: 'Gift Cards', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
+                    { label: 'Reconciliations', to: '/customers/reconciliations', can: 'customerReconciliations.list' },
+                    { label: 'Customer Transaction Links', to: '/customers/transaction-links', can: 'customerTransactionsLinks.list' },
                 ],
             },
             {
@@ -330,7 +332,7 @@ export const workspaces = [
     {
         key: 'administration',
         label: 'Administration',
-        can: 'administration.access',
+        can: 'workspaces.administration',
         home: '/',
         groups: [
             {
@@ -356,9 +358,9 @@ export const workspaces = [
             {
                 label: 'Projects',
                 items: [
-                    { label: 'Active', to: '/projects', can: 'customerProjects.list' },
-                    { label: 'Finished', to: '/projects/finished', can: 'customerProjects.finished' },
-                    { label: 'Create', to: '/projects/create', can: 'customerProjects.create' },
+                    { label: 'Active', to: '/customers/projects', can: 'customerProjects.list' },
+                    { label: 'Finished', to: '/customers/projects/finished', can: 'customerProjects.finished' },
+                    { label: 'Create', to: '/customers/projects/create', can: 'customerProjects.create' },
                 ],
             },
             {
@@ -389,7 +391,7 @@ export const workspaces = [
  * Header account-dropdown links, permission-filtered like the platform's.
  */
 export const userMenu = [
-    { label: 'Notifications', to: '/notifications', can: 'userNotifications.list' },
-    { label: 'Update password', to: '/password', can: 'users.editPassword' },
-    { label: 'Apply for vacation', to: '/vacations/apply', can: 'vacations.applyForm' },
+    { label: 'Notifications', to: '/users/notifications', can: 'userNotifications.list' },
+    { label: 'Update password', to: '/users/password', can: 'users.editPassword' },
+    { label: 'Apply for vacation', to: '/users/vacations/apply', can: 'vacations.applyForm' },
 ];

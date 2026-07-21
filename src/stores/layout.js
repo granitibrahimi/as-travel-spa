@@ -5,13 +5,20 @@ import { useAuthStore } from './auth';
 
 const ACTIVE_KEY = 'as.activeWorkspace';
 
-const canSee = (auth, item) => {
-    if (item.canAny) {
-        return auth.canAny(item.canAny);
+// Whether the current user may see a workspace / nav item. `can` may be a
+// single permission string OR an array (the user needs ANY of them); `canAny`
+// is the explicit any-of list. No requirement declared → always visible.
+const allows = (auth, entry) => {
+    if (entry.canAny) {
+        return auth.canAny(entry.canAny);
     }
 
-    if (item.can) {
-        return auth.can(item.can);
+    if (Array.isArray(entry.can)) {
+        return auth.canAny(entry.can);
+    }
+
+    if (entry.can) {
+        return auth.can(entry.can);
     }
 
     return true;
@@ -33,7 +40,7 @@ export const useLayoutStore = defineStore('layout', {
             const auth = useAuthStore();
 
             return WORKSPACES
-                .filter((workspace) => auth.can(workspace.can))
+                .filter((workspace) => allows(auth, workspace))
                 .map((workspace) => ({
                     key: workspace.key,
                     label: workspace.label,
@@ -58,7 +65,7 @@ export const useLayoutStore = defineStore('layout', {
             const groups = workspace.groups
                 .map((group) => (group.separator
                     ? { separator: true }
-                    : { label: group.label, items: group.items.filter((item) => canSee(auth, item)) }))
+                    : { label: group.label, items: group.items.filter((item) => allows(auth, item)) }))
                 .filter((group) => group.separator || group.items.length > 0);
 
             // Drop separators that would render at the very top/bottom or back to
@@ -78,7 +85,7 @@ export const useLayoutStore = defineStore('layout', {
         userMenuItems() {
             const auth = useAuthStore();
 
-            return USER_MENU.filter((item) => canSee(auth, item));
+            return USER_MENU.filter((item) => allows(auth, item));
         },
     },
 
@@ -87,7 +94,7 @@ export const useLayoutStore = defineStore('layout', {
         // last-selected (from /me), else the first workspace they can access.
         init() {
             const auth = useAuthStore();
-            const accessible = WORKSPACES.filter((w) => auth.can(w.can)).map((w) => w.key);
+            const accessible = WORKSPACES.filter((w) => allows(auth, w)).map((w) => w.key);
             const stored = localStorage.getItem(ACTIVE_KEY);
             const candidates = [stored, auth.user?.workspace];
 
@@ -98,7 +105,7 @@ export const useLayoutStore = defineStore('layout', {
             const auth = useAuthStore();
             const workspace = WORKSPACES.find((w) => w.key === key);
 
-            if (!workspace || !auth.can(workspace.can)) {
+            if (!workspace || !allows(auth, workspace)) {
                 return;
             }
 
@@ -106,7 +113,7 @@ export const useLayoutStore = defineStore('layout', {
             localStorage.setItem(ACTIVE_KEY, key);
             // Best-effort persist so it sticks across devices; the local choice
             // already applied even if this fails.
-            api.patch('/workspace', { key }).catch(() => {});
+            api.patch('/users/workspace', { key }).catch(() => {});
         },
     },
 });

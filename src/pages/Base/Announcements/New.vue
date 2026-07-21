@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -24,16 +25,16 @@ const alertClass = {
 
 async function load() {
     const [activeRes, otherRes] = await Promise.all([
-        api.get('/announcements/active'),
-        api.get('/announcements/other'),
+        api.get('/base/announcements/active'),
+        api.get('/base/announcements/other'),
     ]);
-    active.value = activeRes.data.data ?? activeRes.data;
-    other.value = otherRes.data.data ?? otherRes.data;
+    active.value = castResource(activeRes.data);
+    other.value = castResource(otherRes.data);
 
     const ids = [...active.value, ...other.value].map((a) => a.id);
 
     if (ids.length) {
-        await api.post('/announcements/mark-seen', { ids });
+        await api.post('/base/announcements/mark-seen', { ids });
     }
 }
 

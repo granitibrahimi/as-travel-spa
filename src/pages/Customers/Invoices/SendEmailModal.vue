@@ -69,7 +69,7 @@ async function send() {
     error.value = '';
 
     try {
-        await api.post(`/customer-invoices/${props.invoice.id}/send-email`, form.value);
+        await api.post(`/customers/invoices/${props.invoice.id}/send-email`, form.value);
         emit('sent');
         emit('close');
     } catch (e) {

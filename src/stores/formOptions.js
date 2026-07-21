@@ -5,49 +5,42 @@ import { useAuthStore } from './auth';
 // Shared reference data used across forms (dropdown options). Cached in
 // localStorage and refreshed from the form-options endpoint. Synced on login
 // and on demand via the user-menu button; the SyncScreen overlay shows
-// per-category progress.
+// per-category progress. The endpoint is the single source of truth for which
+// categories exist and their labels — see `titles` below.
 
-export const CATEGORIES = [
-    { key: 'payment_methods', label: 'Payment Methods' },
-    { key: 'countries', label: 'Countries' },
-    { key: 'meal_types', label: 'Meal Types' },
-    { key: 'announcement_priorities', label: 'Announcement Priorities' },
-    { key: 'customer_types', label: 'Customer Types' },
-    { key: 'task_types', label: 'Task Types' },
-    { key: 'user_roles', label: 'User Roles' },
-    { key: 'products', label: 'Products' },
-    { key: 'parent_destinations', label: 'Parent Destinations' },
-    { key: 'customer_transactions_types', label: 'Customer Transaction Types' },
-    { key: 'supplier_transactions_types', label: 'Supplier Transaction Types' },
-    { key: 'person_contact_reference_types', label: 'Person Contact Reference Types' },
-    { key: 'person_genders', label: 'Person Genders' },
-    { key: 'person_classifications', label: 'Person Classifications' },
-    { key: 'task_sources', label: 'Task Sources' },
-    { key: 'destinations', label: 'Destinations' },
-    { key: 'accounts', label: 'Accounts' },
-    { key: 'tax_types', label: 'Tax Types' },
-    { key: 'payment_method_types', label: 'Payment Method Types' },
-    { key: 'cash_accounts', label: 'Cash Accounts' },
-    { key: 'user_log_types', label: 'User Log Types' },
-];
+// Fallback label for a category the endpoint gave no `title` for:
+// 'payment_methods' → 'Payment Methods'.
+const humanizeKey = (key) => String(key)
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 
-// Static (non-synced) option lists shared across pages. Kept here alongside the
-// synced reference data so forms have one place to import option lists from.
-export const TRANSACTION_STATUS_OPTIONS = [
-    { value: 'all', label: 'All' },
-    { value: 'open', label: 'Open' },
-    { value: 'closed', label: 'Closed' },
-];
+// Coerce a category value into a plain array. Accepts an array (returned as-is)
+// or a keyed object — { "1": { value, label } } → its values, { all: "All" } →
+// [{ value: 'all', label: 'All' }] — so a legacy/stale cache that stored the raw
+// keyed shape can't blow up array consumers. Anything else → [].
+function toArray(value) {
+    if (Array.isArray(value)) {
+        return value;
+    }
+
+    if (value && typeof value === 'object') {
+        return Object.entries(value).map(([key, entry]) => (
+            entry && typeof entry === 'object' ? entry : { value: key, label: entry }
+        ));
+    }
+
+    return [];
+}
 
 // Normalize a raw option list into the { value, label } shape the Select /
 // AsyncSelect components expect, tolerating the API's { id, name } variants.
-export const toOptions = (list) => (list ?? []).map((option) => ({
+// Defensive against non-array inputs (see toArray).
+export const toOptions = (list) => toArray(list).map((option) => ({
     value: option.value ?? option.id,
     label: option.label ?? option.name,
 }));
 
-// OPTIONS: GET /form-options?only=<key> -> resource collection { data: [ ...options ] }
-const OPTIONS_URL = '/form-options';
 
 const STORAGE_KEY = 'as.formOptions';
 
@@ -73,18 +66,15 @@ function writeCache(payload) {
     }
 }
 
-function categoryOptions(response, key) {
-    // The endpoint returns a resource collection: { data: [ ...options ] }.
-    if (Array.isArray(response?.data)) {
-        return response.data;
-    }
-
-    // Fallbacks for keyed / bare-array response shapes.
-    if (Array.isArray(response)) {
-        return response;
-    }
-
-    return response?.data?.[key] ?? response?.[key] ?? [];
+// Each category arrives wrapped as { title, data }. Its `data` is one of:
+//   • a plain array of options ([{ id, name }, …] or richer rows),
+//   • a keyed object of objects ({ "1": { value, label }, … }), or
+//   • a keyed object of strings ({ all: "All", open: "Open", … }).
+// Flatten every shape to a plain array so the getters and toOptions() see one
+// consistent structure. Array rows are preserved verbatim (destinations /
+// accounts carry extra fields beyond value/label).
+function normalizeCategory(entry) {
+    return toArray(entry?.data ?? entry);
 }
 
 export const useFormOptionsStore = defineStore('formOptions', {
@@ -92,6 +82,7 @@ export const useFormOptionsStore = defineStore('formOptions', {
         // Whose cache this is (options may be permission/tenant scoped).
         userId: null,
         data: {},       // { [key]: [...options] }
+        titles: {},     // { [key]: display label } — from each category's `title`
         loaded: false,
         syncedAt: null, // epoch ms of the last successful sync (for TTL/staleness)
 
@@ -123,8 +114,16 @@ export const useFormOptionsStore = defineStore('formOptions', {
         paymentMethodTypes: (state) => state.data.payment_method_types ?? [],
         cashAccounts: (state) => state.data.cash_accounts ?? [],
         userLogTypes: (state) => state.data.user_log_types ?? [],
+        transactionStatusOptions: (state) => state.data.transaction_status_options ?? [],
         // Generic accessor: formOptions.options('payment_methods').
         options: (state) => (key) => state.data[key] ?? [],
+        // The cached categories as { key, label } — derived from the last sync
+        // (label from the endpoint's `title`, else a humanized key). Replaces the
+        // old static CATEGORIES list.
+        categoryList: (state) => Object.keys(state.data).map((key) => ({
+            key,
+            label: state.titles[key] ?? humanizeKey(key),
+        })),
         // Cache is stale when it was never synced or the TTL has elapsed.
         isStale: (state) => !state.syncedAt || (Date.now() - state.syncedAt) > TTL_MS,
     },
@@ -138,18 +137,28 @@ export const useFormOptionsStore = defineStore('formOptions', {
 
             if (cache && cache.userId === auth.user?.id) {
                 this.userId = cache.userId;
-                this.data = cache.data ?? {};
+                // Coerce every cached category to an array — snapshots written by
+                // an earlier store version may hold the raw keyed-object shape.
+                this.data = Object.fromEntries(
+                    Object.entries(cache.data ?? {}).map(([key, value]) => [key, toArray(value)]),
+                );
+                this.titles = cache.titles ?? {};
                 this.syncedAt = cache.syncedAt ?? null;
                 this.loaded = Object.keys(this.data).length > 0;
             }
         },
 
         persist() {
-            writeCache({ userId: this.userId, data: this.data, syncedAt: this.syncedAt });
+            writeCache({
+                userId: this.userId,
+                data: this.data,
+                titles: this.titles,
+                syncedAt: this.syncedAt,
+            });
         },
 
         /**
-         * Re-download all configured categories.
+         * Re-download every category the endpoint offers.
          * @param {object} opts
          * @param {boolean} opts.force      Show the screen for a manual "Update".
          * @param {boolean} opts.showScreen Render the progress overlay (default true).
@@ -162,33 +171,56 @@ export const useFormOptionsStore = defineStore('formOptions', {
             if (this.userId !== userId) {
                 this.userId = userId;
                 this.data = {};
+                this.titles = {};
                 this.loaded = false;
                 this.syncedAt = null;
             }
 
             this.status = 'syncing';
-            this.progress = CATEGORIES.map((category) => ({
-                key: category.key,
-                label: category.label,
-                state: 'pending',
+            // Seed progress rows from what we already know (the previous cache);
+            // on a cold first sync this is empty and fills once the response lands.
+            this.progress = this.categoryList.map((category) => ({
+                ...category,
+                state: 'updating',
             }));
             this.showScreen = showScreen || force;
 
-            // Fetch all categories in parallel; each ticks its own row so the
-            // screen fills in progressively as responses land.
-            await Promise.all(CATEGORIES.map(async (category) => {
-                this.setState(category.key, 'updating');
+            try {
+                // One request returns every category, each wrapped as
+                // { title, data }: { data: { payment_methods: { title, data }, … } }.
+                const { data: payload } = await api.get('/form-options');
+                const categories = payload?.data ?? payload ?? {};
 
-                try {
-                    const { data } = await api.get(OPTIONS_URL, { params: { only: category.key } });
-                    this.data = { ...this.data, [category.key]: categoryOptions(data, category.key) };
-                    this.setState(category.key, 'done');
-                } catch {
-                    this.setState(category.key, 'error');
-                }
-            }));
+                // Normalize each category's `data` (array or keyed object) into a
+                // plain array, and capture its `title` for labels. The endpoint is
+                // the sole source of which categories exist.
+                const nextData = { ...this.data };
+                const nextTitles = { ...this.titles };
+                Object.entries(categories).forEach(([key, entry]) => {
+                    nextData[key] = normalizeCategory(entry);
 
-            this.status = this.progress.some((item) => item.state === 'error') ? 'error' : 'done';
+                    if (entry?.title) {
+                        nextTitles[key] = entry.title;
+                    }
+                });
+                this.data = nextData;
+                this.titles = nextTitles;
+
+                // Rebuild progress from the actual response so a first (cold) sync
+                // shows rows too, all resolved together (the fetch is atomic).
+                this.progress = Object.keys(categories).map((key) => ({
+                    key,
+                    label: nextTitles[key] ?? humanizeKey(key),
+                    state: 'done',
+                }));
+                this.status = 'done';
+            } catch {
+                // The bulk fetch is all-or-nothing; mark every row failed so the
+                // snapshot stays stale and the next boot retries.
+                this.progress = this.progress.map((item) => ({ ...item, state: 'error' }));
+                this.status = 'error';
+            }
+
             this.loaded = Object.keys(this.data).length > 0;
             // Only stamp a fresh sync time when everything landed, so a partial
             // (errored) sync stays stale and is retried on the next boot.
@@ -196,10 +228,6 @@ export const useFormOptionsStore = defineStore('formOptions', {
                 this.syncedAt = Date.now();
             }
             this.persist();
-        },
-
-        setState(key, state) {
-            this.progress = this.progress.map((item) => (item.key === key ? { ...item, state } : item));
         },
 
         dismiss() {
@@ -210,6 +238,7 @@ export const useFormOptionsStore = defineStore('formOptions', {
         clear() {
             this.userId = null;
             this.data = {};
+            this.titles = {};
             this.loaded = false;
             this.syncedAt = null;
             this.status = 'idle';

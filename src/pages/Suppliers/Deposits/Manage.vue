@@ -3,6 +3,8 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource, castMutation } from '../../../types/responses.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -39,7 +41,7 @@ const loaded = ref(false);
 onMounted(async () => {
     if (isEdit) {
         const { data } = await api.get(`/supplier-deposits/${depositId}`);
-        const deposit = data.data ?? data;
+        const deposit = castResource(data);
         Object.assign(form, {
             payment_method_id: deposit.payment_method_id,
             amount: deposit.amount,
@@ -66,10 +68,10 @@ async function submit() {
     try {
         if (isEdit) {
             await api.put(`/supplier-deposits/${depositId}`, payload);
-            router.push(`/supplier-deposits/${depositId}`);
+            router.push(routeUrl('supplierDeposits.show', depositId));
         } else {
             const { data } = await api.post(`/suppliers/${supplierId}/deposits`, payload);
-            router.push(`/supplier-deposits/${data.id}`);
+            router.push(routeUrl('supplierDeposits.show', castMutation(data).id));
         }
     } catch (error) {
         if (error.response?.status === 422) {
@@ -84,7 +86,7 @@ async function submit() {
     }
 }
 
-const cancelTo = isEdit ? `/supplier-deposits/${depositId}` : `/suppliers/${supplierId}`;
+const cancelTo = isEdit ? routeUrl('supplierDeposits.show', depositId) : routeUrl('suppliers.show', supplierId);
 </script>
 
 <template>

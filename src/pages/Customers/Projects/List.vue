@@ -2,7 +2,9 @@
 import { computed, ref, watch } from 'vue';
 import { useAuthStore } from '../../../stores/auth';
 import { money } from '../../../helpers/money';
+import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api';
+import { castPaginated } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
@@ -17,21 +19,21 @@ const props = defineProps({
 
 const auth = useAuthStore();
 
-const projects = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const pendingDelete = ref(null);
 const processing = ref(false);
 const busyId = ref(null);
 
 const title = computed(() => (props.mode === 'finished' ? 'Finished Projects' : 'Active Projects'));
-const endpoint = computed(() => (props.mode === 'finished' ? '/customer-projects/finished' : '/customer-projects'));
+const endpoint = computed(() => (props.mode === 'finished' ? '/customers/projects/finished' : '/customers/projects'));
 
 async function fetchProjects(page = 1) {
     loading.value = true;
 
     try {
         const { data } = await api.get(endpoint.value, { params: { page } });
-        projects.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
     }
@@ -44,8 +46,8 @@ async function transition(row, action) {
     busyId.value = row.id;
 
     try {
-        await api.post(`/customer-projects/${row.id}/${action}`);
-        await fetchProjects(projects.value?.current_page ?? 1);
+        await api.post(`/customers/projects/${row.id}/${action}`);
+        await fetchProjects(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         busyId.value = null;
     }
@@ -59,16 +61,16 @@ async function confirmDelete() {
     processing.value = true;
 
     try {
-        await api.delete(`/customer-projects/${pendingDelete.value.id}`);
+        await api.delete(`/customers/projects/${pendingDelete.value.id}`);
         pendingDelete.value = null;
-        await fetchProjects(projects.value?.current_page ?? 1);
+        await fetchProjects(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         processing.value = false;
     }
 }
 
 const rowActions = (row) => [
-    ...(auth.can('customerProjects.show') ? [{ label: 'View', href: `/projects/${row.id}` }] : []),
+    ...(auth.can('customerProjects.show') ? [{ label: 'View', href: routeUrl('customerProjects.show', row.id) }] : []),
     ...(props.mode === 'active' && auth.can('customerProjects.complete')
         ? [{ label: busyId.value === row.id ? 'Completing…' : 'Complete', action: () => transition(row, 'complete') }]
         : []),
@@ -100,13 +102,13 @@ const rowActions = (row) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! projects">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="9" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="projects.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No projects found.</td>
                         </tr>
-                        <tr v-for="project in (loading ? [] : projects?.data ?? [])" :key="project.id" class="hover:bg-gray-50">
+                        <tr v-for="project in (loading ? [] : apiResponse?.data ?? [])" :key="project.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ project.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ project.reference ?? '-' }}</td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap text-gray-600">{{ project.start_date }} → {{ project.end_date }}</td>
@@ -130,7 +132,7 @@ const rowActions = (row) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="projects" :paginator="projects" class="mt-4" @page="fetchProjects" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchProjects" />
         </FullWidthBox>
 
         <ConfirmDialog

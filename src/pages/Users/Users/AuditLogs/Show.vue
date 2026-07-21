@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../../helpers/api';
+import { routeUrl } from '../../../../helpers/route.js';
+import { castResource } from '../../../../types/responses.js';
 import AppLayout from '../../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../../components/FullWidthBox.vue';
 import Loader from '../../../../components/Loader.vue';
@@ -14,8 +16,8 @@ const selected = ref(null);
 const selectedIndex = ref(null);
 
 async function load() {
-    const { data } = await api.get(`/user-activity-logs/${route.params.id}`);
-    activityLog.value = data.data ?? data;
+    const { data } = await api.get(`/audit-logs/user-activity-logs/${route.params.id}`);
+    activityLog.value = castResource(data);
 }
 
 onMounted(load);
@@ -97,7 +99,7 @@ const comparisonRows = computed(() => {
                     </table>
 
                     <template #footer>
-                        <RouterLink to="/users/activity-logs" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to activity logs</RouterLink>
+                        <RouterLink :to="routeUrl('users.activityLogs')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to activity logs</RouterLink>
                     </template>
                 </FullWidthBox>
 

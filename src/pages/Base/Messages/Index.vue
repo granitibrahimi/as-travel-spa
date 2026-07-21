@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -14,7 +16,7 @@ import Loader from '../../../components/Loader.vue';
 // to the api client's base (VITE_API_URL, e.g. https://csrm.test/api/v1).
 const auth = useAuthStore();
 
-const messages = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 
@@ -36,7 +38,7 @@ async function fetchMessages(page = 1) {
             params: { q: search.value || undefined, page },
         });
         // Resource collection envelope: rows in `data`, paginator in `meta`.
-        messages.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -52,7 +54,7 @@ onMounted(() => fetchMessages());
 
 // Messages have ≤4 row actions, so they live in the ⋯ dropdown (see CLAUDE.md).
 const rowActions = (message) => [
-    ...(auth.can('messages.show') ? [{ label: 'View message', href: `/messages/${message.id}` }] : []),
+    ...(auth.can('messages.show') ? [{ label: 'View message', href: routeUrl('messages.show', message.id) }] : []),
     ...(auth.can('messages.delete') ? [{ label: 'Delete message', danger: true, action: () => (toDelete.value = message) }] : []),
 ];
 
@@ -66,7 +68,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/messages/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchMessages(messages.value?.current_page ?? 1);
+        await fetchMessages(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         deleting.value = false;
     }
@@ -102,16 +104,16 @@ async function confirmDelete() {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! messages">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="5" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="messages.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No messages found.</td>
                         </tr>
-                        <tr v-for="message in (loading ? [] : messages?.data ?? [])" :key="message.id" class="hover:bg-gray-50">
+                        <tr v-for="message in (loading ? [] : apiResponse?.data ?? [])" :key="message.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ message.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink v-if="auth.can('messages.show')" :to="`/messages/${message.id}`" class="hover:text-red-700 hover:underline">{{ message.subject }}</RouterLink>
+                                <RouterLink v-if="auth.can('messages.show')" :to="routeUrl('messages.show', message.id)" class="hover:text-red-700 hover:underline">{{ message.subject }}</RouterLink>
                                 <span v-else>{{ message.subject }}</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ message.sender ?? '-' }}</td>
@@ -124,12 +126,12 @@ async function confirmDelete() {
                 </table>
             </div>
 
-            <ApiPagination v-if="messages" :paginator="messages" class="mt-4" @page="fetchMessages" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchMessages" />
 
             <template #footer>
                 <RouterLink
                     v-if="auth.can('messages.create')"
-                    to="/messages/create"
+                    :to="routeUrl('messages.create')"
                     class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
                 >
                     + Message

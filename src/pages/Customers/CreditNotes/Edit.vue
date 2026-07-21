@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
 import { money } from '../../../helpers/money';
+import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore } from '../../../stores/formOptions';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -60,7 +61,7 @@ function blankOrder() {
 }
 
 async function load() {
-    const { data } = await api.get(`/customer-credit-notes/${route.params.id}/edit`);
+    const { data } = await api.get(`/customers/credit-notes/${route.params.id}`);
     creditNote.value = data.data;
 
     orders.value = (data.data.orders ?? []).map((order) => ({
@@ -141,8 +142,8 @@ async function save() {
             })),
         };
 
-        await api.put(`/customer-credit-notes/${route.params.id}`, payload);
-        router.push(`/customer-credit-notes/${route.params.id}`);
+        await api.put(`/customers/credit-notes/${route.params.id}`, payload);
+        router.push(routeUrl('customerCreditNotes.show', route.params.id));
     } catch (e) {
         error.value = e.response?.data?.message ?? 'Could not save the credit note.';
     } finally {
@@ -249,7 +250,7 @@ async function save() {
             <div class="mb-6 flex items-center justify-between">
                 <Button type="button" @click="addOrder">+ Add order</Button>
                 <div class="flex gap-2">
-                    <Button type="button" @click="router.push(`/customer-credit-notes/${route.params.id}`)">Cancel</Button>
+                    <Button type="button" @click="router.push(routeUrl('customerCreditNotes.show', route.params.id))">Cancel</Button>
                     <Button type="button" variant="primary" :loading="saving" @click="save">Save credit note</Button>
                 </div>
             </div>

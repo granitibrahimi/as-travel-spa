@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import flightsApi from '../../../helpers/flightsApi.js';
 import { FLIGHT_PROVIDERS } from '../../../helpers/flightProviders.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Alert from '../../../components/Alert.vue';
@@ -86,7 +87,7 @@ async function submit() {
             await flightsApi.post('/destinations', payload);
         }
 
-        router.push('/flight-destinations');
+        router.push(routeUrl('flightDestinations.list'));
     } catch (e) {
         if (e.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -130,7 +131,7 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink to="/flight-destinations" class="rounded border border-gray-300 px-4 py-1.5 text-sm hover:bg-gray-50">Cancel</RouterLink>
+                <RouterLink :to="routeUrl('flightDestinations.list')" class="rounded border border-gray-300 px-4 py-1.5 text-sm hover:bg-gray-50">Cancel</RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing || ! loaded">
                     {{ processing ? 'Saving…' : (isEdit ? 'Update destination' : 'Create destination') }}
                 </Button>

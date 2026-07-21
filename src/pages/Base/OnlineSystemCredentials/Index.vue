@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated, castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -17,7 +19,7 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const credentials = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 
@@ -54,7 +56,7 @@ async function fetchCredentials(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        credentials.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -88,7 +90,7 @@ async function openEdit(row) {
     overlayOpen.value = true;
 
     const { data } = await api.get(`/online-system-credentials/${row.id}`);
-    const record = data.data ?? data;
+    const record = castResource(data);
     Object.assign(form, {
         vendor_id: record.supplier?.id ?? null,
         title: record.title ?? '',
@@ -116,7 +118,7 @@ async function submit() {
             await api.post('/online-system-credentials', form);
         }
         overlayOpen.value = false;
-        await fetchCredentials(credentials.value?.current_page ?? 1);
+        await fetchCredentials(apiResponse.value?.pagination?.current_page ?? 1);
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -139,7 +141,7 @@ async function confirmDelete() {
 
     try {
         await api.delete(`/online-system-credentials/${pendingDelete.value.id}`);
-        await fetchCredentials(credentials.value?.current_page ?? 1);
+        await fetchCredentials(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         deleting.value = false;
         pendingDelete.value = null;
@@ -147,7 +149,7 @@ async function confirmDelete() {
 }
 
 const rowActions = (row) => [
-    ...(auth.can('onlineSystemCredentials.show') ? [{ label: 'View', href: `/online-credentials/${row.id}` }] : []),
+    ...(auth.can('onlineSystemCredentials.show') ? [{ label: 'View', href: routeUrl('onlineCredentials.show', row.id) }] : []),
     ...(auth.can('onlineSystemCredentials.edit') ? [{ label: 'Edit', action: () => openEdit(row) }] : []),
     ...(auth.can('onlineSystemCredentials.delete') ? [{ label: 'Delete', danger: true, action: () => (pendingDelete.value = row) }] : []),
 ];
@@ -176,16 +178,16 @@ const rowActions = (row) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! credentials">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="5" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="credentials.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No credentials found.</td>
                         </tr>
-                        <tr v-for="row in (loading ? [] : credentials?.data ?? [])" :key="row.id" class="hover:bg-gray-50">
+                        <tr v-for="row in (loading ? [] : apiResponse?.data ?? [])" :key="row.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ row.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="`/online-credentials/${row.id}`" class="hover:text-red-700 hover:underline">{{ row.title || '—' }}</RouterLink>
+                                <RouterLink :to="routeUrl('onlineCredentials.show', row.id)" class="hover:text-red-700 hover:underline">{{ row.title || '—' }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ row.supplier?.name ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ row.username }}</td>
@@ -197,7 +199,7 @@ const rowActions = (row) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="credentials" :paginator="credentials" class="mt-4" @page="fetchCredentials" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchCredentials" />
 
             <template #footer>
                 <Button v-if="auth.can('onlineSystemCredentials.create')" variant="primary" size="sm" @click="openCreate">+ Credential</Button>

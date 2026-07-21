@@ -1,7 +1,9 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '../../../helpers/api.js';
+import api, {getUsersAutosuggestEndpoint} from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castPaginated } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -12,10 +14,7 @@ import Loader from '../../../components/Loader.vue';
 
 const router = useRouter();
 
-// Agent lookup is relative to the api client's /api/v1 base.
-const agentsUrl = 'users/autosuggest';
-
-const logs = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const userId = ref('');
@@ -31,7 +30,7 @@ async function fetchLogs(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/user-activity-logs', {
+        const { data } = await api.get('/audit-logs/user-activity-logs', {
             signal: controller.signal,
             params: {
                 q: search.value || undefined,
@@ -42,8 +41,7 @@ async function fetchLogs(page = 1) {
             },
         });
         // Envelope: { data: { items: [...], pagination: {...} } }.
-        const payload = data.data ?? data;
-        logs.value = { data: payload.items ?? [], ...(payload.pagination ?? {}) };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -69,7 +67,7 @@ function clearFilters() {
 
 // Shown only when the row has audit logs — open the per-entry audit log view.
 function viewAuditLogs(log) {
-    router.push(`/users/activity-logs/${log.id}`);
+    router.push(routeUrl('users.activityLogAudit', log.id));
 }
 
 // input_data is an empty array when there's nothing, or an object of params
@@ -97,7 +95,7 @@ function formatInput(input) {
             <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchLogs()">
                 <input v-model="search" type="text" placeholder="Action…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-base leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-56">
                 <div class="w-full sm:w-56">
-                    <AsyncSelect v-model="userId" :url="agentsUrl" placeholder="All agents" />
+                    <AsyncSelect v-model="userId" :url="getUsersAutosuggestEndpoint()" placeholder="All agents" />
                 </div>
                 <DateInput v-model="from" />
                 <DateInput v-model="to" />
@@ -118,13 +116,13 @@ function formatInput(input) {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! logs">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="6" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="logs.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No logs found.</td>
                         </tr>
-                        <tr v-for="log in (loading ? [] : logs?.data ?? [])" :key="log.id" class="hover:bg-gray-50">
+                        <tr v-for="log in (loading ? [] : apiResponse?.data ?? [])" :key="log.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ log.id }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ log.user ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ log.action ?? '—' }}</td>
@@ -138,7 +136,7 @@ function formatInput(input) {
                 </table>
             </div>
 
-            <ApiPagination v-if="logs" :paginator="logs" class="mt-4" @page="fetchLogs" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchLogs" />
         </FullWidthBox>
     </AppLayout>
 </template>

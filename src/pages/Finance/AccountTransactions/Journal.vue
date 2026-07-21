@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { useAuthStore } from '../../../stores/auth.js';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
@@ -26,7 +27,7 @@ onMounted(async () => {
 
     try {
         const { data } = await api.get(`/account-transactions/journal/${type}/${reference}`);
-        journal.value = data.data ?? data;
+        journal.value = castResource(data);
     } finally {
         loading.value = false;
     }

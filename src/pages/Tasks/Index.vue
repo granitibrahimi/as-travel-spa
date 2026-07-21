@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../helpers/api';
+import { routeUrl } from '../../helpers/route.js';
+import { castPaginated } from '../../types/responses.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
@@ -13,7 +15,7 @@ import Loader from '../../components/Loader.vue';
 
 // All data comes from the platform JSON API (bearer token). Paths are relative
 // to the api client's base (VITE_API_URL, e.g. https://csrm.test/api/v1).
-const tasks = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const q = ref('');
 const unassigned = ref(false);
@@ -35,7 +37,7 @@ async function fetchTasks(page = 1) {
                 page,
             },
         });
-        tasks.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -50,7 +52,7 @@ async function fetchTasks(page = 1) {
 onMounted(() => fetchTasks());
 
 const rowActions = (task) => [
-    { label: 'View', href: `/tasks/${task.id}` },
+    { label: 'View', href: routeUrl('tasks.show', task.id) },
     ...(task.ignored ? [] : [{ label: 'Ignore', danger: true, action: () => openIgnore(task) }]),
 ];
 
@@ -81,7 +83,7 @@ async function confirmIgnore() {
     try {
         await api.post(`/tasks/${taskToIgnore.value.id}/ignore`, { reason: ignoreReason.value.trim() });
         taskToIgnore.value = null;
-        await fetchTasks(tasks.value?.current_page ?? 1);
+        await fetchTasks(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         ignoring.value = false;
     }
@@ -129,18 +131,18 @@ const statusClass = (status) => ({
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! tasks">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="9" class="border border-gray-300 px-2 py-2">
                                 <Loader />
                             </td>
                         </tr>
-                        <tr v-else-if="tasks.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No tasks found.</td>
                         </tr>
-                        <tr v-for="task in (loading ? [] : tasks?.data ?? [])" :key="task.id" class="hover:bg-gray-50">
+                        <tr v-for="task in (loading ? [] : apiResponse?.data ?? [])" :key="task.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ task.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="`/tasks/${task.id}`" class="text-red-600 hover:underline">{{ task.customer || '—' }}</RouterLink>
+                                <RouterLink :to="routeUrl('tasks.show', task.id)" class="text-red-600 hover:underline">{{ task.customer || '—' }}</RouterLink>
                                 <span class="block text-xs font-normal text-gray-400">{{ task.reference }}</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">{{ task.source }}</td>
@@ -162,7 +164,7 @@ const statusClass = (status) => ({
                 </table>
             </div>
 
-            <ApiPagination v-if="tasks" :paginator="tasks" class="mt-4" @page="fetchTasks" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchTasks" />
 
             <ConfirmDialog
                 :show="Boolean(taskToIgnore)"
@@ -183,8 +185,8 @@ const statusClass = (status) => ({
 
             <template #footer>
                 <div class="flex w-full items-center justify-between">
-                    <RouterLink to="/tasks/create" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">+ New task</RouterLink>
-                    <RouterLink to="/tasks/dashboard" class="inline-block rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Dashboard</RouterLink>
+                    <RouterLink :to="routeUrl('tasks.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">+ New task</RouterLink>
+                    <RouterLink :to="routeUrl('tasks.dashboard')" class="inline-block rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Dashboard</RouterLink>
                 </div>
             </template>
         </FullWidthBox>

@@ -3,7 +3,9 @@ import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money';
 import { customerTransactionPath } from '../../../helpers/customerTransactions.js';
+import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
@@ -12,8 +14,8 @@ const route = useRoute();
 const reconciliation = ref(null);
 
 async function load() {
-    const { data } = await api.get(`/customer-reconciliations/${route.params.id}`);
-    reconciliation.value = data.data ?? data;
+    const { data } = await api.get(`/customers/reconciliations/${route.params.id}`);
+    reconciliation.value = castResource(data);
 }
 onMounted(load);
 </script>
@@ -28,7 +30,7 @@ onMounted(load);
                     <div class="flex gap-2">
                         <dt class="w-32 shrink-0 font-medium text-gray-500">Customer</dt>
                         <dd>
-                            <RouterLink v-if="reconciliation.customer" :to="`/customers/${reconciliation.customer.id}`" class="text-red-600 hover:underline">{{ reconciliation.customer.name }}</RouterLink>
+                            <RouterLink v-if="reconciliation.customer" :to="routeUrl('customers.show', reconciliation.customer.id)" class="text-red-600 hover:underline">{{ reconciliation.customer.name }}</RouterLink>
                             <span v-else>—</span>
                         </dd>
                     </div>
@@ -38,7 +40,7 @@ onMounted(load);
                 </dl>
 
                 <template #footer>
-                    <RouterLink to="/customer-reconciliations" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to list</RouterLink>
+                    <RouterLink :to="routeUrl('customerReconciliations.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to list</RouterLink>
                 </template>
             </FullWidthBox>
 

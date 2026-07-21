@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -26,7 +28,7 @@ const processing = ref(false);
 onMounted(async () => {
     if (isEdit) {
         const { data } = await api.get(`/tax-types/${id}`);
-        const taxType = data.data ?? data;
+        const taxType = castResource(data);
         Object.assign(form, {
             name: taxType.name ?? '',
             for_sales: taxType.for_sales ?? false,
@@ -47,7 +49,7 @@ async function submit() {
 
     try {
         await (isEdit ? api.put(`/tax-types/${id}`, form) : api.post('/tax-types', form));
-        router.push('/tax-types');
+        router.push(routeUrl('taxTypes.list'));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -79,7 +81,7 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink to="/tax-types" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('taxTypes.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing">

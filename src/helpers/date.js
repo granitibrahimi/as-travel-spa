@@ -82,6 +82,22 @@ export function todayApiDate() {
     return `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()}`;
 }
 
+export function apiDaysAfter(days) {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+}
+
+export function apiDaysAgo(days) {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+}
+
+
+
 /**
  * Parse an API `d.m.Y` / `d.m.Y H:i:s` string into a local Date (for sorting,
  * comparisons, relative time). Returns null when the input is empty/invalid.

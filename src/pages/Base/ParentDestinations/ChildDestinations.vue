@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import InputText from '../../../components/Form/InputText.vue';
@@ -19,8 +21,8 @@ onMounted(async () => {
         api.get(`/parent-destinations/${id}`),
         api.get(`/parent-destinations/${id}/destinations`),
     ]);
-    parentDestination.value = parent.data.data ?? parent.data;
-    destinations.value = children.data.data ?? children.data;
+    parentDestination.value = castResource(parent.data);
+    destinations.value = castResource(children.data);
 });
 
 const filtered = computed(() => {
@@ -45,7 +47,7 @@ const filtered = computed(() => {
                 <div class="w-full md:max-w-sm">
                     <InputText v-model="q" label="Search" placeholder="Destination name…" />
                 </div>
-                <RouterLink to="/parent-destinations" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('parentDestinations.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     ← Parent destinations
                 </RouterLink>
             </div>

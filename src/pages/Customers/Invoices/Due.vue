@@ -4,6 +4,7 @@ import { useAuthStore } from '../../../stores/auth.js';
 import { useFormOptionsStore } from '../../../stores/formOptions.js';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -45,7 +46,7 @@ const filters = reactive({
     due_to: '',
 });
 
-const invoices = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 
 let request = null;
@@ -57,7 +58,7 @@ async function fetchDue(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/customer-invoices/due', {
+        const { data } = await api.get('/customers/invoices/due', {
             signal: controller.signal,
             params: {
                 q: filters.q || undefined,
@@ -69,7 +70,7 @@ async function fetchDue(page = 1) {
                 page,
             },
         });
-        invoices.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -117,7 +118,7 @@ async function saveContact() {
     contactErrors.value = {};
 
     try {
-        const { data } = await api.post(`/customer-invoices/${contactInvoice.value.id}/contact-log`, contactForm);
+        const { data } = await api.post(`/customers/invoices/${contactInvoice.value.id}/contact-log`, contactForm);
         // Reflect the new log immediately in the open panel.
         contactInvoice.value.contact_logs = [data, ...(contactInvoice.value.contact_logs ?? [])];
         contactForm.comment = '';
@@ -171,13 +172,13 @@ async function saveContact() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="loading || ! invoices">
+                            <tr v-if="loading || ! apiResponse">
                                 <td colspan="9" class="border border-gray-300 px-2 py-2"><Loader /></td>
                             </tr>
-                            <tr v-else-if="invoices.data.length === 0">
+                            <tr v-else-if="apiResponse.data.length === 0">
                                 <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No due invoices found.</td>
                             </tr>
-                            <tr v-for="invoice in (loading ? [] : invoices?.data ?? [])" :key="invoice.id" class="hover:bg-gray-50">
+                            <tr v-for="invoice in (loading ? [] : apiResponse?.data ?? [])" :key="invoice.id" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2 font-medium">
                                     <a v-if="invoice.show_url" :href="invoice.show_url" target="_blank" class="text-red-700 hover:underline">{{ invoice.gen_id }}</a>
                                     <span v-else>{{ invoice.gen_id }}</span>
@@ -209,7 +210,7 @@ async function saveContact() {
                     </table>
                 </div>
 
-                <ApiPagination v-if="invoices" :paginator="invoices" class="mt-4" @page="fetchDue" />
+                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchDue" />
             </FullWidthBox>
         </div>
 

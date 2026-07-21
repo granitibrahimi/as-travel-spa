@@ -2,7 +2,9 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money';
+import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
@@ -11,8 +13,8 @@ const route = useRoute();
 const creditNote = ref(null);
 
 async function load() {
-    const { data } = await api.get(`/customer-credit-notes/${route.params.id}`);
-    creditNote.value = data.data ?? data;
+    const { data } = await api.get(`/customers/credit-notes/${route.params.id}`);
+    creditNote.value = castResource(data);
 }
 onMounted(load);
 </script>
@@ -33,12 +35,12 @@ onMounted(load);
                     <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Debt</dt><dd class="tabular-nums">{{ money(creditNote.debt) }}</dd></div>
                     <div v-if="creditNote.related_invoice" class="flex gap-2">
                         <dt class="w-36 shrink-0 font-medium text-gray-500">Related invoice</dt>
-                        <dd><RouterLink :to="`/customer-invoices/${creditNote.related_invoice.id}`" class="text-red-600 hover:underline">{{ creditNote.related_invoice.gen_id }}</RouterLink></dd>
+                        <dd><RouterLink :to="routeUrl('customerInvoices.show', creditNote.related_invoice.id)" class="text-red-600 hover:underline">{{ creditNote.related_invoice.gen_id }}</RouterLink></dd>
                     </div>
                 </dl>
 
                 <template #footer>
-                    <RouterLink :to="`/customers/${creditNote.customer.id}`" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to customer</RouterLink>
+                    <RouterLink :to="routeUrl('customers.show', creditNote.customer.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to customer</RouterLink>
                 </template>
             </FullWidthBox>
 

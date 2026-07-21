@@ -1,13 +1,14 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import api from '../../helpers/api';
-import { useAuthStore } from '../../stores/auth';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import ConfirmDialog from '../../components/ConfirmDialog.vue';
-import DropdownMenu from '../../components/DropdownMenu.vue';
-import Loader from '../../components/Loader.vue';
+import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { useAuthStore } from '../../../stores/auth.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import DropdownMenu from '../../../components/DropdownMenu.vue';
+import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
@@ -46,7 +47,7 @@ async function confirmDelete() {
 }
 
 const rowActions = (holiday) => [
-    ...(auth.can('officialHolidays.edit') ? [{ label: 'Edit', href: `/official-holidays/${holiday.id}/edit` }] : []),
+    ...(auth.can('officialHolidays.edit') ? [{ label: 'Edit', href: routeUrl('officialHolidays.edit', holiday.id) }] : []),
     ...(auth.can('officialHolidays.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = holiday) }] : []),
 ];
 </script>
@@ -84,7 +85,7 @@ const rowActions = (holiday) => [
             </div>
 
             <template #footer>
-                <RouterLink v-if="auth.can('officialHolidays.create')" to="/official-holidays/create" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
+                <RouterLink v-if="auth.can('officialHolidays.create')" :to="routeUrl('officialHolidays.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
                     + Holiday
                 </RouterLink>
             </template>

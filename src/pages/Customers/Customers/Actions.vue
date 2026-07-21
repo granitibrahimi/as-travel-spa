@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth';
 import ActionsOverlay from '../../../components/ActionsOverlay.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
@@ -40,10 +41,10 @@ const groups = computed(() => {
 
     // "Create"
     const creates = [
-        { label: 'Pro Invoice', to: `/customers/${customer.id}/pro-invoices/create`, can: 'customerProInvoices.create' },
-        { label: 'Invoice', to: `/customers/${customer.id}/invoices/create`, can: 'customerInvoices.create' },
-        { label: 'Payment', to: `/customers/${customer.id}/payments/create`, can: 'customerPayments.create' },
-        { label: 'GiftCard', to: `/customers/${customer.id}/gift-cards/create`, can: 'customerGiftCards.create' },
+        { label: 'Pro Invoice', to: routeUrl('customerProInvoices.create', customer.id), can: 'customerProInvoices.create' },
+        { label: 'Invoice', to: routeUrl('customerInvoices.create', customer.id), can: 'customerInvoices.create' },
+        { label: 'Payment', to: routeUrl('customerPayments.create', customer.id), can: 'customerPayments.create' },
+        { label: 'GiftCard', to: routeUrl('customerGiftCards.create', customer.id), can: 'customerGiftCards.create' },
     ].filter((action) => auth.can(action.can));
 
     if (creates.length) {
@@ -52,11 +53,11 @@ const groups = computed(() => {
 
     // "Pages"
     const pages = [
-        ...(props.showViewAction ? [{ label: 'View', to: `/customers/${customer.id}`, can: 'customers.show' }] : []),
-        { label: 'Edit', to: `/customers/${customer.id}/edit`, can: 'customers.edit' },
-        { label: 'Statistics', to: `/customers/${customer.id}/statistics`, can: 'customers.invoices' },
-        { label: 'Statements', to: `/customers/${customer.id}/statements`, can: 'customers.statements' },
-        { label: 'Reconcile', to: `/customers/${customer.id}/reconcile`, can: 'customers.reconcile' },
+        ...(props.showViewAction ? [{ label: 'View', to: routeUrl('customers.show', customer.id), can: 'customers.show' }] : []),
+        { label: 'Edit', to: routeUrl('customers.edit', customer.id), can: 'customers.edit' },
+        { label: 'Statistics', to: routeUrl('customers.statistics', customer.id), can: 'customers.invoices' },
+        { label: 'Statements', to: routeUrl('customers.statements', customer.id), can: 'customers.statements' },
+        { label: 'Reconcile', to: routeUrl('customers.reconcile', customer.id), can: 'customers.reconcile' },
     ].filter((action) => auth.can(action.can));
 
     if (pages.length) {
@@ -99,7 +100,7 @@ async function confirmDelete() {
 
     try {
         const removed = toDelete.value;
-        await api.delete(`/customers/${removed.id}`);
+        await api.delete(`/customers/customers/${removed.id}`);
         toDelete.value = null;
         emit('deleted', removed);
         emit('close');

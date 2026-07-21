@@ -2,7 +2,9 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Alert from '../../../components/Alert.vue';
@@ -16,7 +18,7 @@ import Loader from '../../../components/Loader.vue';
 // to the api client's base (VITE_API_URL, e.g. https://csrm.test/api/v1).
 const auth = useAuthStore();
 
-const destinations = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const error = ref('');
@@ -35,7 +37,7 @@ async function fetchDestinations(page = 1) {
             params: { q: search.value || undefined, page },
         });
         // Resource collection envelope: rows in `data`, paginator in `meta`.
-        destinations.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (e) {
         if (e.code !== 'ERR_CANCELED') {
             throw e;
@@ -63,7 +65,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/destinations/${destinationToDelete.value.id}`);
         destinationToDelete.value = null;
-        await fetchDestinations(destinations.value?.current_page ?? 1);
+        await fetchDestinations(apiResponse.value?.pagination?.current_page ?? 1);
     } catch (e) {
         if (e.response?.status === 409) {
             error.value = e.response.data.message;
@@ -77,7 +79,7 @@ async function confirmDelete() {
 }
 
 const rowActions = (destination) => [
-    ...(auth.can('destinations.edit') ? [{ label: 'Edit', href: `/destinations/${destination.id}/edit` }] : []),
+    ...(auth.can('destinations.edit') ? [{ label: 'Edit', href: routeUrl('destinations.edit', destination.id) }] : []),
     ...(auth.can('destinations.delete') ? [{ label: 'Delete', danger: true, action: () => (destinationToDelete.value = destination) }] : []),
 ];
 </script>
@@ -94,8 +96,8 @@ const rowActions = (destination) => [
                     <Button type="button" @click="search = ''; fetchDestinations();">Clear</Button>
                 </form>
                 <div class="flex flex-wrap gap-2">
-                    <RouterLink v-if="auth.can('destinations.merge')" to="/destinations/merge" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-base hover:bg-gray-50">Merge</RouterLink>
-                    <RouterLink v-if="auth.can('destinations.parent')" to="/destinations/parent" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-base hover:bg-gray-50">Reassign parent</RouterLink>
+                    <RouterLink v-if="auth.can('destinations.merge')" :to="routeUrl('destinations.merge')" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-base hover:bg-gray-50">Merge</RouterLink>
+                    <RouterLink v-if="auth.can('destinations.parent')" :to="routeUrl('destinations.parent')" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-base hover:bg-gray-50">Reassign parent</RouterLink>
                 </div>
             </div>
 
@@ -111,13 +113,13 @@ const rowActions = (destination) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! destinations">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="5" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="destinations.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No destinations found.</td>
                         </tr>
-                        <tr v-for="destination in (loading ? [] : destinations?.data ?? [])" :key="destination.id" class="hover:bg-gray-50">
+                        <tr v-for="destination in (loading ? [] : apiResponse?.data ?? [])" :key="destination.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ destination.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ destination.name }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ destination.parent_destination?.name || '—' }}</td>
@@ -130,12 +132,12 @@ const rowActions = (destination) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="destinations" :paginator="destinations" class="mt-4" @page="fetchDestinations" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchDestinations" />
 
             <template #footer>
                 <RouterLink
                     v-if="auth.can('destinations.create')"
-                    to="/destinations/create"
+                    :to="routeUrl('destinations.create')"
                     class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
                 >
                     + Destination

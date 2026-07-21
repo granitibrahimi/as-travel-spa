@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castPaginated } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -12,7 +14,7 @@ import Loader from '../../../components/Loader.vue';
 
 // All data comes from the platform JSON API (bearer token). Paths are relative
 // to the api client's base (VITE_API_URL, e.g. https://csrm.test/api/v1).
-const suppliers = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 
@@ -33,7 +35,7 @@ async function fetchSuppliers(page = 1) {
             params: { q: search.value || undefined, page },
         });
         // Resource collection envelope: rows in `data`, paginator in `meta`.
-        suppliers.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -50,7 +52,7 @@ onMounted(() => fetchSuppliers());
 // After a delete from the actions overlay, refresh the current page.
 function onSupplierDeleted() {
     selected.value = null;
-    fetchSuppliers(suppliers.value?.current_page ?? 1);
+    fetchSuppliers(apiResponse.value?.pagination?.current_page ?? 1);
 }
 </script>
 
@@ -78,19 +80,19 @@ function onSupplierDeleted() {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! suppliers">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="6" class="border border-gray-300 px-2 py-2">
                                 <Loader />
                             </td>
                         </tr>
-                        <tr v-else-if="suppliers.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No suppliers found.</td>
                         </tr>
-                        <tr v-for="supplier in (loading ? [] : suppliers?.data ?? [])" :key="supplier.id" class="hover:bg-gray-50">
+                        <tr v-for="supplier in (loading ? [] : apiResponse?.data ?? [])" :key="supplier.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ supplier.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ supplier.unique_id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="`/suppliers/${supplier.id}`" class="hover:text-red-700 hover:underline">{{ supplier.name }}</RouterLink>
+                                <RouterLink :to="routeUrl('suppliers.show', supplier.id)" class="hover:text-red-700 hover:underline">{{ supplier.name }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ supplier.email ?? '-' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ supplier.phone ?? '-' }}</td>
@@ -113,11 +115,11 @@ function onSupplierDeleted() {
                 </table>
             </div>
 
-            <ApiPagination v-if="suppliers" :paginator="suppliers" class="mt-4" @page="fetchSuppliers" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchSuppliers" />
 
             <template #footer>
                 <RouterLink
-                    to="/suppliers/create"
+                    :to="routeUrl('suppliers.create')"
                     class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
                 >
                     + Supplier

@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../helpers/money';
 import api from '../../helpers/api';
+import { routeUrl } from '../../helpers/route.js';
+import { castResource } from '../../types/responses.js';
 import { useAuthStore } from '../../stores/auth';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
@@ -26,7 +28,7 @@ const detailed = ref(false);
 
 onMounted(async () => {
     const { data } = await api.get(`/static-offers/${id}`);
-    const payload = data.data ?? data;
+    const payload = castResource(data);
     offer.value = payload.offer;
     destinations.value = payload.destinations ?? [];
     common.value = payload.common ?? { lines: [], total: 0 };
@@ -160,10 +162,10 @@ const combinedTotal = computed(() => {
                 </FullWidthBox>
 
                 <div class="flex justify-end gap-2">
-                    <RouterLink v-if="auth.can('staticOffers.create')" :to="`/offers/${offer.id}/edit`" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                    <RouterLink v-if="auth.can('staticOffers.create')" :to="routeUrl('staticOffers.edit', offer.id)" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                         Edit
                     </RouterLink>
-                    <RouterLink to="/offers" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">Back to offers</RouterLink>
+                    <RouterLink :to="routeUrl('staticOffers.list')" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">Back to offers</RouterLink>
                 </div>
             </div>
 

@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -13,7 +15,7 @@ const auth = useAuthStore();
 const route = useRoute();
 const userId = route.query.user;
 
-const requests = ref(null);
+const apiResponse = ref(null);
 const user = ref(null);
 const loading = ref(false);
 const recalculating = ref(false);
@@ -29,8 +31,9 @@ async function fetchRequests(page = 1) {
 
     try {
         const { data } = await api.get(`/vacations/requests/${userId}`, { params: { page } });
-        requests.value = { data: data.data, ...data.pagination };
-        user.value = data.user;
+        const pageResult = castPaginated(data);
+        apiResponse.value = pageResult;
+        user.value = pageResult.extra.user;
     } finally {
         loading.value = false;
     }
@@ -47,7 +50,7 @@ async function recalculate() {
 
     try {
         await api.post(`/vacations/${userId}/recalculate`);
-        await fetchRequests(requests.value?.current_page ?? 1);
+        await fetchRequests(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         recalculating.value = false;
     }
@@ -71,13 +74,13 @@ async function recalculate() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="loading || ! requests">
+                            <tr v-if="loading || ! apiResponse">
                                 <td colspan="6" class="border border-gray-300 px-2 py-2"><Loader /></td>
                             </tr>
-                            <tr v-else-if="requests.data.length === 0">
+                            <tr v-else-if="apiResponse.data.length === 0">
                                 <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No requests.</td>
                             </tr>
-                            <tr v-for="request in (loading ? [] : requests?.data ?? [])" :key="request.id" class="hover:bg-gray-50">
+                            <tr v-for="request in (loading ? [] : apiResponse?.data ?? [])" :key="request.id" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2">{{ request.type_label }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ request.from }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ request.to }}</td>
@@ -86,14 +89,14 @@ async function recalculate() {
                                     <span class="rounded px-2 py-0.5 text-xs font-medium" :class="statusClass(request.status_label)">{{ request.status_label }}</span>
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">
-                                    <RouterLink v-if="auth.can('vacations.showRequest')" :to="`/vacations/${request.id}`" class="text-red-700 hover:underline">Open</RouterLink>
+                                    <RouterLink v-if="auth.can('vacations.showRequest')" :to="routeUrl('vacations.show', request.id)" class="text-red-700 hover:underline">Open</RouterLink>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <ApiPagination v-if="requests" :paginator="requests" class="mt-4" @page="fetchRequests" />
+                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchRequests" />
 
                 <template #footer>
                     <Button v-if="auth.can('vacations.reCalculate')" :disabled="recalculating" @click="recalculate">

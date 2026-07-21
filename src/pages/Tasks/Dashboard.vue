@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../helpers/api';
+import { routeUrl } from '../../helpers/route.js';
+import { castResource } from '../../types/responses.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import ConfirmDialog from '../../components/ConfirmDialog.vue';
 import DropdownMenu from '../../components/DropdownMenu.vue';
@@ -18,7 +20,7 @@ async function fetchDashboard() {
         const { data } = await api.get('/tasks/dashboard', {
             params: { in_time: inTime.value || undefined },
         });
-        columns.value = data.columns ?? [];
+        columns.value = castResource(data).columns ?? [];
     } finally {
         loading.value = false;
     }
@@ -82,7 +84,7 @@ function persist(column) {
 }
 
 const cardActions = (task) => [
-    { label: 'View', href: `/tasks/${task.id}` },
+    { label: 'View', href: routeUrl('tasks.show', task.id) },
     { label: 'Ignore', danger: true, action: () => openIgnore(task) },
 ];
 
@@ -139,8 +141,8 @@ async function confirmIgnore() {
             </div>
 
             <div class="flex gap-2">
-                <RouterLink to="/tasks/create" class="inline-block rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">+ New task</RouterLink>
-                <RouterLink to="/tasks" class="inline-block rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">List view</RouterLink>
+                <RouterLink :to="routeUrl('tasks.create')" class="inline-block rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">+ New task</RouterLink>
+                <RouterLink :to="routeUrl('tasks.list')" class="inline-block rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">List view</RouterLink>
             </div>
         </div>
 
@@ -174,7 +176,7 @@ async function confirmIgnore() {
                         @drop.prevent.stop="onDropOnCard(column.status, task.id)"
                     >
                         <div class="flex items-start justify-between gap-2">
-                            <RouterLink :to="`/tasks/${task.id}`" class="font-medium text-gray-900 hover:text-red-600">#{{ task.id }} · {{ task.customer || '—' }}</RouterLink>
+                            <RouterLink :to="routeUrl('tasks.show', task.id)" class="font-medium text-gray-900 hover:text-red-600">#{{ task.id }} · {{ task.customer || '—' }}</RouterLink>
                             <div class="flex items-center gap-1">
                                 <span class="select-none text-gray-300" title="Drag to reorder">⠿</span>
                                 <DropdownMenu :items="cardActions(task)" />

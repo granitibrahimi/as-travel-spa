@@ -1,7 +1,9 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Alert from '../../../components/Alert.vue';
@@ -14,7 +16,7 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const countries = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const error = ref('');
@@ -24,7 +26,7 @@ async function fetchCountries(page = 1) {
 
     try {
         const { data } = await api.get('/countries', { params: { q: search.value || undefined, page } });
-        countries.value = { data: data.data.items, ...data.data.pagination };
+        apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
     }
@@ -63,7 +65,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/countries/${countryToDelete.value.id}`);
         countryToDelete.value = null;
-        await fetchCountries(countries.value?.current_page ?? 1);
+        await fetchCountries(apiResponse.value?.pagination?.current_page ?? 1);
     } catch (e) {
         if (e.response?.status === 409) {
             error.value = e.response.data.message;
@@ -77,7 +79,7 @@ async function confirmDelete() {
 }
 
 const rowActions = (country) => [
-    ...(auth.can('countries.edit') ? [{ label: 'Edit', href: `/countries/${country.id}/edit` }] : []),
+    ...(auth.can('countries.edit') ? [{ label: 'Edit', href: routeUrl('countries.edit', country.id) }] : []),
     ...(auth.can('countries.delete') ? [{ label: 'Delete', danger: true, action: () => (countryToDelete.value = country) }] : []),
 ];
 </script>
@@ -108,13 +110,13 @@ const rowActions = (country) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! countries">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="countries.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No countries found.</td>
                         </tr>
-                        <tr v-for="country in (loading ? [] : countries?.data ?? [])" :key="country.id" class="hover:bg-gray-50">
+                        <tr v-for="country in (loading ? [] : apiResponse?.data ?? [])" :key="country.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ country.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ country.name }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ country.nationality }}</td>
@@ -136,7 +138,7 @@ const rowActions = (country) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="countries" :paginator="countries" class="mt-4" @page="fetchCountries" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchCountries" />
         </FullWidthBox>
 
         <ConfirmDialog

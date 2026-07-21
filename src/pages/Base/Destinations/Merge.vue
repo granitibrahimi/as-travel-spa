@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Alert from '../../../components/Alert.vue';
@@ -17,7 +19,7 @@ const router = useRouter();
 const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
 const targetsUrl = `${apiOrigin}/api/customers/child-destinations`;
 
-const destinations = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const target = ref(null);
@@ -38,7 +40,7 @@ async function fetchDestinations(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, per_page: 50, page },
         });
-        destinations.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (e) {
         if (e.code !== 'ERR_CANCELED') {
             throw e;
@@ -83,7 +85,7 @@ async function submit() {
             parent: target.value,
             child: [...selected.value],
         });
-        router.push('/destinations');
+        router.push(routeUrl('destinations.list'));
     } catch (e) {
         error.value = e.response?.data?.message ?? 'Merge failed.';
     } finally {
@@ -128,13 +130,13 @@ async function submit() {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! destinations">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="5" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="destinations.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No destinations found.</td>
                         </tr>
-                        <tr v-for="destination in (loading ? [] : destinations?.data ?? [])" :key="destination.id" class="hover:bg-gray-50">
+                        <tr v-for="destination in (loading ? [] : apiResponse?.data ?? [])" :key="destination.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <input type="checkbox" :checked="selected.has(destination.id)" @change="toggle(destination.id)">
                             </td>
@@ -147,12 +149,12 @@ async function submit() {
                 </table>
             </div>
 
-            <ApiPagination v-if="destinations" :paginator="destinations" class="mt-4" @page="fetchDestinations" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchDestinations" />
 
             <template #footer>
                 <div class="flex items-center gap-3">
                     <span class="text-sm text-gray-500">{{ selected.size }} selected</span>
-                    <RouterLink to="/destinations" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-base hover:bg-gray-50">Cancel</RouterLink>
+                    <RouterLink :to="routeUrl('destinations.list')" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-base hover:bg-gray-50">Cancel</RouterLink>
                     <Button variant="primary" :disabled="processing" @click="submit">
                         {{ processing ? 'Merging…' : 'Merge selected' }}
                     </Button>

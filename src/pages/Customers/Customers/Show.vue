@@ -3,18 +3,19 @@ import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {RouterLink, useRoute, useRouter} from 'vue-router';
 import {money} from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Select from '../../../components/Form/Select.vue';
-import InputText from '../../../components/Form/InputText.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
 import CustomerActions from './Actions.vue';
 import Loader from '../../../components/Loader.vue';
 import {useAuthStore} from '../../../stores/auth.js';
-import {useFormOptionsStore, TRANSACTION_STATUS_OPTIONS} from '../../../stores/formOptions.js';
+import {useFormOptionsStore, toOptions} from '../../../stores/formOptions.js';
 import {customerTransactionPath} from '../../../helpers/customerTransactions.js';
+import {routeUrl} from '../../../helpers/route.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -32,11 +33,11 @@ const title = computed(() => customer.value?.full_name ?? '');
 const canViewTransactions = computed(() => auth.canAny(['customerTransactions.all', 'customerTransactions.own']));
 
 async function fetchSummary() {
-    const {data} = await api.get(`/customers/${id}/summary`);
+    const {data} = await api.get(`/customers/customers/${id}/summary`);
     stats.value = data.data;
 }
 
-const statusOptions = TRANSACTION_STATUS_OPTIONS;
+const statusOptions = computed(() => toOptions(formOptions.transactionStatusOptions));
 
 const filters = reactive({from: '', to: '', status: 'open', entities: []});
 
@@ -70,7 +71,7 @@ async function fetchTransactions(page = 1) {
     loadingTransactions.value = true;
 
     try {
-        const {data} = await api.get(`/customers/${id}/transactions`, {
+        const {data} = await api.get(`/customers/customers/${id}/transactions`, {
             signal: controller.signal,
             params: {
                 from: filters.from || undefined,
@@ -80,8 +81,11 @@ async function fetchTransactions(page = 1) {
                 page,
             },
         });
-        transactions.value = {data: data.data, ...data.pagination};
-        totalAmount.value = data.total_amount;
+        const pageResult = castPaginated(data);
+        transactions.value = pageResult;
+
+        console.log(transactions);
+        totalAmount.value = pageResult.extra.total_amount;
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -94,7 +98,7 @@ async function fetchTransactions(page = 1) {
 }
 
 onMounted(async () => {
-    const {data} = await api.get(`/customers/${id}?transaction_filters=true`);
+    const {data} = await api.get(`/customers/customers/${id}?transaction_filters=true`);
     customer.value = data.data;
 
     filters.from = customer.value.transaction_filters.from;
@@ -121,11 +125,11 @@ watch(filters, () => {
             <FullWidthBox :title="title ? `Customer: ${title}` : 'Customer'" :collapsible="false">
                 <template #actions>
                     <div class="flex items-center gap-2">
-                        <RouterLink :to="`/customers`" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to Customers</RouterLink>
+                        <RouterLink :to="routeUrl('customers.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to Customers</RouterLink>
 
                         <RouterLink
                             v-if="customer && auth.can('customerInvoices.create')"
-                            :to="`/customers/${customer.id}/invoices/create`"
+                            :to="routeUrl('customerInvoices.create', customer.id)"
                             class="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
                         >
                             + Invoice
@@ -194,7 +198,7 @@ watch(filters, () => {
                 </div>
 
                 <template #footer>
-                    <RouterLink to="/customers"
+                    <RouterLink :to="routeUrl('customers.list')"
                                 class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                         Back to list
                     </RouterLink>
@@ -206,7 +210,7 @@ watch(filters, () => {
                 :show="actionsOpen"
                 :show-view-action="false"
                 @close="actionsOpen = false"
-                @deleted="router.push('/customers')"
+                @deleted="router.push(routeUrl('customers.list'))"
             />
 
             <FullWidthBox v-if="canViewTransactions" title="List of all transactions" :collapsible="false">
@@ -280,7 +284,7 @@ watch(filters, () => {
                                 <td colspan="3" class="border border-gray-300 px-2 py-2 text-right">TOTAL</td>
                                 <td class="border border-gray-300 px-2 py-2"/>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
-                                    {{ money(totalAmount) }}
+                                    {{ money(transactions.extra.total_amount) }}
                                 </td>
                                 <td colspan="2" class="border border-gray-300 px-2 py-2"/>
                             </tr>
@@ -289,7 +293,7 @@ watch(filters, () => {
                     </table>
                 </div>
 
-                <ApiPagination v-if="transactions" :paginator="transactions" class="mt-4" @page="fetchTransactions"/>
+                <ApiPagination v-if="transactions" :paginator="transactions.pagination" class="mt-4" @page="fetchTransactions"/>
             </FullWidthBox>
         </div>
     </AppLayout>

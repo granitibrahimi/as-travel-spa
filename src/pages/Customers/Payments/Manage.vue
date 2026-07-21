@@ -3,6 +3,8 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { todayApiDate } from '../../../helpers/date';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
+import { castResource, castMutation } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -18,8 +20,8 @@ import {usePaymentMethodsRepository} from "../../../repositories/paymentMethods.
 
 // Create + edit a customer payment. Mirrors the platform payments/create blade
 // and Suppliers/Payments/Manage.vue. Create is nested under a customer
-// (route param) and POSTs the flat /customer-payments endpoint with customer_id
-// in the body; edit PUTs /customer-payments/{id}.
+// (route param) and POSTs the flat /customers/payments endpoint with customer_id
+// in the body; edit PUTs /customers/payments/{id}.
 const route = useRoute();
 const router = useRouter();
 
@@ -48,8 +50,8 @@ const canEditAmount = ref(true);
 
 onMounted(async () => {
     if (isEdit) {
-        const { data } = await api.get(`/customer-payments/${paymentId}`);
-        const payment = data.data ?? data;
+        const { data } = await api.get(`/customers/payments/${paymentId}`);
+        const payment = castResource(data);
         customer.value = payment.customer ?? null;
         Object.assign(form, {
             payment_method_id: payment.payment_method_id,
@@ -62,7 +64,7 @@ onMounted(async () => {
         // Amount/method are locked once any of the payment is used.
         canEditAmount.value = payment.amount === payment.open_amount;
     } else {
-        const { data } = await api.get(`/customers/${customerId}`);
+        const { data } = await api.get(`/customers/customers/${customerId}`);
         // This endpoint returns a raw resource wrapper ({ resource, with, ... }),
         // not the standard { data } envelope — unwrap defensively.
         customer.value = data.data ?? data.resource ?? data;
@@ -83,11 +85,11 @@ async function submit() {
 
     try {
         if (isEdit) {
-            await api.put(`/customer-payments/${paymentId}`, payload);
-            router.push(`/customer-payments/${paymentId}`);
+            await api.put(`/customers/payments/${paymentId}`, payload);
+            router.push(routeUrl('customerPayments.show', paymentId));
         } else {
-            const { data } = await api.post('/customer-payments', { ...payload, customer_id: customerId });
-            router.push(`/customer-payments/${data.id ?? (data.data ?? data)?.id}`);
+            const { data } = await api.post('/customers/payments', { ...payload, customer_id: customerId });
+            router.push(routeUrl('customerPayments.show', castMutation(data).id));
         }
     } catch (error) {
         if (error.response?.status === 422) {
@@ -102,7 +104,7 @@ async function submit() {
     }
 }
 
-const cancelTo = isEdit ? `/customer-payments/${paymentId}` : `/customers/${customerId}`;
+const cancelTo = isEdit ? routeUrl('customerPayments.show', paymentId) : routeUrl('customers.show', customerId);
 </script>
 
 <template>

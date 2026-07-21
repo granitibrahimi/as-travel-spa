@@ -2,7 +2,9 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -13,7 +15,7 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const products = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const toDelete = ref(null);
@@ -33,7 +35,7 @@ async function fetchProducts(page = 1) {
             params: { q: search.value || undefined, page },
         });
         // Resource collection envelope: rows in `data`, paginator in `meta`.
-        products.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -57,14 +59,14 @@ async function confirmDelete() {
     try {
         await api.delete(`/products/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchProducts(products.value?.current_page ?? 1);
+        await fetchProducts(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         deleting.value = false;
     }
 }
 
 const rowActions = (product) => [
-    ...(auth.can('products.edit') ? [{ label: 'Edit', href: `/products/${product.id}/edit` }] : []),
+    ...(auth.can('products.edit') ? [{ label: 'Edit', href: routeUrl('products.edit', product.id) }] : []),
     ...(auth.can('products.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = product) }] : []),
 ];
 </script>
@@ -89,13 +91,13 @@ const rowActions = (product) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! products">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="4" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="products.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="4" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No products found.</td>
                         </tr>
-                        <tr v-for="product in (loading ? [] : products?.data ?? [])" :key="product.id" class="hover:bg-gray-50">
+                        <tr v-for="product in (loading ? [] : apiResponse?.data ?? [])" :key="product.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ product.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ product.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">{{ product.orders_count }}</td>
@@ -107,12 +109,12 @@ const rowActions = (product) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="products" :paginator="products" class="mt-4" @page="fetchProducts" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchProducts" />
 
             <template #footer>
                 <RouterLink
                     v-if="auth.can('products.create')"
-                    to="/products/create"
+                    :to="routeUrl('products.create')"
                     class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
                 >
                     + Product

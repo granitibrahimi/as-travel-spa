@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -15,8 +17,8 @@ const user = ref(null);
 const title = computed(() => user.value?.name ?? `User #${id}`);
 
 onMounted(async () => {
-    const { data } = await api.get(`/users/${id}`);
-    user.value = data.data ?? data;
+    const { data } = await api.get(`/users/users/${id}`);
+    user.value = castResource(data);
 });
 </script>
 
@@ -81,10 +83,10 @@ onMounted(async () => {
 
             <template #footer>
                 <div class="flex items-center gap-2">
-                    <RouterLink to="/users" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                    <RouterLink :to="routeUrl('users.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                         Back to list
                     </RouterLink>
-                    <RouterLink v-if="user && auth.can('users.edit')" :to="`/users/${user.id}/edit`" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
+                    <RouterLink v-if="user && auth.can('users.edit')" :to="routeUrl('users.edit', user.id)" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
                         Edit
                     </RouterLink>
                 </div>

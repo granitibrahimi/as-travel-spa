@@ -4,6 +4,8 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import { supplierTransactionPath } from '../../../helpers/supplierTransactions.js';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -65,8 +67,9 @@ async function fetchTransactions(page = 1) {
                 page,
             },
         });
-        transactions.value = { data: data.data, ...data.pagination };
-        totalAmount.value = data.total_amount;
+        const pageResult = castPaginated(data);
+        transactions.value = pageResult;
+        totalAmount.value = pageResult.extra.total_amount;
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -109,7 +112,7 @@ async function deleteSupplier() {
 
     try {
         await api.delete(`/suppliers/${id}`);
-        router.push('/suppliers');
+        router.push(routeUrl('suppliers.list'));
     } finally {
         deleting.value = false;
         confirmingDelete.value = false;
@@ -136,7 +139,7 @@ const details = (record) => [
                     <div class="flex items-center gap-2">
                     <RouterLink
                         v-if="supplier && auth.can('suppliers.reconcile')"
-                        :to="`/suppliers/${id}/reconcile`"
+                        :to="routeUrl('suppliers.reconcile', id)"
                         class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
                     >
                         Reconcile
@@ -210,12 +213,12 @@ const details = (record) => [
 
                 <template #footer>
                     <div class="flex flex-wrap items-center gap-3">
-                        <RouterLink to="/suppliers" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                        <RouterLink :to="routeUrl('suppliers.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                             Back to list
                         </RouterLink>
                         <RouterLink
                             v-if="supplier && auth.can('suppliers.edit')"
-                            :to="`/suppliers/${id}/edit`"
+                            :to="routeUrl('suppliers.edit', id)"
                             class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
                         >
                             Edit
@@ -237,7 +240,7 @@ const details = (record) => [
                 :show="actionsOpen"
                 :show-view-action="false"
                 @close="actionsOpen = false"
-                @deleted="router.push('/suppliers')"
+                @deleted="router.push(routeUrl('suppliers.list'))"
             />
 
             <ConfirmDialog
@@ -312,7 +315,7 @@ const details = (record) => [
                     </table>
                 </div>
 
-                <ApiPagination v-if="transactions" :paginator="transactions" class="mt-4" @page="fetchTransactions" />
+                <ApiPagination v-if="transactions" :paginator="transactions.pagination" class="mt-4" @page="fetchTransactions" />
             </FullWidthBox>
         </div>
     </AppLayout>

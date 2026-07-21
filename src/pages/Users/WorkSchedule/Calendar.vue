@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -32,9 +33,9 @@ function toggleFilter(color) {
 }
 
 onMounted(async () => {
-    const { data } = await api.get('/work-schedule');
-    events.value = data.events ?? [];
-    shifts.value = data.shifts ?? [];
+    const { data } = await api.get('/users/work-schedule');
+    events.value = castResource(data).events ?? [];
+    shifts.value = castResource(data).shifts ?? [];
     ready.value = true;
 });
 

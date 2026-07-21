@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -37,7 +39,7 @@ const actions = computed(() => {
 
 onMounted(async () => {
     const { data } = await api.get(`/z-reports/${id}`);
-    report.value = data.data ?? data;
+    report.value = castResource(data);
 });
 
 async function confirmDelete() {
@@ -49,7 +51,7 @@ async function confirmDelete() {
 
     try {
         await api.delete(`/z-reports/${id}`);
-        router.push('/z-reports');
+        router.push(routeUrl('zReports.list'));
     } finally {
         deleting.value = false;
         showDelete.value = false;
@@ -63,7 +65,7 @@ async function confirmDelete() {
             <template #actions>
                 <ShowActions
                     :items="report ? actions : []"
-                    back-to="/z-reports"
+                    :back-to="routeUrl('zReports.list')"
                     back-label="Z-Reports"
                     :title="`Z-Report ${title}`"
                 />

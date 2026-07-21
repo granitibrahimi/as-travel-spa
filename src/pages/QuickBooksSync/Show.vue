@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../helpers/api';
+import { routeUrl } from '../../helpers/route.js';
+import { castResource } from '../../types/responses.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
@@ -24,7 +26,7 @@ async function load() {
         api.get(`/quickbooks-sync/${id}`),
         api.get('/quickbooks-sync/options'),
     ]);
-    row.value = detail.data ?? detail;
+    row.value = castResource(detail);
     statuses.value = options.statuses;
     form.status = row.value.status_value;
     form.qb_id = row.value.qb_id ?? '';
@@ -37,7 +39,7 @@ async function retry() {
 
     try {
         const { data } = await api.post(`/quickbooks-sync/${id}/retry`);
-        row.value = data.data ?? data;
+        row.value = castResource(data);
         form.status = row.value.status_value;
         form.qb_id = row.value.qb_id ?? '';
     } finally {
@@ -58,7 +60,7 @@ async function saveStatus() {
             status: form.status,
             qb_id: form.qb_id === '' ? null : form.qb_id,
         });
-        row.value = data.data ?? data;
+        row.value = castResource(data);
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = error.response.data.errors ?? {};
@@ -103,7 +105,7 @@ async function saveStatus() {
                     <template #footer>
                         <div class="flex items-center gap-2">
                             <Button type="button" variant="primary" :disabled="retrying" @click="retry">{{ retrying ? 'Retrying…' : 'Retry sync' }}</Button>
-                            <RouterLink to="/quickbooks-sync" class="rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Back to list</RouterLink>
+                            <RouterLink :to="routeUrl('quickBooksSync.list')" class="rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Back to list</RouterLink>
                         </div>
                     </template>
                 </FullWidthBox>

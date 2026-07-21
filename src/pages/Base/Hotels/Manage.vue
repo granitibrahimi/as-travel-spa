@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
@@ -36,7 +38,7 @@ const processing = ref(false);
 onMounted(async () => {
     if (isEdit) {
         const { data } = await api.get(`/hotels/${id}`);
-        const hotel = data.data ?? data;
+        const hotel = castResource(data);
         Object.assign(form, {
             title: hotel.title ?? '',
             parent_destination_id: hotel.parent_destination_id ?? null,
@@ -70,7 +72,7 @@ async function submit() {
 
     try {
         await (isEdit ? api.put(`/hotels/${id}`, form) : api.post('/hotels', form));
-        router.push('/hotels');
+        router.push(routeUrl('hotels.list'));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -167,7 +169,7 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink to="/hotels" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('hotels.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
                 <button

@@ -1,13 +1,15 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import api from '../../helpers/api';
-import AppLayout from '../../layouts/AppLayout.vue';
-import FullWidthBox from '../../components/FullWidthBox.vue';
-import Button from '../../components/Button.vue';
-import InputText from '../../components/Form/InputText.vue';
-import DateInput from '../../components/Form/DateInput.vue';
-import Textarea from '../../components/Form/Textarea.vue';
+import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource } from '../../../types/responses.js';
+import AppLayout from '../../../layouts/AppLayout.vue';
+import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Button from '../../../components/Button.vue';
+import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
+import Textarea from '../../../components/Form/Textarea.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -27,7 +29,7 @@ const processing = ref(false);
 onMounted(async () => {
     if (isEdit) {
         const { data } = await api.get(`/official-holidays/${id}`);
-        const holiday = data.data ?? data;
+        const holiday = castResource(data);
         Object.assign(form, {
             name: holiday.name ?? '',
             holiday_date: holiday.holiday_date ?? '',
@@ -48,7 +50,7 @@ async function submit() {
 
     try {
         await (isEdit ? api.put(`/official-holidays/${id}`, payload) : api.post('/official-holidays', payload));
-        router.push('/official-holidays');
+        router.push(routeUrl('officialHolidays.list'));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -75,7 +77,7 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink to="/official-holidays" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('officialHolidays.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing">

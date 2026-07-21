@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -23,7 +25,7 @@ const title = computed(() => (transfer.value ? `Transfer ${transfer.value.gen_id
 
 onMounted(async () => {
     const { data } = await api.get(`/account-transfers/${id}`);
-    transfer.value = data.data ?? data;
+    transfer.value = castResource(data);
 });
 
 async function confirmDelete() {
@@ -35,7 +37,7 @@ async function confirmDelete() {
 
     try {
         await api.delete(`/account-transfers/${id}`);
-        router.push('/account-transfers');
+        router.push(routeUrl('accountTransfers.list'));
     } finally {
         deleting.value = false;
     }
@@ -50,7 +52,7 @@ async function confirmDelete() {
                 <div class="mb-4 flex flex-wrap gap-2">
                     <RouterLink
                         v-if="auth.can('accountTransfers.edit') && transfer.editable"
-                        :to="`/account-transfers/${transfer.id}/edit`"
+                        :to="routeUrl('accountTransfers.edit', transfer.id)"
                         class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
                     >
                         Edit
@@ -91,7 +93,7 @@ async function confirmDelete() {
             </template>
 
             <template #footer>
-                <RouterLink to="/account-transfers" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('accountTransfers.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                     Back to transfers
                 </RouterLink>
             </template>

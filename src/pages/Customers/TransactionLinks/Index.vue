@@ -3,7 +3,9 @@ import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money';
 import { customerTransactionPath } from '../../../helpers/customerTransactions.js';
+import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api';
+import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -14,7 +16,7 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const links = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 
@@ -22,8 +24,8 @@ async function fetchLinks(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/customer-transaction-links', { params: { q: search.value || undefined, page } });
-        links.value = { data: data.data, ...data.pagination };
+        const { data } = await api.get('/customers/transaction-links', { params: { q: search.value || undefined, page } });
+        apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
     }
@@ -36,8 +38,8 @@ const unlinking = ref(false);
 
 function parentPath(link) {
     return link.is_reconciliation
-        ? `/customer-reconciliations/${link.reconciliation_id}`
-        : `/customer-payments/${link.payment_id}`;
+        ? routeUrl('customerReconciliations.show', link.reconciliation_id)
+        : routeUrl('customerPayments.show', link.payment_id);
 }
 
 function unlinkMessage(link) {
@@ -61,9 +63,9 @@ async function confirmUnlink() {
     unlinking.value = true;
 
     try {
-        await api.delete(`/customer-transaction-links/${toUnlink.value.id}`);
+        await api.delete(`/customers/transaction-links/${toUnlink.value.id}`);
         toUnlink.value = null;
-        await fetchLinks(links.value?.current_page ?? 1);
+        await fetchLinks(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         unlinking.value = false;
     }
@@ -101,13 +103,13 @@ const rowActions = (link) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! links">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="9" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="links.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No linked transactions found.</td>
                         </tr>
-                        <tr v-for="link in (loading ? [] : links?.data ?? [])" :key="link.id" class="hover:bg-gray-50">
+                        <tr v-for="link in (loading ? [] : apiResponse?.data ?? [])" :key="link.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ link.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ link.type }}</td>
                             <td class="border border-gray-300 px-2 py-2">
@@ -119,7 +121,7 @@ const rowActions = (link) => [
                                 <span v-else>{{ link.reference }}</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">
-                                <RouterLink v-if="link.customer" :to="`/customers/${link.customer.id}`" class="text-red-600 hover:underline">{{ link.customer.id }} # {{ link.customer.name }}</RouterLink>
+                                <RouterLink v-if="link.customer" :to="routeUrl('customers.show', link.customer.id)" class="text-red-600 hover:underline">{{ link.customer.id }} # {{ link.customer.name }}</RouterLink>
                                 <span v-else>—</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">
@@ -136,7 +138,7 @@ const rowActions = (link) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="links" :paginator="links" class="mt-4" @page="fetchLinks" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchLinks" />
         </FullWidthBox>
 
         <ConfirmDialog

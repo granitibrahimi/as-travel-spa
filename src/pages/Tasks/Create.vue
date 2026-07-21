@@ -2,6 +2,8 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../helpers/api';
+import { routeUrl } from '../../helpers/route.js';
+import { castMutation } from '../../types/responses.js';
 import { useFormOptionsStore, toOptions } from '../../stores/formOptions.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
@@ -96,7 +98,7 @@ async function submit() {
 
     try {
         const { data } = await api.post('/tasks', payload);
-        router.push(`/tasks/${data.id}`);
+        router.push(routeUrl('tasks.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -189,7 +191,7 @@ async function submit() {
             </FullWidthBox>
 
             <div class="flex justify-end gap-3">
-                <RouterLink to="/tasks" class="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Cancel</RouterLink>
+                <RouterLink :to="routeUrl('tasks.list')" class="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Cancel</RouterLink>
                 <button
                     type="submit"
                     :disabled="processing"

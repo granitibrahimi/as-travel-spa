@@ -4,6 +4,8 @@ import { RouterLink } from 'vue-router';
 import { useAuthStore } from '../../../stores/auth.js';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -19,7 +21,7 @@ const auth = useAuthStore();
 // Agent lookup is relative to the api client's /api/v1 base.
 const agentsUrl = 'users/autosuggest';
 
-const invoices = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 
 // Date inputs speak Y-m-d; the API expects d.m.Y (see helpers/date.js).
@@ -39,7 +41,7 @@ async function fetchInvoices(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/customer-invoices', {
+        const { data } = await api.get('/customers/invoices', {
             signal: controller.signal,
             params: {
                 q: filters.q || undefined,
@@ -49,7 +51,7 @@ async function fetchInvoices(page = 1) {
                 page,
             },
         });
-        invoices.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -57,6 +59,8 @@ async function fetchInvoices(page = 1) {
     } finally {
         if (request === controller) {
             loading.value = false;
+
+            console.log(apiResponse);
         }
     }
 }
@@ -77,7 +81,7 @@ const selected = ref(null);
 // After a delete from the actions overlay, refresh the current page.
 function onInvoiceDeleted() {
     selected.value = null;
-    fetchInvoices(invoices.value?.pagination?.current_page ?? 1);
+    fetchInvoices(apiResponse.value?.pagination?.current_page ?? 1);
 }
 </script>
 
@@ -86,7 +90,7 @@ function onInvoiceDeleted() {
         <FullWidthBox v-if="auth.canAny(['customerInvoices.listAll', 'customerInvoices.listOwn'])" title="Invoices" :collapsible="false">
             <form class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="fetchInvoices()">
                 <InputText v-model="filters.q" label="Search" placeholder="Invoice ID, ticket, customer…" />
-                <AsyncSelect v-model="filters.agent" :url="agentsUrl" label="Agent" placeholder="All agents" />
+                <AsyncSelect v-model="filters.agent" :url="agentsUrl" label="Agent" placeholder="All agents" v-if="auth.can('customerInvoices.listFilterByAgent')" />
                 <DateInput v-model="filters.date_from" label="Date from" />
                 <DateInput v-model="filters.date_to" label="Date to" />
                 <div class="flex items-end gap-2 md:col-span-4">
@@ -110,20 +114,20 @@ function onInvoiceDeleted() {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! invoices">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="invoices.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No invoices found.</td>
                         </tr>
-                        <tr v-for="invoice in (loading ? [] : invoices?.data ?? [])" :key="invoice.id" class="hover:bg-gray-50">
+                        <tr v-for="invoice in (loading ? [] : apiResponse?.data ?? [])" :key="invoice.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="`/customer-invoices/${invoice.id}`" class="text-red-700 hover:underline">{{ invoice.gen_id }}</RouterLink>
+                                <RouterLink :to="routeUrl('customerInvoices.show', invoice.id)" class="text-red-700 hover:underline">{{ invoice.gen_id }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ invoice.on_date }}</td>
-                            <td class="border border-gray-300 px-2 py-2">{{ invoice.customer ?? '-' }}</td>
+                            <td class="border border-gray-300 px-2 py-2">{{ invoice.customer.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ invoice.destination ?? '-' }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ invoice.agent ?? '-' }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ invoice.user.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(invoice.amount) }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(invoice.paid_amount) }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
@@ -145,7 +149,7 @@ function onInvoiceDeleted() {
                 </table>
             </div>
 
-            <ApiPagination v-if="invoices" :paginator="invoices.pagination" class="mt-4" @page="fetchInvoices" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchInvoices" />
         </FullWidthBox>
 
         <!-- Per-invoice actions — defined locally and permission-gated (Actions.vue). -->

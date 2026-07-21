@@ -3,6 +3,8 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castResource, castMutation } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -46,7 +48,7 @@ const form = reactive({
 
 onMounted(async () => {
     const journal = isEdit
-        ? await api.get(`/journals/${id}`).then((r) => r.data.data ?? r.data)
+        ? await api.get(`/journals/${id}`).then((r) => castResource(r.data))
         : null;
 
     if (journal) {
@@ -114,7 +116,7 @@ async function submit() {
         const { data } = await (isEdit
             ? api.put(`/journals/${id}`, payload)
             : api.post('/journals', payload));
-        router.push(`/journals/${data.id}`);
+        router.push(routeUrl('journals.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -200,7 +202,7 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink to="/journals" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('journals.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing || ! balanced">

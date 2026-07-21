@@ -38,7 +38,7 @@ async function generate() {
     error.value = '';
 
     try {
-        const { data } = await api.post(`/customer-invoices/${props.invoice.id}/payment-link`, {
+        const { data } = await api.post(`/customers/invoices/${props.invoice.id}/payment-link`, {
             amount: amount.value || undefined,
         });
         link.value = data.url ?? '';

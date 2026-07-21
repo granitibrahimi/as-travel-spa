@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
+import { castMutation } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { openFileInNewTab } from '../../../helpers/download';
 import { useAuthStore } from '../../../stores/auth';
 import ActionsOverlay from '../../../components/ActionsOverlay.vue';
@@ -59,8 +61,8 @@ const groups = computed(() => {
     const result = [];
 
     const documents = [
-        { label: 'Print', action: () => openFileInNewTab(`/customer-invoices/${invoice.id}/print`), can: 'customerInvoices.print' },
-        { label: 'Print with products', action: () => openFileInNewTab(`/customer-invoices/${invoice.id}/print-products`), can: 'customerInvoices.printProducts' },
+        { label: 'Print', action: () => openFileInNewTab(`/customers/invoices/${invoice.id}/print`), can: 'customerInvoices.print' },
+        { label: 'Print with products', action: () => openFileInNewTab(`/customers/invoices/${invoice.id}/print-products`), can: 'customerInvoices.printProducts' },
         { label: 'Send E-Mail', action: () => (emailOpen.value = true), can: 'customerInvoices.sendEmail' },
         { label: 'Add document', action: () => (documentOpen.value = true), can: 'invoiceDocuments.manageDocuments' },
         { label: 'Generate Payment Link', action: () => (paymentLinkOpen.value = true), can: 'onlinePayments.generate' },
@@ -72,13 +74,13 @@ const groups = computed(() => {
 
     const pages = [
         ...(props.showViewAction
-            ? [{ label: 'View', to: `/customer-invoices/${invoice.id}`, canAny: ['customerInvoices.show', 'customerInvoices.showOwn'] }]
+            ? [{ label: 'View', to: routeUrl('customerInvoices.show', invoice.id), canAny: ['customerInvoices.show', 'customerInvoices.showOwn'] }]
             : []),
         ...(customerId.value
-            ? [{ label: 'Reconcile', to: `/customers/${customerId.value}/reconcile`, can: 'customers.reconcile' }]
+            ? [{ label: 'Reconcile', to: routeUrl('customers.reconcile', customerId.value), can: 'customers.reconcile' }]
             : []),
-        { label: 'Journal', to: `/finance/account-transactions/journal/customer-invoice/${invoice.id}`, can: 'accountTransactions.journal' },
-        { label: 'Edit', to: `/customer-invoices/${invoice.id}/edit`, canAny: ['customerInvoices.edit', 'customerInvoices.editOwnWithinTheDay'] },
+        { label: 'Journal', to: `/finance/account-transactions/journal/customers/invoice/${invoice.id}`, can: 'accountTransactions.journal' },
+        { label: 'Edit', to: routeUrl('customerInvoices.edit', invoice.id), canAny: ['customerInvoices.edit', 'customerInvoices.editOwnWithinTheDay'] },
     ].filter(allowed);
 
     if (pages.length) {
@@ -86,10 +88,10 @@ const groups = computed(() => {
     }
 
     const changes = [
-        { label: 'Change Customer', to: `/customer-invoices/${invoice.id}/change-customer`, can: 'customerInvoices.changeCustomer' },
-        { label: 'Change Agent', to: `/customer-invoices/${invoice.id}/change-agent`, can: 'customerInvoices.changeAgent' },
-        { label: 'Change Date', to: `/customer-invoices/${invoice.id}/change-date`, can: 'customerInvoices.changeDate' },
-        { label: 'Change Due Date', to: `/customer-invoices/${invoice.id}/change-due-date`, can: 'customerInvoices.changeDueDate' },
+        { label: 'Change Customer', to: routeUrl('customerInvoices.changeCustomer', invoice.id), can: 'customerInvoices.changeCustomer' },
+        { label: 'Change Agent', to: routeUrl('customerInvoices.changeAgent', invoice.id), can: 'customerInvoices.changeAgent' },
+        { label: 'Change Date', to: routeUrl('customerInvoices.changeDate', invoice.id), can: 'customerInvoices.changeDate' },
+        { label: 'Change Due Date', to: routeUrl('customerInvoices.changeDueDate', invoice.id), can: 'customerInvoices.changeDueDate' },
     ].filter(allowed);
 
     if (changes.length) {
@@ -121,9 +123,9 @@ const paymentLinkOpen = ref(false);
 
 // Create a credit note from this invoice, then navigate to the new credit note.
 async function createCreditNote(invoice) {
-    const { data } = await api.post(`/customer-invoices/${invoice.id}/credit-note`);
+    const { data } = await api.post(`/customers/invoices/${invoice.id}/credit-note`);
     emit('close');
-    router.push(`/customer-credit-notes/${data.id}`);
+    router.push(routeUrl('customerCreditNotes.show', castMutation(data).id));
 }
 
 // Local delete flow (confirm dialog → API). The parent decides what happens
@@ -140,7 +142,7 @@ async function confirmDelete() {
 
     try {
         const removed = toDelete.value;
-        await api.delete(`/customer-invoices/${removed.id}`);
+        await api.delete(`/customers/invoices/${removed.id}`);
         toDelete.value = null;
         emit('deleted', removed);
         emit('close');

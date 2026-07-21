@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -13,7 +15,7 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 const router = useRouter();
 
-const announcements = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const toDelete = ref(null);
@@ -35,12 +37,12 @@ async function fetchAnnouncements(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/announcements', {
+        const { data } = await api.get('/base/announcements', {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
         // Resource collection envelope: rows in `data`, paginator in `meta`.
-        announcements.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -64,7 +66,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/announcements/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchAnnouncements(announcements.value?.current_page ?? 1);
+        await fetchAnnouncements(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         deleting.value = false;
     }
@@ -79,15 +81,15 @@ async function claim(announcement) {
 
     try {
         await api.post(`/announcements/${announcement.id}/claim`);
-        await fetchAnnouncements(announcements.value?.current_page ?? 1);
+        await fetchAnnouncements(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         claiming.value = null;
     }
 }
 
 const rowActions = (announcement) => [
-    ...(auth.can('announcements.statistics') ? [{ label: 'Statistics', action: () => router.push(`/announcements/${announcement.id}/statistics`) }] : []),
-    ...(auth.can('announcements.edit') ? [{ label: 'Edit', action: () => router.push(`/announcements/${announcement.id}/edit`) }] : []),
+    ...(auth.can('announcements.statistics') ? [{ label: 'Statistics', action: () => router.push(routeUrl('announcements.statistics', announcement.id)) }] : []),
+    ...(auth.can('announcements.edit') ? [{ label: 'Edit', action: () => router.push(routeUrl('announcements.edit', announcement.id)) }] : []),
     ...(auth.can('announcements.claim') && ! announcement.is_claimed ? [{ label: 'Claim', action: () => claim(announcement) }] : []),
     ...(auth.can('announcements.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = announcement) }] : []),
 ];
@@ -116,13 +118,13 @@ const rowActions = (announcement) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! announcements">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="announcements.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No announcements found.</td>
                         </tr>
-                        <tr v-for="announcement in (loading ? [] : announcements?.data ?? [])" :key="announcement.id" class="hover:bg-gray-50">
+                        <tr v-for="announcement in (loading ? [] : apiResponse?.data ?? [])" :key="announcement.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ announcement.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ announcement.title }}</td>
                             <td class="border border-gray-300 px-2 py-2">
@@ -141,12 +143,12 @@ const rowActions = (announcement) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="announcements" :paginator="announcements" class="mt-4" @page="fetchAnnouncements" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchAnnouncements" />
 
             <template #footer>
                 <RouterLink
                     v-if="auth.can('announcements.create')"
-                    to="/announcements/create"
+                    :to="routeUrl('announcements.create')"
                     class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
                 >
                     + Announcement

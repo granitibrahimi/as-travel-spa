@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -29,7 +31,7 @@ const deleting = ref(false);
 async function load() {
     const { data } = await api.get(`/vacations/${id}`);
     request.value = data.data;
-    statuses.value = data.statuses;
+    statuses.value = castResource(data).statuses;
     respondForm.type = data.data.status;
     respondForm.response = data.data.response ?? '';
 }
@@ -71,7 +73,7 @@ async function confirmDelete() {
         const userId = request.value.user_id;
         await api.delete(`/vacations/${id}`);
         showDelete.value = false;
-        router.push(`/vacations/requests?user=${userId}`);
+        router.push(routeUrl('vacations.requests', { user: userId }));
     } finally {
         deleting.value = false;
     }
@@ -84,7 +86,7 @@ async function confirmDelete() {
         <div v-else class="space-y-6">
             <FullWidthBox title="Request details" :collapsible="false">
                 <template #actions>
-                    <RouterLink v-if="auth.can('vacations.edit')" :to="`/vacations/${id}/edit`" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
+                    <RouterLink v-if="auth.can('vacations.edit')" :to="routeUrl('vacations.edit', id)" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
                     <Button v-if="auth.can('vacations.delete')" variant="danger" size="sm" @click="showDelete = true">Delete</Button>
                 </template>
 
@@ -112,7 +114,7 @@ async function confirmDelete() {
                     </div>
                     <template #footer>
                         <div class="flex items-center gap-3">
-                            <RouterLink :to="`/vacations/requests?user=${request.user_id}`" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
+                            <RouterLink :to="routeUrl('vacations.requests', { user: request.user_id })" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
                             <Button type="submit" variant="primary" :disabled="responding">
                                 {{ responding ? 'Saving…' : 'Save response' }}
                             </Button>

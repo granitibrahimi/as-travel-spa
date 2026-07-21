@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -15,7 +17,7 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const parentDestinations = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const error = ref('');
@@ -25,7 +27,7 @@ async function fetchParentDestinations(page = 1) {
 
     try {
         const { data } = await api.get('/parent-destinations', { params: { q: search.value || undefined, page } });
-        parentDestinations.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
     }
@@ -64,7 +66,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/parent-destinations/${destinationToDelete.value.id}`);
         destinationToDelete.value = null;
-        await fetchParentDestinations(parentDestinations.value?.current_page ?? 1);
+        await fetchParentDestinations(apiResponse.value?.pagination?.current_page ?? 1);
     } catch (e) {
         if (e.response?.status === 409) {
             error.value = e.response.data.message;
@@ -78,8 +80,8 @@ async function confirmDelete() {
 }
 
 const rowActions = (destination) => [
-    ...(auth.can('parentDestinations.childDestinations') ? [{ label: `View destinations (${destination.destinations_count})`, href: `/parent-destinations/${destination.id}/destinations` }] : []),
-    ...(auth.can('parentDestinations.edit') ? [{ label: 'Edit', href: `/parent-destinations/${destination.id}/edit` }] : []),
+    ...(auth.can('parentDestinations.childDestinations') ? [{ label: `View destinations (${destination.destinations_count})`, href: routeUrl('parentDestinations.children', destination.id) }] : []),
+    ...(auth.can('parentDestinations.edit') ? [{ label: 'Edit', href: routeUrl('parentDestinations.edit', destination.id) }] : []),
     ...(auth.can('parentDestinations.delete') ? [{ label: 'Delete', danger: true, action: () => (destinationToDelete.value = destination) }] : []),
 ];
 </script>
@@ -108,13 +110,13 @@ const rowActions = (destination) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! parentDestinations">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="6" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="parentDestinations.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No parent destinations found.</td>
                         </tr>
-                        <tr v-for="destination in (loading ? [] : parentDestinations?.data ?? [])" :key="destination.id" class="hover:bg-gray-50">
+                        <tr v-for="destination in (loading ? [] : apiResponse?.data ?? [])" :key="destination.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ destination.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ destination.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
@@ -129,7 +131,7 @@ const rowActions = (destination) => [
                                 />
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
-                                <RouterLink v-if="auth.can('parentDestinations.childDestinations')" :to="`/parent-destinations/${destination.id}/destinations`" class="text-blue-600 hover:underline">
+                                <RouterLink v-if="auth.can('parentDestinations.childDestinations')" :to="routeUrl('parentDestinations.children', destination.id)" class="text-blue-600 hover:underline">
                                     {{ destination.destinations_count }}
                                 </RouterLink>
                                 <span v-else>{{ destination.destinations_count }}</span>
@@ -142,12 +144,12 @@ const rowActions = (destination) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="parentDestinations" :paginator="parentDestinations" class="mt-4" @page="fetchParentDestinations" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchParentDestinations" />
 
             <template #footer>
                 <RouterLink
                     v-if="auth.can('parentDestinations.create')"
-                    to="/parent-destinations/create"
+                    :to="routeUrl('parentDestinations.create')"
                     class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
                 >
                     + Parent Destination

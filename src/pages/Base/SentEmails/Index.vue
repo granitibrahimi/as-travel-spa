@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -22,7 +24,7 @@ const statuses = [
     { value: 'bounced', label: 'Bounced' },
 ];
 
-const emails = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const form = reactive({ search: '', type: null, status: null });
 
@@ -38,7 +40,7 @@ async function fetchEmails(page = 1) {
                 page,
             },
         });
-        emails.value = { data: data.data.items, ...data.data.pagination };
+        apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
     }
@@ -95,13 +97,13 @@ const statusLabel = { sent: 'Sent', opened: 'Opened', bounced: 'Bounced' };
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="loading || ! emails">
+                            <tr v-if="loading || ! apiResponse">
                                 <td colspan="9" class="border border-gray-300 px-2 py-2"><Loader /></td>
                             </tr>
-                            <tr v-else-if="emails.data.length === 0">
+                            <tr v-else-if="apiResponse.data.length === 0">
                                 <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No sent emails found.</td>
                             </tr>
-                            <tr v-for="email in (loading ? [] : emails?.data ?? [])" :key="email.id" class="hover:bg-gray-50">
+                            <tr v-for="email in (loading ? [] : apiResponse?.data ?? [])" :key="email.id" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ email.id }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ email.type }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ email.to }}</td>
@@ -116,14 +118,14 @@ const statusLabel = { sent: 'Sent', opened: 'Opened', bounced: 'Bounced' };
                                 <td class="border border-gray-300 px-2 py-2 text-center tabular-nums">{{ email.open_count }}</td>
                                 <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ email.sent_at }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">
-                                    <RouterLink :to="`/sent-emails/${email.id}`" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-xs hover:bg-gray-50">View</RouterLink>
+                                    <RouterLink :to="routeUrl('sentEmails.show', email.id)" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-xs hover:bg-gray-50">View</RouterLink>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <ApiPagination v-if="emails" :paginator="emails" class="mt-4" @page="fetchEmails" />
+                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchEmails" />
             </FullWidthBox>
         </div>
     </AppLayout>

@@ -2,6 +2,8 @@
 import { onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../helpers/api';
+import { routeUrl } from '../../helpers/route.js';
+import { castResource } from '../../types/responses.js';
 import { downloadFile } from '../../helpers/download';
 import { useAuthStore } from '../../stores/auth';
 import AppLayout from '../../layouts/AppLayout.vue';
@@ -34,7 +36,7 @@ const statusClass = (status) => ({
 async function load() {
     ticket.value = null;
     const { data } = await api.get(`/support-tickets/${route.params.id}`);
-    ticket.value = data.data ?? data;
+    ticket.value = castResource(data);
 }
 
 onMounted(load);
@@ -100,7 +102,7 @@ async function downloadAttachment() {
                     </div>
 
                     <template #footer>
-                        <RouterLink to="/support" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to list</RouterLink>
+                        <RouterLink :to="routeUrl('support.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to list</RouterLink>
                     </template>
                 </FullWidthBox>
 

@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -26,7 +28,7 @@ const to = ref('');
 let request = null;
 
 async function fetchCustomer() {
-    const { data } = await api.get(`/customers/${id}`);
+    const { data } = await api.get(`/customers/customers/${id}`);
     customer.value = data.data;
 }
 
@@ -37,7 +39,7 @@ async function fetchStatistics(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get(`/customers/${id}/statistics`, {
+        const { data } = await api.get(`/customers/customers/${id}/statistics`, {
             signal: controller.signal,
             params: {
                 from: from.value || undefined,
@@ -46,7 +48,7 @@ async function fetchStatistics(page = 1) {
             },
         });
         stats.value = data.stats;
-        invoices.value = { data: data.data, ...data.pagination };
+        invoices.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -69,7 +71,7 @@ onMounted(() => {
         <div class="space-y-6">
             <FullWidthBox :title="customer ? `Statistics: ${customer.full_name}` : 'Statistics'" :collapsible="false">
                 <template #actions>
-                    <RouterLink :to="`/customers/${id}`" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50">
+                    <RouterLink :to="routeUrl('customers.show', id)" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50">
                         Back to customer
                     </RouterLink>
                 </template>
@@ -136,7 +138,7 @@ onMounted(() => {
                                 </tr>
                                 <tr v-for="invoice in (loading ? [] : invoices?.data ?? [])" :key="invoice.id" class="hover:bg-gray-50">
                                     <td class="border border-gray-300 px-2 py-2 font-medium">
-                                        <RouterLink :to="`/customer-invoices/${invoice.id}`" class="text-red-600 hover:underline">{{ invoice.id }} | {{ invoice.reference }}</RouterLink>
+                                        <RouterLink :to="routeUrl('customerInvoices.show', invoice.id)" class="text-red-600 hover:underline">{{ invoice.id }} | {{ invoice.reference }}</RouterLink>
                                     </td>
                                     <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ invoice.agent ?? '—' }}</td>
                                     <td class="border border-gray-300 px-2 py-2">{{ invoice.type ?? '—' }}</td>
@@ -148,7 +150,7 @@ onMounted(() => {
                         </table>
                     </div>
 
-                    <ApiPagination v-if="invoices" :paginator="invoices" class="mt-4" @page="fetchStatistics" />
+                    <ApiPagination v-if="invoices" :paginator="invoices.pagination" class="mt-4" @page="fetchStatistics" />
                 </FullWidthBox>
             </template>
         </div>

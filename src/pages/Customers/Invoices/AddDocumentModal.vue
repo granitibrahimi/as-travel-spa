@@ -29,7 +29,7 @@ watch(() => props.show, async (open) => {
     file.value = null;
 
     try {
-        const { data } = await api.get(`/customer-invoices/${props.invoice.id}/documents`);
+        const { data } = await api.get(`/customers/invoices/${props.invoice.id}/documents`);
         types.value = data.types ?? [];
     } catch {
         types.value = [];
@@ -58,7 +58,7 @@ async function upload() {
         payload.append('type', type.value);
         payload.append('document', file.value);
 
-        await api.post(`/customer-invoices/${props.invoice.id}/documents`, payload);
+        await api.post(`/customers/invoices/${props.invoice.id}/documents`, payload);
         emit('uploaded');
         emit('close');
     } catch (e) {

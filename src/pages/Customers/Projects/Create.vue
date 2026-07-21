@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -48,13 +49,13 @@ async function submit() {
     errors.value = {};
 
     try {
-        await api.post('/customer-projects', {
+        await api.post('/customers/projects', {
             ...form,
             start_date: form.start_date,
             end_date: form.end_date,
             customers: selectedCustomers.value.map((c) => c.id),
         });
-        router.push('/projects');
+        router.push(routeUrl('customerProjects.list'));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = error.response.data.errors ?? {};
@@ -84,7 +85,7 @@ async function submit() {
                 <template #footer>
                     <div class="flex items-center gap-2">
                         <Button type="submit" variant="primary" :disabled="saving">{{ saving ? 'Saving…' : 'Save' }}</Button>
-                        <Button type="button" :href="'/projects'" @click="router.push('/projects')">Cancel</Button>
+                        <Button type="button" :href="routeUrl('customerProjects.list')" @click="router.push(routeUrl('customerProjects.list'))">Cancel</Button>
                     </div>
                 </template>
             </FullWidthBox>

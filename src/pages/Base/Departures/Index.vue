@@ -2,25 +2,18 @@
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
-import { todayApiDate } from '../../../helpers/date';
+import { todayApiDate, apiDaysAfter } from '../../../helpers/date';
 import Loader from '../../../components/Loader.vue';
 
-// API date (d.m.Y) N days back.
-const apiDaysAgo = (days) => {
-    const d = new Date();
-    d.setDate(d.getDate() - days);
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
-};
-
 const filters = reactive({
-    from: apiDaysAgo(90),
-    to: todayApiDate(),
+    from: todayApiDate(),
+    to: apiDaysAfter(30),
     q: '',
 });
 
@@ -94,7 +87,7 @@ onMounted(fetchDepartures);
                             </tr>
                             <tr v-for="departure in (loading ? [] : departures ?? [])" :key="`${departure.invoice_id}-${departure.start_date}`" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2 font-medium">
-                                    <RouterLink :to="`/customer-invoices/${departure.invoice_id}`" class="text-red-700 hover:underline">{{ departure.invoice_gen_id }}</RouterLink>
+                                    <RouterLink :to="routeUrl('customerInvoices.show', departure.invoice_id)" class="text-red-700 hover:underline">{{ departure.invoice_gen_id }}</RouterLink>
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 font-medium whitespace-nowrap">{{ departure.start_date }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ departure.destination }}</td>

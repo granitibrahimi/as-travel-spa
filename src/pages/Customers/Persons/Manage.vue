@@ -2,6 +2,8 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castMutation } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -55,7 +57,7 @@ const removeContactReference = (index) => form.contact_references.splice(index, 
 
 onMounted(async () => {
     const person = isEdit
-        ? await api.get(`/persons/${id}`).then((r) => r.data.data ?? r.data)
+        ? await api.get(`/customers/persons/${id}`).then((r) => r.data.data ?? r.data)
         : null;
 
     if (person) {
@@ -95,10 +97,10 @@ async function submit() {
 
     try {
         const { data } = await (isEdit
-            ? api.put(`/persons/${id}`, payload)
-            : api.post('/persons', payload));
+            ? api.put(`/customers/persons/${id}`, payload)
+            : api.post('/customers/persons', payload));
 
-        router.push(`/travelers/${isEdit ? id : data.id}`);
+        router.push(routeUrl('persons.show', isEdit ? id : castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -127,7 +129,7 @@ async function submit() {
 
                     <AsyncSelect
                         v-model="form.country_id"
-                        url="/persons/countries"
+                        url="/customers/persons/countries"
                         :initial-option="countryInitial"
                         label="Nationality *"
                         placeholder="Search country or nationality…"
@@ -189,7 +191,7 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink to="/travelers" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('persons.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing">

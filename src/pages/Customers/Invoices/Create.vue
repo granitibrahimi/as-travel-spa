@@ -2,7 +2,9 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
+import { castResource, castMutation } from '../../../types/responses.js';
 import { money } from '../../../helpers/money';
+import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore } from '../../../stores/formOptions';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -79,8 +81,8 @@ onMounted(async () => {
     orders.value = [blankOrder()];
 
     try {
-        const { data } = await api.get(`/customers/${route.params.customer}`);
-        customer.value = data.data ?? data;
+        const { data } = await api.get(`/customers/customers/${route.params.customer}`);
+        customer.value = castResource(data);
     } catch {
         customer.value = null;
     }
@@ -121,7 +123,7 @@ async function importExcel(event) {
     try {
         const payload = new FormData();
         payload.append('file', file);
-        const { data } = await api.post(`/customers/${route.params.customer}/invoices/excel`, payload);
+        const { data } = await api.post(`/customers/customers/${route.params.customer}/invoices/excel`, payload);
         orders.value = (data.orders ?? []).map(toEditorOrder);
 
         if (orders.value.length === 0) {
@@ -161,8 +163,8 @@ async function save() {
             })),
         };
 
-        const { data } = await api.post('/customer-invoices', payload);
-        router.push(`/customer-invoices/${data.id}`);
+        const { data } = await api.post('/customers/invoices', payload);
+        router.push(routeUrl('customerInvoices.show', castMutation(data).id));
     } catch (e) {
         error.value = e.response?.data?.message ?? 'Could not create the invoice.';
     } finally {

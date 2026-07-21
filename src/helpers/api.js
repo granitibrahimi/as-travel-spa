@@ -71,4 +71,20 @@ api.interceptors.response.use(
     },
 );
 
+//Some functions that can be used to pull generaly used endpoints
+
+export function getDestinationsAutosuggestEndpoint(){
+    return '/destinations/autosuggest';
+}
+
+export function getParentDestinationsAutosuggestEndpoint(){
+    return '/parent-destinations/autosuggest';
+}
+
+export function getUsersAutosuggestEndpoint(){
+    return '/users/users/autosuggest';
+}
+
+
+
 export default api;

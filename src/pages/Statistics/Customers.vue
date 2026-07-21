@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
+import { routeUrl } from '../../helpers/route.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
@@ -12,7 +13,7 @@ import Loader from '../../components/Loader.vue';
 import { useReport } from '../../composables/useReport.js';
 import { useFormOptionsStore } from '../../stores/formOptions.js';
 
-const { loading, error, data, load } = useReport('/statistics/customers');
+const { loading, error, data, load } = useReport('/statistics/customers/customers');
 
 const formOptions = useFormOptionsStore();
 
@@ -102,7 +103,7 @@ onMounted(apply);
                         <tbody>
                             <tr v-for="row in data.rows" :key="row.customer_id" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2 font-medium">
-                                    <RouterLink :to="`/customers/${row.customer_id}`" class="text-red-600 hover:underline">{{ row.customer_id }} | {{ row.customer }}</RouterLink>
+                                    <RouterLink :to="routeUrl('customers.show', row.customer_id)" class="text-red-600 hover:underline">{{ row.customer_id }} | {{ row.customer }}</RouterLink>
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.type }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ row.amount }}</td>

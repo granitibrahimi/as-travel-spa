@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
@@ -12,7 +14,7 @@ const bill = ref(null);
 
 async function load() {
     const { data } = await api.get(`/supplier-bills/${route.params.id}`);
-    bill.value = data.data ?? data;
+    bill.value = castResource(data);
 }
 onMounted(load);
 </script>
@@ -35,13 +37,13 @@ onMounted(load);
                     <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Open</dt><dd class="tabular-nums" :class="bill.open_amount > 0 ? 'text-amber-600' : 'text-green-600'">{{ money(bill.open_amount) }}</dd></div>
                     <div v-if="bill.customer_invoice" class="flex gap-2">
                         <dt class="w-36 shrink-0 font-medium text-gray-500">Customer invoice</dt>
-                        <dd><RouterLink :to="`/customer-invoices/${bill.customer_invoice.id}`" class="text-red-600 hover:underline">{{ bill.customer_invoice.gen_id }}</RouterLink></dd>
+                        <dd><RouterLink :to="routeUrl('customerInvoices.show', bill.customer_invoice.id)" class="text-red-600 hover:underline">{{ bill.customer_invoice.gen_id }}</RouterLink></dd>
                     </div>
                     <div class="flex gap-2 sm:col-span-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Notes</dt><dd class="whitespace-pre-line">{{ bill.notes ?? '—' }}</dd></div>
                 </dl>
 
                 <template #footer>
-                    <RouterLink :to="`/suppliers/${bill.supplier.id}`" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to supplier</RouterLink>
+                    <RouterLink :to="routeUrl('suppliers.show', bill.supplier.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to supplier</RouterLink>
                 </template>
             </FullWidthBox>
 

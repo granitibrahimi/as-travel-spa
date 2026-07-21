@@ -34,7 +34,7 @@ export const useNotificationsStore = defineStore('notifications', {
         // Refresh the unread badge from the server (persistent notifications).
         async fetchUnread() {
             try {
-                const { data } = await api.get('/user-notifications/unread-count');
+                const { data } = await api.get('/users/notifications/unread-count');
                 this.unread = data.count ?? 0;
             } catch {
                 // Non-fatal: leave the badge as-is if the request fails.

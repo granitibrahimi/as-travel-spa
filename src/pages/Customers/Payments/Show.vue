@@ -2,7 +2,9 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money';
+import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
@@ -12,8 +14,8 @@ const route = useRoute();
 const payment = ref(null);
 
 async function load() {
-    const { data } = await api.get(`/customer-payments/${route.params.id}`);
-    payment.value = data.data ?? data;
+    const { data } = await api.get(`/customers/payments/${route.params.id}`);
+    payment.value = castResource(data);
 }
 onMounted(load);
 </script>
@@ -28,7 +30,7 @@ onMounted(load);
 
 
                 <template #footer>
-                    <RouterLink :to="`/customers/${payment.customer.id}`" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to customer</RouterLink>
+                    <RouterLink :to="routeUrl('customers.show', payment.customer.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to customer</RouterLink>
                 </template>
             </FullWidthBox>
 

@@ -1,7 +1,7 @@
 <script setup>
 import {computed, ref} from 'vue';
 import {useAuthStore} from '../stores/auth';
-import {useFormOptionsStore, CATEGORIES} from '../stores/formOptions';
+import {useFormOptionsStore} from '../stores/formOptions';
 import AppLayout from '../layouts/AppLayout.vue';
 import FullWidthBox from '../components/FullWidthBox.vue';
 import DataTree from '../components/DataTree.vue';
@@ -59,9 +59,9 @@ async function refresh() {
     }
 }
 
-// One row per configured category, with whatever options are currently cached.
+// One row per cached category (from the store's last sync), with its options.
 const formOptionCategories = computed(() =>
-    CATEGORIES.map((category) => {
+    formOptions.categoryList.map((category) => {
         const options = formOptions.options(category.key);
 
         return {...category, options, count: options.length};

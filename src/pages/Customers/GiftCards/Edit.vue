@@ -2,6 +2,8 @@
 import {onMounted, reactive, ref} from 'vue';
 import {RouterLink, useRoute, useRouter} from 'vue-router';
 import api from '../../../helpers/api';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -29,8 +31,8 @@ const processing = ref(false);
 const loaded = ref(false);
 
 onMounted(async () => {
-    const {data} = await api.get(`/customer-gift-cards/${giftCardId}`);
-    const giftCard = data.data ?? data;
+    const {data} = await api.get(`/customers/gift-cards/${giftCardId}`);
+    const giftCard = castResource(data);
     form.amount = giftCard.amount;
     form.notes = giftCard.notes ?? '';
     onDate.value = giftCard.on_date ?? '';
@@ -52,8 +54,8 @@ async function submit() {
     };
 
     try {
-        await api.put(`/customer-gift-cards/${giftCardId}`, payload);
-        router.push(`/customer-gift-cards/${giftCardId}`);
+        await api.put(`/customers/gift-cards/${giftCardId}`, payload);
+        router.push(routeUrl('customerGiftCards.show', giftCardId));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -90,7 +92,7 @@ async function submit() {
             </div>
             <footer
                 class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink :to="`/customer-gift-cards/${giftCardId}`"
+                <RouterLink :to="routeUrl('customerGiftCards.show', giftCardId)"
                             class="rounded border border-gray-300 px-4 py-1.5 text-sm hover:bg-gray-50">Cancel
                 </RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing || ! loaded">

@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -17,7 +19,7 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 const formOptions = useFormOptionsStore();
 
-const persons = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 
 const search = ref('');
@@ -42,7 +44,7 @@ async function fetchPersons(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/persons', {
+        const { data } = await api.get('/customers/persons', {
             signal: controller.signal,
             params: {
                 q: search.value || undefined,
@@ -51,7 +53,7 @@ async function fetchPersons(page = 1) {
                 page,
             },
         });
-        persons.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -71,9 +73,9 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/persons/${personToDelete.value.id}`);
+        await api.delete(`/customers/persons/${personToDelete.value.id}`);
         personToDelete.value = null;
-        await fetchPersons(persons.value?.current_page ?? 1);
+        await fetchPersons(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         deleting.value = false;
     }
@@ -113,16 +115,16 @@ onMounted(async () => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! persons">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="persons.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No travelers found.</td>
                         </tr>
-                        <tr v-for="person in (loading ? [] : persons?.data ?? [])" :key="person.id" class="hover:bg-gray-50">
+                        <tr v-for="person in (loading ? [] : apiResponse?.data ?? [])" :key="person.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ person.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="`/travelers/${person.id}`" class="hover:text-red-700 hover:underline">{{ person.full_name }}</RouterLink>
+                                <RouterLink :to="routeUrl('persons.show', person.id)" class="hover:text-red-700 hover:underline">{{ person.full_name }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ person.gender_label }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ person.classification_label ?? '—' }}</td>
@@ -155,12 +157,12 @@ onMounted(async () => {
                 </table>
             </div>
 
-            <ApiPagination v-if="persons" :paginator="persons" class="mt-4" @page="fetchPersons" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchPersons" />
 
             <template #footer>
                 <RouterLink
                     v-if="auth.can('persons.create')"
-                    to="/travelers/create"
+                    :to="routeUrl('persons.create')"
                     class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
                 >
                     + New traveler
@@ -177,14 +179,14 @@ onMounted(async () => {
         >
             <div v-if="selected" class="space-y-3">
                 <RouterLink
-                    :to="`/travelers/${selected.id}`"
+                    :to="routeUrl('persons.show', selected.id)"
                     class="block w-full rounded border border-gray-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-gray-50"
                 >
                     View traveler
                 </RouterLink>
                 <RouterLink
                     v-if="auth.can('persons.edit')"
-                    :to="`/travelers/${selected.id}/edit`"
+                    :to="routeUrl('persons.edit', selected.id)"
                     class="block w-full rounded border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                     Edit

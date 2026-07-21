@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castResource, castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -21,7 +23,7 @@ const logs = ref(null);
 
 async function fetchCredential() {
     const { data } = await api.get(`/online-system-credentials/${id}`);
-    credential.value = data.data ?? data;
+    credential.value = castResource(data);
 }
 
 async function reveal() {
@@ -39,7 +41,7 @@ async function reveal() {
 
 async function fetchLogs(page = 1) {
     const { data } = await api.get(`/online-system-credentials/${id}/logs`, { params: { page } });
-    logs.value = { data: data.data, ...(data.pagination ?? data) };
+    logs.value = castPaginated(data);
 }
 
 function copyPassword() {
@@ -88,7 +90,7 @@ onMounted(async () => {
                 </table>
 
                 <template #footer>
-                    <RouterLink to="/online-credentials" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                    <RouterLink :to="routeUrl('onlineCredentials.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                         Back to list
                     </RouterLink>
                 </template>
@@ -115,7 +117,7 @@ onMounted(async () => {
                         </tbody>
                     </table>
                 </div>
-                <ApiPagination v-if="logs" :paginator="logs" class="mt-4" @page="fetchLogs" />
+                <ApiPagination v-if="logs" :paginator="logs.pagination" class="mt-4" @page="fetchLogs" />
             </FullWidthBox>
         </div>
     </AppLayout>

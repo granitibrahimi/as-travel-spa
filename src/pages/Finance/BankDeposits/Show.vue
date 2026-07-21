@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -47,7 +49,7 @@ const actions = computed(() => {
 
 async function load() {
     const { data } = await api.get(`/bank-deposits/${id}`);
-    deposit.value = data.data ?? data;
+    deposit.value = castResource(data);
 }
 
 onMounted(load);
@@ -76,7 +78,7 @@ async function confirmDelete() {
 
     try {
         await api.delete(`/bank-deposits/${id}`);
-        router.push('/bank-deposits');
+        router.push(routeUrl('bankDeposits.list'));
     } finally {
         deleting.value = false;
     }
@@ -89,7 +91,7 @@ async function confirmDelete() {
             <template #actions>
                 <ShowActions
                     :items="deposit ? actions : []"
-                    back-to="/bank-deposits"
+                    :back-to="routeUrl('bankDeposits.list')"
                     back-label="Bank Deposits"
                     :title="title"
                 />

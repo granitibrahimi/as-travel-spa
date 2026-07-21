@@ -2,12 +2,14 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api';
+import { castPaginated } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
 
-const reconciliations = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 
@@ -15,8 +17,8 @@ async function fetchReconciliations(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/customer-reconciliations', { params: { q: search.value || undefined, page } });
-        reconciliations.value = { data: data.data, ...data.pagination };
+        const { data } = await api.get('/customers/reconciliations', { params: { q: search.value || undefined, page } });
+        apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
     }
@@ -47,18 +49,18 @@ onMounted(() => fetchReconciliations());
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! reconciliations">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="6" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="reconciliations.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No reconciliations found.</td>
                         </tr>
-                        <tr v-for="reconciliation in (loading ? [] : reconciliations?.data ?? [])" :key="reconciliation.id" class="hover:bg-gray-50">
+                        <tr v-for="reconciliation in (loading ? [] : apiResponse?.data ?? [])" :key="reconciliation.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="`/customer-reconciliations/${reconciliation.id}`" class="text-red-600 hover:underline">{{ reconciliation.id }}</RouterLink>
+                                <RouterLink :to="routeUrl('customerReconciliations.show', reconciliation.id)" class="text-red-600 hover:underline">{{ reconciliation.id }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">
-                                <RouterLink v-if="reconciliation.customer" :to="`/customers/${reconciliation.customer.id}`" class="text-red-600 hover:underline">{{ reconciliation.customer.id }} # {{ reconciliation.customer.name }}</RouterLink>
+                                <RouterLink v-if="reconciliation.customer" :to="routeUrl('customers.show', reconciliation.customer.id)" class="text-red-600 hover:underline">{{ reconciliation.customer.id }} # {{ reconciliation.customer.name }}</RouterLink>
                                 <span v-else>—</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">{{ reconciliation.reference ?? '—' }}</td>
@@ -73,7 +75,7 @@ onMounted(() => fetchReconciliations());
                 </table>
             </div>
 
-            <ApiPagination v-if="reconciliations" :paginator="reconciliations" class="mt-4" @page="fetchReconciliations" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchReconciliations" />
         </FullWidthBox>
     </AppLayout>
 </template>

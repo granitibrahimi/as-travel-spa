@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import flightsApi from '../../../helpers/flightsApi.js';
 import { flightProviderName } from '../../../helpers/flightProviders.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Alert from '../../../components/Alert.vue';
@@ -80,7 +81,7 @@ async function confirmDelete() {
 const routeLabel = (option) => `${option.from?.name ?? '?'} → ${option.to?.name ?? '?'}`;
 
 const rowActions = (option) => [
-    { label: 'Edit', href: `/travel-options/${option.id}/edit` },
+    { label: 'Edit', href: routeUrl('travelOptions.edit', option.id) },
     { label: 'Delete', danger: true, action: () => (optionToDelete.value = option) },
 ];
 </script>
@@ -89,7 +90,7 @@ const rowActions = (option) => [
     <AppLayout title="Travel Options">
         <FullWidthBox title="Travel Options" :collapsible="false">
             <template #actions>
-                <RouterLink to="/travel-options/create">
+                <RouterLink :to="routeUrl('travelOptions.create')">
                     <Button variant="primary">New travel option</Button>
                 </RouterLink>
             </template>

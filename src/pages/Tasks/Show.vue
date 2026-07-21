@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../helpers/api';
+import { routeUrl } from '../../helpers/route.js';
+import { castResource } from '../../types/responses.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import Button from '../../components/Button.vue';
 import ConfirmDialog from '../../components/ConfirmDialog.vue';
@@ -36,7 +38,7 @@ async function loadTask() {
         api.get(`/tasks/${id}/meta`),
     ]);
 
-    const payload = detail.data ?? detail;
+    const payload = castResource(detail);
     task.value = payload.task;
     contactReference.value = payload.contactReference;
     offerRequests.value = (payload.offerRequests?.data ?? payload.offerRequests) ?? [];
@@ -65,7 +67,7 @@ async function openConversation() {
 
     try {
         const { data } = await api.get(`/tasks/${id}/conversation`);
-        conversationMessages.value = data.messages ?? [];
+        conversationMessages.value = castResource(data).messages ?? [];
     } finally {
         conversationLoading.value = false;
     }
@@ -457,7 +459,7 @@ const tabs = [
                                     <tr v-if="contactReference?.customer">
                                         <td class="border border-gray-300 px-2 py-2 text-gray-500">Customer</td>
                                         <td class="border border-gray-300 px-2 py-2 text-right font-medium">
-                                            <RouterLink :to="`/customers/${contactReference.customer.id}`" class="text-red-600 hover:underline">{{ contactReference.customer.name }}</RouterLink>
+                                            <RouterLink :to="routeUrl('customers.show', contactReference.customer.id)" class="text-red-600 hover:underline">{{ contactReference.customer.name }}</RouterLink>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -467,7 +469,7 @@ const tabs = [
                 </div>
 
                 <div class="mt-4 flex justify-end">
-                    <RouterLink to="/tasks" class="inline-block rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">← All tasks</RouterLink>
+                    <RouterLink :to="routeUrl('tasks.list')" class="inline-block rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">← All tasks</RouterLink>
                 </div>
             </div>
         </div>

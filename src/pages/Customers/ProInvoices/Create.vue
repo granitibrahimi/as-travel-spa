@@ -3,6 +3,8 @@ import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../../stores/auth.js';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { todayApiDate } from '../../../helpers/date.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -23,6 +25,7 @@ const customerId = route.params.customer;
 const customer = ref(null);
 
 const form = reactive({
+    customer_id: customerId,
     amount: null,
     on_date: todayApiDate(),
     flight_info: '',
@@ -34,8 +37,8 @@ const processing = ref(false);
 const success = ref(false);
 
 onMounted(async () => {
-    const { data } = await api.get('customers/' + customerId);
-    customer.value = data.data ?? data;
+    const { data } = await api.get('customers/customers/' + customerId);
+    customer.value = castResource(data);
 });
 
 async function submit() {
@@ -47,7 +50,7 @@ async function submit() {
     errors.value = {};
 
     try {
-        await api.post(`/customers/${customerId}/pro-invoices`, form);
+        await api.post(`/customers/pro-invoices`, form);
         success.value = true;
     } catch (error) {
         if (error.response?.status === 422) {
@@ -64,7 +67,7 @@ async function submit() {
 
 function done() {
     success.value = false;
-    router.push(`/customers/${customerId}`);
+    router.push(routeUrl('customers.show', customerId));
 }
 </script>
 
@@ -94,7 +97,7 @@ function done() {
             </div>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <Button :href="`/customers/${customerId}`" @click.prevent="router.push(`/customers/${customerId}`)">Cancel</Button>
+                <Button :href="routeUrl('customers.show', customerId)" @click.prevent="router.push(routeUrl('customers.show', customerId))">Cancel</Button>
                 <Button type="submit" variant="primary" :disabled="processing">
                     {{ processing ? 'Saving…' : 'Create pro-invoice' }}
                 </Button>

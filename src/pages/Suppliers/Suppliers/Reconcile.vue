@@ -4,6 +4,8 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import { supplierTransactionPath } from '../../../helpers/supplierTransactions.js';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource, castPaginated } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
@@ -47,7 +49,7 @@ const balanced = computed(() => debitTotal.value > 0 && difference.value === 0);
 
 async function fetchSupplier() {
     const { data } = await api.get(`/suppliers/${id}`);
-    supplier.value = data.data ?? data;
+    supplier.value = castResource(data);
 }
 
 async function fetchDebit(page = 1) {
@@ -65,7 +67,7 @@ async function fetchDebit(page = 1) {
                 page,
             },
         });
-        debitRows.value = { data: data.data, ...data.pagination };
+        debitRows.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -92,7 +94,7 @@ async function fetchCredit(page = 1) {
                 page,
             },
         });
-        creditRows.value = { data: data.data, ...data.pagination };
+        creditRows.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -129,7 +131,7 @@ async function submit() {
             credit_links: { ...creditAmounts },
         });
         notifications.push({ type: 'success', message: 'Transactions reconciled successfully.' });
-        router.push(`/suppliers/${id}`);
+        router.push(routeUrl('suppliers.show', id));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.values(error.response.data.errors ?? {}).flat();
@@ -232,7 +234,7 @@ onMounted(() => {
                             </tbody>
                         </table>
                     </div>
-                    <ApiPagination :paginator="debitRows" class="mt-4" @page="fetchDebit" />
+                    <ApiPagination :paginator="debitRows.pagination" class="mt-4" @page="fetchDebit" />
                 </template>
             </FullWidthBox>
 
@@ -287,7 +289,7 @@ onMounted(() => {
                             </tbody>
                         </table>
                     </div>
-                    <ApiPagination :paginator="creditRows" class="mt-4" @page="fetchCredit" />
+                    <ApiPagination :paginator="creditRows.pagination" class="mt-4" @page="fetchCredit" />
                 </template>
             </FullWidthBox>
         </div>

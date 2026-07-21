@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { downloadFile } from '../../../helpers/download';
 import { useAuthStore } from '../../../stores/auth';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -20,8 +22,8 @@ const documents = ref([]);
 const canManageDocuments = auth.can('invoiceDocuments.manageDocuments');
 
 async function load() {
-    const { data } = await api.get(`/customer-invoices/${route.params.id}`);
-    invoice.value = data.data ?? data;
+    const { data } = await api.get(`/customers/invoices/${route.params.id}`);
+    invoice.value = castResource(data);
 }
 
 async function fetchDocuments() {
@@ -29,13 +31,13 @@ async function fetchDocuments() {
         return;
     }
 
-    const { data } = await api.get(`/customer-invoices/${route.params.id}/documents`);
+    const { data } = await api.get(`/customers/invoices/${route.params.id}/documents`);
     documents.value = data.data ?? [];
 }
 
 async function downloadDocument(document) {
     await downloadFile(
-        `/customer-invoices/${route.params.id}/documents/${document.id}`,
+        `/customers/invoices/${route.params.id}/documents/${document.id}`,
         { fallbackName: document.path ?? `document-${document.id}.pdf` },
     );
 }
@@ -53,7 +55,7 @@ onMounted(() => {
         <template v-else>
             <FullWidthBox :title="`Invoice ${invoice.gen_id}`" :collapsible="false" class="mb-6">
                 <template #actions>
-                    <RouterLink :to="`/customers/invoices`" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to Invoices</RouterLink>
+                    <RouterLink :to="routeUrl('customerInvoices.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to Invoices</RouterLink>
 
                     <button
                         type="button"
@@ -116,7 +118,7 @@ onMounted(() => {
                         <tbody>
                             <tr v-for="creditNote in invoice.credit_notes" :key="creditNote.id" class="border-b last:border-0">
                                 <td class="py-2 pr-2">
-                                    <RouterLink :to="`/customer-credit-notes/${creditNote.id}`" class="text-red-600 hover:underline">{{ creditNote.gen_id }}</RouterLink>
+                                    <RouterLink :to="routeUrl('customerCreditNotes.show', creditNote.id)" class="text-red-600 hover:underline">{{ creditNote.gen_id }}</RouterLink>
                                 </td>
                                 <td class="py-2 pr-2">{{ creditNote.on_date }}</td>
                                 <td class="py-2 pl-2 text-right tabular-nums">{{ money(creditNote.amount) }}</td>
@@ -175,7 +177,7 @@ onMounted(() => {
                 :show="actionsOpen"
                 :show-view-action="false"
                 @close="actionsOpen = false"
-                @deleted="router.push(`/customers/${invoice.customer.id}`)"
+                @deleted="router.push(routeUrl('customers.show', invoice.customer.id))"
                 @document-added="fetchDocuments"
             />
         </template>

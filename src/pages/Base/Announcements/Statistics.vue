@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
@@ -13,8 +15,8 @@ const announcement = ref(null);
 const viewers = ref([]);
 
 onMounted(async () => {
-    const { data } = await api.get(`/announcements/${id}/statistics`);
-    announcement.value = data.announcement.data ?? data.announcement;
+    const { data } = await api.get(`/base/announcements/${id}/statistics`);
+    announcement.value = castResource(data.data.announcement);
     viewers.value = data.viewers ?? [];
 });
 </script>
@@ -59,7 +61,7 @@ onMounted(async () => {
             </div>
 
             <template #footer>
-                <RouterLink to="/announcements" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('announcements.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                     Back to list
                 </RouterLink>
             </template>

@@ -3,7 +3,9 @@ import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -14,7 +16,7 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const transfers = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const toDelete = ref(null);
@@ -33,7 +35,7 @@ async function fetchTransfers(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        transfers.value = { data: data.data.items, ...data.data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -57,15 +59,15 @@ async function confirmDelete() {
     try {
         await api.delete(`/account-transfers/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchTransfers(transfers.value?.current_page ?? 1);
+        await fetchTransfers(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         deleting.value = false;
     }
 }
 
 const rowActions = (transfer) => [
-    ...(auth.can('accountTransfers.show') ? [{ label: 'View', href: `/account-transfers/${transfer.id}` }] : []),
-    ...(auth.can('accountTransfers.edit') && transfer.editable ? [{ label: 'Edit', href: `/account-transfers/${transfer.id}/edit` }] : []),
+    ...(auth.can('accountTransfers.show') ? [{ label: 'View', href: routeUrl('accountTransfers.show', transfer.id) }] : []),
+    ...(auth.can('accountTransfers.edit') && transfer.editable ? [{ label: 'Edit', href: routeUrl('accountTransfers.edit', transfer.id) }] : []),
     ...(auth.can('accountTransfers.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = transfer) }] : []),
 ];
 </script>
@@ -93,13 +95,13 @@ const rowActions = (transfer) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! transfers">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="transfers.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No transfers found.</td>
                         </tr>
-                        <tr v-for="transfer in (loading ? [] : transfers?.data ?? [])" :key="transfer.id" class="hover:bg-gray-50">
+                        <tr v-for="transfer in (loading ? [] : apiResponse?.data ?? [])" :key="transfer.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ transfer.gen_id }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ transfer.on_date }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ transfer.from_account }}</td>
@@ -114,10 +116,10 @@ const rowActions = (transfer) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="transfers" :paginator="transfers" class="mt-4" @page="fetchTransfers" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchTransfers" />
 
             <template #footer>
-                <RouterLink v-if="auth.can('accountTransfers.create')" to="/account-transfers/create" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
+                <RouterLink v-if="auth.can('accountTransfers.create')" :to="routeUrl('accountTransfers.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
                     + Transfer
                 </RouterLink>
             </template>

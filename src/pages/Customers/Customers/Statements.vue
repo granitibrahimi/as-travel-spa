@@ -4,6 +4,7 @@ import DateInput from '../../../components/Form/DateInput.vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import { customerTransactionPath } from '../../../helpers/customerTransactions.js';
+import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api.js';
 import { downloadFile } from '../../../helpers/download.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -49,7 +50,7 @@ function apiParams() {
 }
 
 async function fetchCustomer() {
-    const { data } = await api.get(`/customers/${id}`);
+    const { data } = await api.get(`/customers/customers/${id}`);
     customer.value = data.data;
 }
 
@@ -60,7 +61,7 @@ async function fetchStatements() {
     loading.value = true;
 
     try {
-        const { data } = await api.get(`/customers/${id}/statements`, {
+        const { data } = await api.get(`/customers/customers/${id}/statements`, {
             signal: controller.signal,
             params: apiParams(),
         });
@@ -99,7 +100,7 @@ async function download(kind, flag) {
     flag.value = true;
 
     try {
-        await downloadFile(`/customers/${id}/statements/${kind}`, {
+        await downloadFile(`/customers/customers/${id}/statements/${kind}`, {
             fallbackName: `statement.${kind === 'pdf' ? 'pdf' : 'xlsx'}`,
             config: { params: apiParams() },
         });
@@ -115,7 +116,7 @@ async function sendEmail() {
     sendingEmail.value = true;
 
     try {
-        await api.post(`/customers/${id}/statements/email`, apiParams());
+        await api.post(`/customers/customers/${id}/statements/email`, apiParams());
         notifications.push({ type: 'success', message: 'Statement email sent successfully.' });
     } catch {
         notifications.push({ type: 'error', message: 'Could not send the statement email.' });
@@ -139,7 +140,7 @@ onMounted(() => {
                         <Button size="sm" :loading="sendingEmail" @click="sendEmail">Send email</Button>
                         <Button size="sm" :loading="downloadingExcel" @click="download('excel', downloadingExcel)">Download Excel</Button>
                         <Button size="sm" :loading="downloadingPdf" @click="download('pdf', downloadingPdf)">Download PDF</Button>
-                        <RouterLink :to="`/customers/${id}`" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50">
+                        <RouterLink :to="routeUrl('customers.show', id)" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50">
                             Back to customer
                         </RouterLink>
                     </div>

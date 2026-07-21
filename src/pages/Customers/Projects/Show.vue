@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { useAuthStore } from '../../../stores/auth';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -28,8 +29,8 @@ const barColor = computed(() => ({
 }[project.value?.progress_color] ?? 'bg-red-500'));
 
 async function load() {
-    const { data } = await api.get(`/customer-projects/${id}`);
-    project.value = data.data ?? data;
+    const { data } = await api.get(`/customers/projects/${id}`);
+    project.value = castResource(data);
 }
 
 onMounted(load);
@@ -42,8 +43,8 @@ async function attachRetroactively() {
     attaching.value = true;
 
     try {
-        const { data } = await api.post(`/customer-projects/${id}/attach-retroactively`);
-        project.value = data.data ?? data;
+        const { data } = await api.post(`/customers/projects/${id}/attach-retroactively`);
+        project.value = castResource(data);
     } finally {
         attaching.value = false;
     }
@@ -57,8 +58,8 @@ async function confirmDetach() {
     detaching.value = true;
 
     try {
-        const { data } = await api.delete(`/customer-projects/${id}/invoices/${pendingDetach.value.id}`);
-        project.value = data.data ?? data;
+        const { data } = await api.delete(`/customers/projects/${id}/invoices/${pendingDetach.value.id}`);
+        project.value = castResource(data);
         pendingDetach.value = null;
     } finally {
         detaching.value = false;

@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth';
 import ActionsOverlay from '../../../components/ActionsOverlay.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
@@ -38,12 +39,12 @@ const groups = computed(() => {
     // "Create" — only for top-level suppliers (no parent).
     if (supplier.parent_supplier_id == null) {
         const creates = [
-            { label: 'Bill', to: `/suppliers/${supplier.id}/bills/create`, can: 'supplierBills.create' },
-            { label: 'Payment', to: `/suppliers/${supplier.id}/payments/create`, can: 'supplierPayments.create' },
-            { label: 'Deposit', to: `/suppliers/${supplier.id}/deposits/create`, can: 'supplierDeposits.create' },
-            { label: 'Credit Note', to: `/suppliers/${supplier.id}/credit-notes/create`, can: 'supplierCreditNotes.create' },
-            { label: 'Gift Card', to: `/suppliers/${supplier.id}/gift-cards/create`, can: 'supplierGiftCards.create' },
-            { label: 'Refund', to: `/suppliers/${supplier.id}/refunds/create`, can: 'supplierRefunds.create' },
+            { label: 'Bill', to: routeUrl('supplierBills.create', supplier.id), can: 'supplierBills.create' },
+            { label: 'Payment', to: routeUrl('supplierPayments.create', supplier.id), can: 'supplierPayments.create' },
+            { label: 'Deposit', to: routeUrl('supplierDeposits.create', supplier.id), can: 'supplierDeposits.create' },
+            { label: 'Credit Note', to: routeUrl('supplierCreditNotes.create', supplier.id), can: 'supplierCreditNotes.create' },
+            { label: 'Gift Card', to: routeUrl('supplierGiftCards.create', supplier.id), can: 'supplierGiftCards.create' },
+            { label: 'Refund', to: routeUrl('supplierRefunds.create', supplier.id), can: 'supplierRefunds.create' },
         ].filter((action) => auth.can(action.can));
 
         if (creates.length) {
@@ -53,10 +54,10 @@ const groups = computed(() => {
 
     // "Pages"
     const pages = [
-        ...(props.showViewAction ? [{ label: 'View', to: `/suppliers/${supplier.id}`, can: 'suppliers.show' }] : []),
-        { label: 'Statements', to: `/suppliers/${supplier.id}/statements`, can: 'suppliers.statements' },
-        { label: 'Credentials', to: `/suppliers/${supplier.id}/credentials`, can: 'suppliers.credentials' },
-        { label: 'Edit', to: `/suppliers/${supplier.id}/edit`, can: 'suppliers.edit' },
+        ...(props.showViewAction ? [{ label: 'View', to: routeUrl('suppliers.show', supplier.id), can: 'suppliers.show' }] : []),
+        { label: 'Statements', to: routeUrl('suppliers.statements', supplier.id), can: 'suppliers.statements' },
+        { label: 'Credentials', to: routeUrl('suppliers.credentials', supplier.id), can: 'suppliers.credentials' },
+        { label: 'Edit', to: routeUrl('suppliers.edit', supplier.id), can: 'suppliers.edit' },
     ].filter((action) => auth.can(action.can));
 
     if (pages.length) {

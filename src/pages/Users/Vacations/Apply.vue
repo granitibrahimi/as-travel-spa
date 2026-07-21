@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -34,9 +35,9 @@ const cancelling = ref(false);
 
 async function loadOptions() {
     const { data } = await api.get('/vacations/apply');
-    vacationTypes.value = data.vacationTypes;
-    balances.value = data.balances.data ?? data.balances;
-    activeRequest.value = data.activeRequest;
+    vacationTypes.value = castResource(data).vacationTypes;
+    balances.value = castResource(data).balances.data ?? castResource(data).balances;
+    activeRequest.value = castResource(data).activeRequest;
     form.type = vacationTypes.value[0]?.value ?? null;
     ready.value = true;
 }

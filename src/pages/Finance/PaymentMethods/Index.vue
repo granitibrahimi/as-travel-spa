@@ -2,7 +2,9 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -13,7 +15,7 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const paymentMethods = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const toDelete = ref(null);
@@ -32,7 +34,7 @@ async function fetchPaymentMethods(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        paymentMethods.value = { data: data.data.items, ...data.data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -56,14 +58,14 @@ async function confirmDelete() {
     try {
         await api.delete(`/payment-methods/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchPaymentMethods(paymentMethods.value?.current_page ?? 1);
+        await fetchPaymentMethods(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         deleting.value = false;
     }
 }
 
 const rowActions = (method) => [
-    ...(auth.can('paymentMethods.edit') ? [{ label: 'Edit', href: `/payment-methods/${method.id}/edit` }] : []),
+    ...(auth.can('paymentMethods.edit') ? [{ label: 'Edit', href: routeUrl('paymentMethods.edit', method.id) }] : []),
     ...(auth.can('paymentMethods.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = method) }] : []),
 ];
 
@@ -96,13 +98,13 @@ const flags = (method) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! paymentMethods">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="5" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="paymentMethods.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No payment methods found.</td>
                         </tr>
-                        <tr v-for="method in (loading ? [] : paymentMethods?.data ?? [])" :key="method.id" class="hover:bg-gray-50">
+                        <tr v-for="method in (loading ? [] : apiResponse?.data ?? [])" :key="method.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ method.name }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ method.type_label }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ method.account ?? '—' }}</td>
@@ -115,10 +117,10 @@ const flags = (method) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="paymentMethods" :paginator="paymentMethods" class="mt-4" @page="fetchPaymentMethods" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchPaymentMethods" />
 
             <template #footer>
-                <RouterLink v-if="auth.can('paymentMethods.create')" to="/payment-methods/create" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
+                <RouterLink v-if="auth.can('paymentMethods.create')" :to="routeUrl('paymentMethods.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
                     + Payment method
                 </RouterLink>
             </template>

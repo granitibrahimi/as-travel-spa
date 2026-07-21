@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -17,7 +19,7 @@ const title = computed(() => (expense.value ? `Expense ${expense.value.gen_id}` 
 
 onMounted(async () => {
     const { data } = await api.get(`/expenses/${id}`);
-    expense.value = data.data ?? data;
+    expense.value = castResource(data);
 });
 </script>
 
@@ -28,7 +30,7 @@ onMounted(async () => {
             <template v-else>
                 <div v-if="auth.can('expenses.edit')" class="mb-4 flex gap-2">
                     <RouterLink
-                        :to="`/expenses/${expense.id}/edit`"
+                        :to="routeUrl('expenses.edit', expense.id)"
                         class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
                     >
                         Edit
@@ -72,7 +74,7 @@ onMounted(async () => {
             </template>
 
             <template #footer>
-                <RouterLink to="/expenses" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('expenses.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                     Back to expenses
                 </RouterLink>
             </template>

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../../helpers/api';
+import { castResource } from '../../../types/responses.js';
 import Loader from '../../../components/Loader.vue';
 import RecordChange from '../../../components/RecordChange.vue';
 
@@ -38,11 +39,11 @@ const segments = {
 };
 
 const endpoints = computed(() => ({
-    customer: `${apiOrigin}/api/base/customers/${invoice.value.customer.id}/details`,
+    customer: `customers/customers/${invoice.value.customer.id}/details`,
     customersSearch: 'customers/autosuggest',
     agentsSearch: 'users/autosuggest',
-    submit: `/customer-invoices/${invoice.value.id}/${segments[props.field]}`,
-    redirect: `/customer-invoices/${invoice.value.id}`,
+    submit: `/customers/invoices/${invoice.value.id}/${segments[props.field]}`,
+    redirect: `/customers/invoices/${invoice.value.id}`,
 }));
 
 const current = computed(() => ({
@@ -52,8 +53,8 @@ const current = computed(() => ({
 }));
 
 onMounted(async () => {
-    const { data } = await api.get(`/customer-invoices/${route.params.id}`);
-    invoice.value = data.data ?? data;
+    const { data } = await api.get(`/customers/invoices/${route.params.id}`);
+    invoice.value = castResource(data);
 });
 </script>
 

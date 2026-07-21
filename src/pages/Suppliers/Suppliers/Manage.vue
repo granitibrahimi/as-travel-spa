@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource, castMutation } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -35,7 +37,7 @@ onMounted(async () => {
     }
 
     const { data } = await api.get(`/suppliers/${supplierId}`);
-    const supplier = data.data ?? data;
+    const supplier = castResource(data);
 
     Object.assign(form, {
         name: supplier.name ?? '',
@@ -62,10 +64,10 @@ async function submit() {
     try {
         if (isEdit) {
             await api.put(`/suppliers/${supplierId}`, form);
-            router.push(`/suppliers/${supplierId}`);
+            router.push(routeUrl('suppliers.show', supplierId));
         } else {
             const { data } = await api.post('/suppliers', form);
-            router.push(`/suppliers/${data.id}`);
+            router.push(routeUrl('suppliers.show', castMutation(data).id));
         }
     } catch (error) {
         if (error.response?.status === 422) {
@@ -80,7 +82,7 @@ async function submit() {
     }
 }
 
-const cancelTo = isEdit ? `/suppliers/${supplierId}` : '/suppliers';
+const cancelTo = isEdit ? routeUrl('suppliers.show', supplierId) : routeUrl('suppliers.list');
 </script>
 
 <template>

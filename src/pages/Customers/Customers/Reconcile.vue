@@ -3,7 +3,9 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import { customerTransactionPath } from '../../../helpers/customerTransactions.js';
+import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
@@ -46,7 +48,7 @@ const difference = computed(() => Math.round((debitTotal.value - creditTotal.val
 const balanced = computed(() => debitTotal.value > 0 && difference.value === 0);
 
 async function fetchCustomer() {
-    const { data } = await api.get(`/customers/${id}`);
+    const { data } = await api.get(`/customers/customers/${id}`);
     customer.value = data.data;
 }
 
@@ -57,7 +59,7 @@ async function fetchDebit(page = 1) {
     debitLoading.value = true;
 
     try {
-        const { data } = await api.get(`/customers/${id}/reconcile/debit-transactions`, {
+        const { data } = await api.get(`/customers/customers/${id}/reconcile/debit-transactions`, {
             signal: controller.signal,
             params: {
                 search: debitSearch.value || undefined,
@@ -65,7 +67,7 @@ async function fetchDebit(page = 1) {
                 page,
             },
         });
-        debitRows.value = { data: data.data, ...data.pagination };
+        debitRows.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -84,7 +86,7 @@ async function fetchCredit(page = 1) {
     creditLoading.value = true;
 
     try {
-        const { data } = await api.get(`/customers/${id}/reconcile/credit-transactions`, {
+        const { data } = await api.get(`/customers/customers/${id}/reconcile/credit-transactions`, {
             signal: controller.signal,
             params: {
                 search: creditSearch.value || undefined,
@@ -92,7 +94,7 @@ async function fetchCredit(page = 1) {
                 page,
             },
         });
-        creditRows.value = { data: data.data, ...data.pagination };
+        creditRows.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -124,12 +126,12 @@ async function submit() {
     errors.value = [];
 
     try {
-        await api.post(`/customers/${id}/reconcile`, {
+        await api.post(`/customers/customers/${id}/reconcile`, {
             debit_links: { ...debitAmounts },
             credit_links: { ...creditAmounts },
         });
         notifications.push({ type: 'success', message: 'Transactions reconciled successfully.' });
-        router.push(`/customers/${id}`);
+        router.push(routeUrl('customers.show', id));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.values(error.response.data.errors ?? {}).flat();
@@ -232,7 +234,7 @@ onMounted(() => {
                             </tbody>
                         </table>
                     </div>
-                    <ApiPagination :paginator="debitRows" class="mt-4" @page="fetchDebit" />
+                    <ApiPagination :paginator="debitRows.pagination" class="mt-4" @page="fetchDebit" />
                 </template>
             </FullWidthBox>
 
@@ -287,7 +289,7 @@ onMounted(() => {
                             </tbody>
                         </table>
                     </div>
-                    <ApiPagination :paginator="creditRows" class="mt-4" @page="fetchCredit" />
+                    <ApiPagination :paginator="creditRows.pagination" class="mt-4" @page="fetchCredit" />
                 </template>
             </FullWidthBox>
         </div>

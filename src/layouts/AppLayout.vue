@@ -147,7 +147,7 @@ async function signOut() {
                 <div class="flex flex-1 items-center justify-end gap-4">
                     <RouterLink
                         v-if="canSeeNotifications"
-                        to="/notifications"
+                        to="/users/notifications"
                         class="relative inline-flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-50 hover:text-gray-700"
                         aria-label="Notifications"
                     >

@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -17,7 +19,7 @@ const title = computed(() => (journal.value ? `Journal ${journal.value.gen_id}` 
 
 onMounted(async () => {
     const { data } = await api.get(`/journals/${id}`);
-    journal.value = data.data ?? data;
+    journal.value = castResource(data);
 });
 </script>
 
@@ -29,7 +31,7 @@ onMounted(async () => {
                 <div v-if="auth.canAny(['journals.edit', 'journals.create'])" class="mb-4 flex gap-2">
                     <RouterLink
                         v-if="auth.can('journals.edit')"
-                        :to="`/journals/${journal.id}/edit`"
+                        :to="routeUrl('journals.edit', journal.id)"
                         class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
                     >
                         Edit
@@ -77,7 +79,7 @@ onMounted(async () => {
             </template>
 
             <template #footer>
-                <RouterLink to="/journals" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('journals.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                     Back to journals
                 </RouterLink>
             </template>

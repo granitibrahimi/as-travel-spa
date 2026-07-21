@@ -2,7 +2,9 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
+import { castResource, castMutation } from '../../../types/responses.js';
 import { money } from '../../../helpers/money';
+import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore } from '../../../stores/formOptions';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -56,8 +58,8 @@ onMounted(async () => {
     orders.value = [blankOrder()];
 
     try {
-        const { data } = await api.get(`/customers/${route.params.customer}`);
-        customer.value = data.data ?? data;
+        const { data } = await api.get(`/customers/customers/${route.params.customer}`);
+        customer.value = castResource(data);
     } catch {
         customer.value = null;
     }
@@ -110,8 +112,8 @@ async function save() {
             })),
         };
 
-        const { data } = await api.post(`/customers/${route.params.customer}/credit-notes`, payload);
-        router.push(`/customer-credit-notes/${data.id}`);
+        const { data } = await api.post(`/customers/customers/${route.params.customer}/credit-notes`, payload);
+        router.push(routeUrl('customerCreditNotes.show', castMutation(data).id));
     } catch (e) {
         error.value = e.response?.data?.message ?? 'Could not create the credit note.';
     } finally {

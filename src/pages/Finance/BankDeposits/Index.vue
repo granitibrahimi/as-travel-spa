@@ -3,7 +3,9 @@ import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -14,7 +16,7 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const deposits = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const toDelete = ref(null);
@@ -33,7 +35,7 @@ async function fetchDeposits(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        deposits.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -57,14 +59,14 @@ async function confirmDelete() {
     try {
         await api.delete(`/bank-deposits/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchDeposits(deposits.value?.current_page ?? 1);
+        await fetchDeposits(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         deleting.value = false;
     }
 }
 
 const rowActions = (deposit) => [
-    ...(auth.can('bankDeposits.show') ? [{ label: 'View', href: `/bank-deposits/${deposit.id}` }] : []),
+    ...(auth.can('bankDeposits.show') ? [{ label: 'View', href: routeUrl('bankDeposits.show', deposit.id) }] : []),
     ...(auth.can('accountTransactions.journal') ? [{ label: 'Journal', to: { name: 'accountTransactions.journal', params: { type: 'bank-deposit', reference: deposit.id } } }] : []),
     ...(deposit.qb_id ? [{ label: 'Open in QuickBooks', href: `https://qbo.intuit.com/app/transfer?txnId=${deposit.qb_id}` }] : []),
     ...(auth.can('bankDeposits.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = deposit) }] : []),
@@ -93,13 +95,13 @@ const rowActions = (deposit) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! deposits">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="deposits.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No bank deposits found.</td>
                         </tr>
-                        <tr v-for="deposit in (loading ? [] : deposits?.data ?? [])" :key="deposit.id" class="hover:bg-gray-50">
+                        <tr v-for="deposit in (loading ? [] : apiResponse?.data ?? [])" :key="deposit.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ deposit.gen_id }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ deposit.on_date }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ deposit.payment_method }}</td>
@@ -113,10 +115,10 @@ const rowActions = (deposit) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="deposits" :paginator="deposits" class="mt-4" @page="fetchDeposits" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchDeposits" />
 
             <template #footer>
-                <RouterLink v-if="auth.can('bankDeposits.create')" to="/bank-deposits/create" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
+                <RouterLink v-if="auth.can('bankDeposits.create')" :to="routeUrl('bankDeposits.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
                     + Bank Deposit
                 </RouterLink>
             </template>

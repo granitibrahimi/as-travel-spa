@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -35,7 +36,7 @@ const ready = ref(false);
 
 onMounted(async () => {
     const user = isEdit
-        ? await api.get(`/users/${id}`).then((r) => r.data.data ?? r.data)
+        ? await api.get(`/users/users/${id}`).then((r) => r.data.data ?? r.data)
         : null;
 
     if (user) {
@@ -59,8 +60,8 @@ async function submit() {
     errors.value = {};
 
     try {
-        await (isEdit ? api.put(`/users/${id}`, form) : api.post('/users', form));
-        router.push('/users');
+        await (isEdit ? api.put(`/users/users/${id}`, form) : api.post('/users/users', form));
+        router.push(routeUrl('users.list'));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -99,7 +100,7 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink to="/users" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('users.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing">

@@ -3,6 +3,8 @@ import { computed, onMounted, provide, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../helpers/money';
 import api from '../../helpers/api';
+import { routeUrl } from '../../helpers/route.js';
+import { castResource } from '../../types/responses.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import Button from '../../components/Button.vue';
 import AsyncSelect from '../../components/Form/AsyncSelect.vue';
@@ -90,7 +92,7 @@ onMounted(async () => {
 
     if (isEdit) {
         const { data: payload } = await api.get(`/static-offers/${id}/edit`);
-        const offer = payload.data ?? payload;
+        const offer = castResource(payload);
 
         Object.assign(form, {
             name: offer.name ?? '',
@@ -392,7 +394,7 @@ async function submit() {
     try {
         const payload = buildPayload();
         await (isEdit ? api.put(`/static-offers/${id}`, payload) : api.post('/static-offers', payload));
-        router.push('/offers');
+        router.push(routeUrl('staticOffers.list'));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -657,7 +659,7 @@ async function submit() {
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <RouterLink to="/offers" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">Cancel</RouterLink>
+                        <RouterLink :to="routeUrl('staticOffers.list')" class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">Cancel</RouterLink>
                         <Button type="submit" variant="primary" :disabled="processing">
                             {{ processing ? 'Saving…' : 'Save offer' }}
                         </Button>

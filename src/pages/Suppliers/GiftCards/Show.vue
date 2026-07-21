@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -18,7 +20,7 @@ const giftCard = ref(null);
 
 async function load() {
     const { data } = await api.get(`/supplier-gift-cards/${route.params.id}`);
-    giftCard.value = data.data ?? data;
+    giftCard.value = castResource(data);
 }
 
 onMounted(load);
@@ -35,7 +37,7 @@ async function confirmDelete() {
 
     try {
         await api.delete(`/supplier-gift-cards/${giftCard.value.id}`);
-        router.push(giftCard.value.supplier ? `/suppliers/${giftCard.value.supplier.id}` : '/supplier-gift-cards');
+        router.push(giftCard.value.supplier ? routeUrl('suppliers.show', giftCard.value.supplier.id) : routeUrl('supplierGiftCards.list'));
     } finally {
         deleting.value = false;
     }
@@ -57,8 +59,8 @@ async function confirmDelete() {
 
             <template #footer>
                 <div class="flex flex-wrap items-center gap-3">
-                    <RouterLink to="/supplier-gift-cards" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
-                    <RouterLink v-if="auth.can('supplierGiftCards.edit')" :to="`/supplier-gift-cards/${giftCard.id}/edit`" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
+                    <RouterLink :to="routeUrl('supplierGiftCards.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
+                    <RouterLink v-if="auth.can('supplierGiftCards.edit')" :to="routeUrl('supplierGiftCards.edit', giftCard.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
                     <Button v-if="auth.can('supplierGiftCards.delete')" variant="danger" size="sm" @click="confirmingDelete = true">Delete</Button>
                 </div>
             </template>

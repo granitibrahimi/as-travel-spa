@@ -2,6 +2,8 @@
 import { onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
@@ -16,8 +18,9 @@ const thread = ref([]);
 async function load(id) {
     message.value = null;
     const { data } = await api.get(`/messages/${id}`);
-    message.value = data.message?.data ?? data.message;
-    thread.value = data.thread ?? [];
+    const record = castResource(data);
+    message.value = record.message?.data ?? record.message;
+    thread.value = record.thread ?? [];
 }
 
 onMounted(() => load(route.params.id));
@@ -43,7 +46,7 @@ watch(() => route.params.id, (id) => {
                     </template>
 
                     <template #footer>
-                        <RouterLink to="/messages" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                        <RouterLink :to="routeUrl('messages.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                             Back to list
                         </RouterLink>
                     </template>
@@ -54,7 +57,7 @@ watch(() => route.params.id, (id) => {
                 <p v-if="thread.length === 0" class="text-sm text-gray-400">No other messages.</p>
                 <ul class="divide-y divide-gray-100">
                     <li v-for="item in thread" :key="item.id">
-                        <RouterLink :to="`/messages/${item.id}`" class="flex items-center justify-between gap-2 py-2 text-sm hover:text-red-600">
+                        <RouterLink :to="routeUrl('messages.show', item.id)" class="flex items-center justify-between gap-2 py-2 text-sm hover:text-red-600">
                             <span :class="{ 'font-semibold': item.unread }">{{ item.subject }}</span>
                             <span class="whitespace-nowrap text-xs text-gray-400">{{ item.created_at }}</span>
                         </RouterLink>

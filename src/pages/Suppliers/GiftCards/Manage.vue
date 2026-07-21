@@ -3,6 +3,8 @@ import { onMounted, reactive, ref } from 'vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource, castMutation } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -32,7 +34,7 @@ const loaded = ref(false);
 onMounted(async () => {
     if (isEdit) {
         const { data } = await api.get(`/supplier-gift-cards/${giftCardId}`);
-        const giftCard = data.data ?? data;
+        const giftCard = castResource(data);
         Object.assign(form, {
             amount: giftCard.amount,
             on_date: giftCard.on_date ?? '',
@@ -56,10 +58,10 @@ async function submit() {
     try {
         if (isEdit) {
             await api.put(`/supplier-gift-cards/${giftCardId}`, payload);
-            router.push(`/supplier-gift-cards/${giftCardId}`);
+            router.push(routeUrl('supplierGiftCards.show', giftCardId));
         } else {
             const { data } = await api.post(`/suppliers/${supplierId}/gift-cards`, payload);
-            router.push(`/supplier-gift-cards/${data.id}`);
+            router.push(routeUrl('supplierGiftCards.show', castMutation(data).id));
         }
     } catch (error) {
         if (error.response?.status === 422) {
@@ -74,7 +76,7 @@ async function submit() {
     }
 }
 
-const cancelTo = isEdit ? `/supplier-gift-cards/${giftCardId}` : `/suppliers/${supplierId}`;
+const cancelTo = isEdit ? routeUrl('supplierGiftCards.show', giftCardId) : routeUrl('suppliers.show', supplierId);
 </script>
 
 <template>

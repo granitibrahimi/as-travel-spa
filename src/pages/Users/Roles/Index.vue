@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -20,8 +22,8 @@ async function fetchRoles() {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/roles');
-        roles.value = data.data ?? data;
+        const { data } = await api.get('/users/roles');
+        roles.value = castResource(data);
     } finally {
         loading.value = false;
     }
@@ -46,8 +48,8 @@ async function confirmDelete() {
 }
 
 const rowActions = (role) => [
-    ...(auth.can('roles.permissions') ? [{ label: 'Permissions', href: `/roles/${role.id}/permissions` }] : []),
-    ...(auth.can('roles.edit') ? [{ label: 'Edit', href: `/roles/${role.id}/edit` }] : []),
+    ...(auth.can('roles.permissions') ? [{ label: 'Permissions', href: routeUrl('userRoles.permissions', role.id) }] : []),
+    ...(auth.can('roles.edit') ? [{ label: 'Edit', href: routeUrl('userRoles.edit', role.id) }] : []),
     ...(auth.can('roles.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = role) }] : []),
 ];
 </script>
@@ -78,7 +80,7 @@ const rowActions = (role) => [
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ role.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ role.description }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
-                                <RouterLink v-if="auth.can('roles.permissions')" :to="`/roles/${role.id}/permissions`" class="text-blue-600 hover:underline">
+                                <RouterLink v-if="auth.can('roles.permissions')" :to="routeUrl('userRoles.permissions', role.id)" class="text-blue-600 hover:underline">
                                     {{ role.permissions_count }}
                                 </RouterLink>
                                 <span v-else>{{ role.permissions_count }}</span>
@@ -93,10 +95,10 @@ const rowActions = (role) => [
 
             <template #footer>
                 <div class="flex items-center gap-3">
-                    <RouterLink v-if="auth.can('roles.allPermissions')" to="/permissions" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                    <RouterLink v-if="auth.can('roles.allPermissions')" :to="routeUrl('userPermissions.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                         All permissions
                     </RouterLink>
-                    <RouterLink v-if="auth.can('roles.create')" to="/roles/create" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
+                    <RouterLink v-if="auth.can('roles.create')" :to="routeUrl('userRoles.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
                         + Role
                     </RouterLink>
                 </div>

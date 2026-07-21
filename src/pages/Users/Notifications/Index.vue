@@ -2,8 +2,10 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
-import { useAuthStore } from '../../../stores/auth';
-import { useNotificationsStore } from '../../../stores/notifications';
+import { routeUrl } from '../../../helpers/route.js';
+import { castPaginated } from '../../../types/responses.js';
+import { useAuthStore } from '../../../stores/auth.js';
+import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
@@ -12,7 +14,7 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 const store = useNotificationsStore();
 const canView = auth.can('userNotifications.show');
-const notifications = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 
 let request = null;
@@ -24,11 +26,11 @@ async function fetchNotifications(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/user-notifications', {
+        const { data } = await api.get('/users/notifications', {
             signal: controller.signal,
             params: { page },
         });
-        notifications.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -47,7 +49,7 @@ async function markRead(notification) {
         return;
     }
 
-    await api.post(`/user-notifications/${notification.id}/read`);
+    await api.post(`/users/notifications/${notification.id}/read`);
     notification.is_read = true;
     store.fetchUnread();
 }
@@ -78,14 +80,14 @@ async function open(notification) {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! notifications">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="5" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="notifications.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No notifications.</td>
                         </tr>
                         <tr
-                            v-for="notification in (loading ? [] : notifications?.data ?? [])"
+                            v-for="notification in (loading ? [] : apiResponse?.data ?? [])"
                             :key="notification.id"
                             class="hover:bg-gray-50"
                             :class="{ 'bg-red-50/40': ! notification.is_read }"
@@ -102,7 +104,7 @@ async function open(notification) {
                             <td class="border border-gray-300 px-2 py-2">
                                 <RouterLink
                                     v-if="canView"
-                                    :to="`/notifications/${notification.id}`"
+                                    :to="routeUrl('notifications.show', notification.id)"
                                     :class="notification.is_read ? 'font-medium text-gray-700 hover:text-red-700 hover:underline' : 'font-semibold text-gray-900 hover:text-red-700 hover:underline'"
                                 >
                                     {{ notification.title }}
@@ -117,7 +119,7 @@ async function open(notification) {
                                 <div class="flex items-center justify-center gap-2">
                                     <RouterLink
                                         v-if="canView"
-                                        :to="`/notifications/${notification.id}`"
+                                        :to="routeUrl('notifications.show', notification.id)"
                                         class="rounded border border-gray-300 bg-white px-2 py-1 text-xs hover:bg-gray-50"
                                     >
                                         View
@@ -145,7 +147,7 @@ async function open(notification) {
                 </table>
             </div>
 
-            <ApiPagination v-if="notifications" :paginator="notifications" class="mt-4" @page="fetchNotifications" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchNotifications" />
         </FullWidthBox>
     </AppLayout>
 </template>

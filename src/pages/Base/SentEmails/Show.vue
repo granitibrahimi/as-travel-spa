@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
@@ -14,7 +16,7 @@ const title = computed(() => email.value?.subject ?? `Sent Email #${id}`);
 
 onMounted(async () => {
     const { data } = await api.get(`/sent-emails/${id}`);
-    email.value = data.data ?? data;
+    email.value = castResource(data);
 });
 
 const badgeClass = {
@@ -81,7 +83,7 @@ const statusLabel = { sent: 'Sent', opened: 'Opened', bounced: 'Bounced' };
             </template>
 
             <template #footer>
-                <RouterLink to="/sent-emails" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('sentEmails.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">
                     Back to list
                 </RouterLink>
             </template>

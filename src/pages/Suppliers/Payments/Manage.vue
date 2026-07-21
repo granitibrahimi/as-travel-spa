@@ -3,6 +3,8 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource, castMutation } from '../../../types/responses.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -40,7 +42,7 @@ const canEditAmount = ref(true);
 onMounted(async () => {
     if (isEdit) {
         const { data } = await api.get(`/supplier-payments/${paymentId}`);
-        const payment = data.data ?? data;
+        const payment = castResource(data);
         Object.assign(form, {
             payment_method_id: payment.payment_method_id,
             amount: payment.amount,
@@ -68,10 +70,10 @@ async function submit() {
     try {
         if (isEdit) {
             await api.put(`/supplier-payments/${paymentId}`, payload);
-            router.push(`/supplier-payments/${paymentId}`);
+            router.push(routeUrl('supplierPayments.show', paymentId));
         } else {
             const { data } = await api.post(`/suppliers/${supplierId}/payments`, payload);
-            router.push(`/supplier-payments/${data.id}`);
+            router.push(routeUrl('supplierPayments.show', castMutation(data).id));
         }
     } catch (error) {
         if (error.response?.status === 422) {
@@ -86,7 +88,7 @@ async function submit() {
     }
 }
 
-const cancelTo = isEdit ? `/supplier-payments/${paymentId}` : `/suppliers/${supplierId}`;
+const cancelTo = isEdit ? routeUrl('supplierPayments.show', paymentId) : routeUrl('suppliers.show', supplierId);
 </script>
 
 <template>

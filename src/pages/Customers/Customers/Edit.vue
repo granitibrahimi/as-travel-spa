@@ -3,6 +3,8 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import api from '../../../helpers/api.js';
+import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -41,8 +43,8 @@ const processing = ref(false);
 const loaded = ref(false);
 
 onMounted(async () => {
-    const { data } = await api.get(`/customers/${customerId}`);
-    const customer = data.data ?? data;
+    const { data } = await api.get(`/customers/customers/${customerId}`);
+    const customer = castResource(data);
     Object.assign(form, {
         type: customer.type ?? null,
         name: customer.name ?? '',
@@ -67,8 +69,8 @@ async function submit() {
     errors.value = {};
 
     try {
-        await api.put(`/customers/${customerId}`, form);
-        router.push(`/customers/${customerId}`);
+        await api.put(`/customers/customers/${customerId}`, form);
+        router.push(routeUrl('customers.show', customerId));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -111,7 +113,7 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink :to="`/customers/${customerId}`" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
+                <RouterLink :to="routeUrl('customers.show', customerId)" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing || ! loaded">

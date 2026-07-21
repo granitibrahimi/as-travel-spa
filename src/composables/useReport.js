@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import api from '../helpers/api';
+import { castResource } from '../types/responses.js';
 
 /**
  * Fetch a statistics report from the API. `load(params)` GETs the endpoint with
@@ -20,7 +21,7 @@ export function useReport(endpoint) {
 
         try {
             const { data: payload } = await api.get(endpoint, { signal: controller.signal, params });
-            data.value = payload;
+            data.value = castResource(payload);
         } catch (e) {
             if (e.code === 'ERR_CANCELED') {
                 return;

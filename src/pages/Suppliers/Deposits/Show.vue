@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource, castMutation } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -18,7 +20,7 @@ const deposit = ref(null);
 
 async function load() {
     const { data } = await api.get(`/supplier-deposits/${route.params.id}`);
-    deposit.value = data.data ?? data;
+    deposit.value = castResource(data);
 }
 
 onMounted(load);
@@ -35,7 +37,7 @@ async function confirmDelete() {
 
     try {
         await api.delete(`/supplier-deposits/${deposit.value.id}`);
-        router.push(deposit.value.supplier ? `/suppliers/${deposit.value.supplier.id}` : '/supplier-deposits');
+        router.push(deposit.value.supplier ? routeUrl('suppliers.show', deposit.value.supplier.id) : routeUrl('supplierDeposits.list'));
     } finally {
         deleting.value = false;
     }
@@ -52,7 +54,7 @@ async function convertToPayment() {
 
     try {
         const { data } = await api.post(`/supplier-deposits/${deposit.value.id}/convert-to-payment`);
-        router.push(`/supplier-payments/${data.id}`);
+        router.push(routeUrl('supplierPayments.show', castMutation(data).id));
     } catch (error) {
         converting.value = false;
         throw error;
@@ -77,8 +79,8 @@ async function convertToPayment() {
 
             <template #footer>
                 <div class="flex flex-wrap items-center gap-3">
-                    <RouterLink to="/supplier-deposits" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
-                    <RouterLink v-if="auth.can('supplierDeposits.edit')" :to="`/supplier-deposits/${deposit.id}/edit`" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
+                    <RouterLink :to="routeUrl('supplierDeposits.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
+                    <RouterLink v-if="auth.can('supplierDeposits.edit')" :to="routeUrl('supplierDeposits.edit', deposit.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
                     <Button v-if="auth.can('supplierDeposits.convertToPayment')" size="sm" :disabled="converting" @click="convertToPayment">
                         {{ converting ? 'Converting…' : 'Convert to payment' }}
                     </Button>

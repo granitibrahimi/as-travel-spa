@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
@@ -12,8 +13,8 @@ const route = useRoute();
 const giftCard = ref(null);
 
 onMounted(async() => {
-    const { data } = await api.get(`/customer-gift-cards/${route.params.id}`);
-    giftCard.value = data.data ?? data;
+    const { data } = await api.get(`/customers/gift-cards/${route.params.id}`);
+    giftCard.value = castResource(data);
 });
 </script>
 

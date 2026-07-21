@@ -2,7 +2,9 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -13,7 +15,7 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const taxTypes = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const toDelete = ref(null);
@@ -32,7 +34,7 @@ async function fetchTaxTypes(page = 1) {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
-        taxTypes.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
@@ -56,14 +58,14 @@ async function confirmDelete() {
     try {
         await api.delete(`/tax-types/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchTaxTypes(taxTypes.value?.current_page ?? 1);
+        await fetchTaxTypes(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         deleting.value = false;
     }
 }
 
 const rowActions = (taxType) => [
-    ...(auth.can('taxTypes.edit') ? [{ label: 'Edit', href: `/tax-types/${taxType.id}/edit` }] : []),
+    ...(auth.can('taxTypes.edit') ? [{ label: 'Edit', href: routeUrl('taxTypes.edit', taxType.id) }] : []),
     ...(auth.can('taxTypes.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = taxType) }] : []),
 ];
 </script>
@@ -91,13 +93,13 @@ const rowActions = (taxType) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! taxTypes">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="taxTypes.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No tax types found.</td>
                         </tr>
-                        <tr v-for="taxType in (loading ? [] : taxTypes?.data ?? [])" :key="taxType.id" class="hover:bg-gray-50">
+                        <tr v-for="taxType in (loading ? [] : apiResponse?.data ?? [])" :key="taxType.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ taxType.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ taxType.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
@@ -116,10 +118,10 @@ const rowActions = (taxType) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="taxTypes" :paginator="taxTypes" class="mt-4" @page="fetchTaxTypes" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchTaxTypes" />
 
             <template #footer>
-                <RouterLink v-if="auth.can('taxTypes.create')" to="/tax-types/create" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
+                <RouterLink v-if="auth.can('taxTypes.create')" :to="routeUrl('taxTypes.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">
                     + Tax type
                 </RouterLink>
             </template>

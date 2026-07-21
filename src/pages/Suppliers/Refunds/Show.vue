@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
+import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -18,7 +20,7 @@ const refund = ref(null);
 
 async function load() {
     const { data } = await api.get(`/supplier-refunds/${route.params.id}`);
-    refund.value = data.data ?? data;
+    refund.value = castResource(data);
 }
 
 onMounted(load);
@@ -35,7 +37,7 @@ async function confirmDelete() {
 
     try {
         await api.delete(`/supplier-refunds/${refund.value.id}`);
-        router.push(refund.value.supplier ? `/suppliers/${refund.value.supplier.id}` : '/supplier-refunds');
+        router.push(refund.value.supplier ? routeUrl('suppliers.show', refund.value.supplier.id) : routeUrl('supplierRefunds.list'));
     } finally {
         deleting.value = false;
     }
@@ -59,8 +61,8 @@ async function confirmDelete() {
 
             <template #footer>
                 <div class="flex flex-wrap items-center gap-3">
-                    <RouterLink to="/supplier-refunds" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
-                    <RouterLink v-if="auth.can('supplierRefunds.edit')" :to="`/supplier-refunds/${refund.id}/edit`" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
+                    <RouterLink :to="routeUrl('supplierRefunds.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
+                    <RouterLink v-if="auth.can('supplierRefunds.edit')" :to="routeUrl('supplierRefunds.edit', refund.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
                     <Button v-if="auth.can('supplierRefunds.delete')" variant="danger" size="sm" @click="confirmingDelete = true">Delete</Button>
                 </div>
             </template>

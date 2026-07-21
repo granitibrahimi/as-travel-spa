@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../helpers/api';
+import { routeUrl } from '../../helpers/route.js';
+import { castPaginated } from '../../types/responses.js';
 import { useAuthStore } from '../../stores/auth';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
@@ -11,7 +13,7 @@ import Loader from '../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const tickets = ref(null);
+const apiResponse = ref(null);
 const loading = ref(false);
 const filter = ref('all');
 
@@ -29,7 +31,7 @@ async function fetchTickets(page = 1) {
         const { data } = await api.get('/support-tickets', {
             params: { status: filter.value === 'all' ? undefined : filter.value, page },
         });
-        tickets.value = { data: data.data, ...data.pagination };
+        apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
     }
@@ -49,7 +51,7 @@ const statusClass = (status) => ({
 }[status] ?? 'bg-gray-100 text-gray-600');
 
 const rowActions = (ticket) => [
-    { label: 'View', href: `/support/${ticket.id}` },
+    { label: 'View', href: routeUrl('support.show', ticket.id) },
 ];
 </script>
 
@@ -83,16 +85,16 @@ const rowActions = (ticket) => [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading || ! tickets">
+                        <tr v-if="loading || ! apiResponse">
                             <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
-                        <tr v-else-if="tickets.data.length === 0">
+                        <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No tickets found.</td>
                         </tr>
-                        <tr v-for="ticket in (loading ? [] : tickets?.data ?? [])" :key="ticket.id" class="hover:bg-gray-50">
+                        <tr v-for="ticket in (loading ? [] : apiResponse?.data ?? [])" :key="ticket.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ ticket.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="`/support/${ticket.id}`" class="text-red-600 hover:underline">{{ ticket.title }}</RouterLink>
+                                <RouterLink :to="routeUrl('support.show', ticket.id)" class="text-red-600 hover:underline">{{ ticket.title }}</RouterLink>
                                 <span v-if="ticket.has_attachment" class="ml-1 text-xs text-gray-400">📎</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
@@ -109,12 +111,12 @@ const rowActions = (ticket) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="tickets" :paginator="tickets" class="mt-4" @page="fetchTickets" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchTickets" />
 
             <template #footer>
                 <RouterLink
                     v-if="auth.can('supportTickets.create')"
-                    to="/support/create"
+                    :to="routeUrl('support.create')"
                     class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
                 >+ New ticket</RouterLink>
             </template>

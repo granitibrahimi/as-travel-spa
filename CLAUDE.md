@@ -63,9 +63,9 @@ bearer token. This file documents conventions to follow when working here.
   (leading/trailing/back-to-back after permission filtering) are auto-removed.
 - Navigation currently keys off **path strings** (`to: '/foo'`), and
   `AppLayout.vue` matches the active item via `route.path`. Routes are named in
-  `src/router.js`; you may navigate by name (`router.push({ name })`), but if you
-  switch nav config to named routes you must also update the active-state
-  matching and the page-label lookups (`OnlineUsers.vue`, `Me.vue`).
+  `src/router/` (see below); you may navigate by name (`router.push({ name })`),
+  but if you switch nav config to named routes you must also update the
+  active-state matching and the page-label lookups (`OnlineUsers.vue`, `Me.vue`).
 
 ## Real-time (Laravel Reverb / Echo)
 
@@ -144,10 +144,16 @@ modular monolith). When moving a feature here:
   validate `date_format:d.m.Y`). Bind date fields with the `DateInput` component
   (v-model is `d.m.Y`) and send the value verbatim — no conversion. See the
   Dates (standard) note above.
-- **Router wiring** (`src/router.js`): static imports grouped by domain; route
-  names mirror platform route names (`supplierDeposits.list`); order matters —
-  `/x/create` and `/x/:id/edit` before `/x/:id`, and nested creates like
-  `/suppliers/:supplierId/deposits/create` before `/suppliers/:id`.
+- **Router wiring** (`src/router/`): routes are split by domain under
+  `src/router/routes/*.js` (`shell`, `suppliers`, `customers`, `finance`,
+  `base`, `flights`, `hr`, `crm`) — each file owns its lazy `import()`s and
+  exports an array of route records. `src/router/index.js` concatenates them and
+  keeps the `/:pathMatch` catch-all last. Add a route to its domain file (create
+  a new module + wire it into `index.js` for a new domain). Route names mirror
+  platform route names (`supplierDeposits.list`). Order matters **within a
+  module** — `/x/create` and `/x/:id/edit` before `/x/:id`, and nested creates
+  like `/suppliers/:supplierId/deposits/create` before `/suppliers/:id`; each
+  domain uses a distinct path prefix, so cross-module order is safe.
 - One Manage.vue handles create + edit (`route.params.id` ⇒ edit, hydrate in
   `onMounted`); nested create passes the parent id via the route param.
 - PDFs/exports stay server-rendered; download with
