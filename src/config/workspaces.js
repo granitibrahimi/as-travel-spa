@@ -75,11 +75,12 @@ export const workspaces = [
             {
                 label: 'Customers',
                 items: [
-                    { label: 'All Customers', to: '/customers/customers', can: 'customers.list' },
+                    { label: 'Customers List', to: '/customers/customers', can: 'customers.list' },
                     { label: 'New Customer', to: '/customers/customers/create', can: 'customers.create' },
-                    { label: 'Gift Cards', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
+                    { label: 'GiftCards', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
+                    { label: 'Payments', to: '/customers/payments', canAny: ['customerPayments.viewAll', 'customerPayments.viewOwn'] },
                     { label: 'Reconciliations', to: '/customers/reconciliations', can: 'customerReconciliations.list' },
-                    { label: 'Customer Transaction Links', to: '/customers/transaction-links', can: 'customerTransactionsLinks.list' },
+                    { label: 'Transaction Links', to: '/customers/transaction-links', can: 'customerTransactionsLinks.list' },
                     { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
                     { label: 'Pro Invoices', to: '/customers/pro-invoices', can: 'customerProInvoices.list' },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
@@ -242,6 +243,7 @@ export const workspaces = [
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
                     { label: 'Gift Cards', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
+                    { label: 'Payments', to: '/customers/payments', canAny: ['customerPayments.viewAll', 'customerPayments.viewOwn'] },
                     { label: 'Reconciliations', to: '/customers/reconciliations', can: 'customerReconciliations.list' },
                     { label: 'Customer Transaction Links', to: '/customers/transaction-links', can: 'customerTransactionsLinks.list' },
                 ],

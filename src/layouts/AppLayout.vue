@@ -77,11 +77,10 @@ try {
 }
 
 const isActive = (to) => route.path === to;
-const groupHasActive = (group) => group.items.some((item) => isActive(item.to));
 
-// The user's explicit toggle always wins. With no explicit choice, a group
-// defaults to open when it holds the active page (so the current location isn't
-// hidden) and collapsed otherwise.
+// The user's explicit toggle always wins and is persisted per group. With no
+// explicit choice a group defaults to open, so switching workspace shows its
+// groups expanded rather than all collapsed.
 const isGroupCollapsed = (group) => {
     const override = collapsedGroups.value[group.label];
 
@@ -89,7 +88,7 @@ const isGroupCollapsed = (group) => {
         return Boolean(override);
     }
 
-    return !groupHasActive(group);
+    return false;
 };
 
 function toggleGroup(label) {

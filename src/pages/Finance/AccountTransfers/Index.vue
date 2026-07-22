@@ -102,7 +102,12 @@ const rowActions = (transfer) => [
                             <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No transfers found.</td>
                         </tr>
                         <tr v-for="transfer in (loading ? [] : apiResponse?.data ?? [])" :key="transfer.id" class="hover:bg-gray-50">
-                            <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ transfer.gen_id }}</td>
+                            <td class="border border-gray-300 px-2 py-2 font-mono text-xs">
+                                <RouterLink v-if="auth.can('accountTransfers.show')" :to="routeUrl('accountTransfers.show', transfer.id)" class="text-red-700 hover:underline">
+                                    {{ transfer.id }}# {{ transfer.gen_id }}
+                                </RouterLink>
+                                <template v-else>{{ transfer.id }}# {{ transfer.gen_id }}</template>
+                            </td>
                             <td class="border border-gray-300 px-2 py-2">{{ transfer.on_date }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ transfer.from_account }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ transfer.to_account }}</td>

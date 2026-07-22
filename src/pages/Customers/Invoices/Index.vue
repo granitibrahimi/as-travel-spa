@@ -3,7 +3,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useAuthStore } from '../../../stores/auth.js';
 import { money } from '../../../helpers/money.js';
-import api from '../../../helpers/api.js';
+import api, {getUsersAutosuggestEndpoint} from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -17,9 +17,6 @@ import InvoiceActions from './Actions.vue';
 import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
-
-// Agent lookup is relative to the api client's /api/v1 base.
-const agentsUrl = 'users/autosuggest';
 
 const apiResponse = ref(null);
 const loading = ref(false);
@@ -90,7 +87,7 @@ function onInvoiceDeleted() {
         <FullWidthBox v-if="auth.canAny(['customerInvoices.listAll', 'customerInvoices.listOwn'])" title="Invoices" :collapsible="false">
             <form class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="fetchInvoices()">
                 <InputText v-model="filters.q" label="Search" placeholder="Invoice ID, ticket, customer…" />
-                <AsyncSelect v-model="filters.agent" :url="agentsUrl" label="Agent" placeholder="All agents" v-if="auth.can('customerInvoices.listFilterByAgent')" />
+                <AsyncSelect v-model="filters.agent" :url="getUsersAutosuggestEndpoint()" label="Agent" placeholder="All agents" v-if="auth.can('customerInvoices.listFilterByAgent')" />
                 <DateInput v-model="filters.date_from" label="Date from" />
                 <DateInput v-model="filters.date_to" label="Date to" />
                 <div class="flex items-end gap-2 md:col-span-4">

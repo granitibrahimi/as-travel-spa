@@ -2,13 +2,35 @@
 import { computed, onMounted, ref } from 'vue';
 import api from '../../../helpers/api.js';
 import { money } from '../../../helpers/money.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Select from '../../../components/Form/Select.vue';
 import Loader from '../../../components/Loader.vue';
+
+const formOptions = useFormOptionsStore();
 
 const accounts = ref(null);
 const loading = ref(false);
 const q = ref('');
+const classification = ref('');
+
+// Classification options come from the shared form-options store.
+const classifications = computed(() => toOptions(formOptions.accountClassifications));
+
+// A row's `classification` is serialized as a readable label, while the option
+// value may be the enum's int or its label — match tolerantly against both.
+function matchesClassification(row) {
+    if (! classification.value) {
+        return true;
+    }
+
+    const selected = classifications.value.find((option) => String(option.value) === String(classification.value));
+    const rowValue = String(row.classification ?? '').toLowerCase();
+
+    return rowValue === String(classification.value).toLowerCase()
+        || (selected && rowValue === String(selected.label).toLowerCase());
+}
 
 async function fetchAccounts() {
     loading.value = true;
@@ -24,29 +46,30 @@ async function fetchAccounts() {
 onMounted(() => fetchAccounts());
 
 const filtered = computed(() => {
-    const list = accounts.value ?? [];
     const term = q.value.trim().toLowerCase();
 
-    if (!term) {
-        return list;
-    }
+    return (accounts.value ?? []).filter((account) => {
+        const matchesTerm = ! term
+            || `${account.number ?? ''} ${account.name} ${account.type ?? ''}`.toLowerCase().includes(term);
 
-    return list.filter((account) =>
-        `${account.number ?? ''} ${account.name} ${account.type ?? ''}`.toLowerCase().includes(term));
+        return matchesTerm && matchesClassification(account);
+    });
 });
 </script>
 
 <template>
-    <AppLayout title="Accounts">
+    <AppLayout title="Accounts" fluid>
         <FullWidthBox title="Accounts" :collapsible="false">
-            <div class="mb-4 md:max-w-sm">
+            <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:max-w-2xl">
                 <input v-model="q" type="text" placeholder="Number, name or type…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                <Select v-model="classification" :options="classifications" placeholder="All classifications" />
             </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
                     <thead>
                         <tr class="text-left text-xs uppercase text-gray-500">
+                            <th class="border border-gray-300 px-2 py-2" style="width: 150px;">ID</th>
                             <th class="border border-gray-300 px-2 py-2" style="width: 120px;">Number</th>
                             <th class="border border-gray-300 px-2 py-2">Name</th>
                             <th class="border border-gray-300 px-2 py-2">Type</th>
@@ -61,7 +84,8 @@ const filtered = computed(() => {
                             <td colspan="4" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No accounts found.</td>
                         </tr>
                         <tr v-for="account in (loading ? [] : filtered)" :key="account.id" class="hover:bg-gray-50">
-                            <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ account.number || '—' }}</td>
+                            <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ account.id }}</td>
+                            <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ account.number }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ account.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ account.type }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(account.balance) }}</td>

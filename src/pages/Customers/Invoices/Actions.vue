@@ -65,7 +65,10 @@ const groups = computed(() => {
         { label: 'Print with products', action: () => openFileInNewTab(`/customers/invoices/${invoice.id}/print-products`), can: 'customerInvoices.printProducts' },
         { label: 'Send E-Mail', action: () => (emailOpen.value = true), can: 'customerInvoices.sendEmail' },
         { label: 'Add document', action: () => (documentOpen.value = true), can: 'invoiceDocuments.manageDocuments' },
-        { label: 'Generate Payment Link', action: () => (paymentLinkOpen.value = true), can: 'onlinePayments.generate' },
+        // Payment link only makes sense while there's an outstanding debt.
+        ...(invoice.has_debt
+            ? [{ label: 'Generate Payment Link', action: () => (paymentLinkOpen.value = true), can: 'onlinePayments.generate' }]
+            : []),
     ].filter(allowed);
 
     if (documents.length) {

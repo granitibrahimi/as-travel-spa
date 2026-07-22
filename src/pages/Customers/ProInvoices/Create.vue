@@ -79,9 +79,7 @@ function done() {
 
         <form v-else class="space-y-6" @submit.prevent="submit">
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-[40%_60%]">
-                <FullWidthBox title="Customer" :collapsible="false">
-                    <CustomerDetails :customer="customer" />
-                </FullWidthBox>
+                <CustomerDetails :customer="customer" />
 
                 <FullWidthBox :title="`Pro-invoice for ${customer.full_name}`" :collapsible="false">
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

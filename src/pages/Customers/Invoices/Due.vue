@@ -17,12 +17,11 @@ import Textarea from '../../../components/Form/Textarea.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import SideOverlay from '../../../components/SideOverlay.vue';
 import Loader from '../../../components/Loader.vue';
+import {RouterLink} from "vue-router";
+import routeUrl from "../../../helpers/route.js";
 
 const auth = useAuthStore();
 const formOptions = useFormOptionsStore();
-
-// Agent lookup is relative to the api client's /api/v1 base.
-const agentsUrl = 'users/autosuggest';
 
 // Dropdown reference data from the shared form-options store.
 const customerTypes = computed(() =>
@@ -180,8 +179,7 @@ async function saveContact() {
                             </tr>
                             <tr v-for="invoice in (loading ? [] : apiResponse?.data ?? [])" :key="invoice.id" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2 font-medium">
-                                    <a v-if="invoice.show_url" :href="invoice.show_url" target="_blank" class="text-red-700 hover:underline">{{ invoice.gen_id }}</a>
-                                    <span v-else>{{ invoice.gen_id }}</span>
+                                    <RouterLink :to="routeUrl('customerInvoices.show', invoice.id)" class="text-red-700 hover:underline">{{ invoice.gen_id }}</RouterLink>
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ invoice.due_date }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">

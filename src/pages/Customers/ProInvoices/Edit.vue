@@ -76,9 +76,9 @@ async function submit() {
 
         <form v-else class="space-y-6" @submit.prevent="submit">
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-[40%_60%]">
-                <FullWidthBox title="Customer" :collapsible="false">
-                    <CustomerDetails v-if="proInvoice.customer" :customer="proInvoice.customer" />
-                    <p v-else class="text-sm text-gray-400">No customer linked.</p>
+                <CustomerDetails v-if="proInvoice.customer" :customer="proInvoice.customer" />
+                <FullWidthBox v-else title="Customer" :collapsible="false">
+                    <p class="text-sm text-gray-400">No customer linked.</p>
                 </FullWidthBox>
 
                 <FullWidthBox title="Pro-invoice details" :collapsible="false">

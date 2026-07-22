@@ -9,15 +9,15 @@ import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
+import CustomerDetails from "../../../components/CustomerDetails.vue";
 
 const route = useRoute();
 const reconciliation = ref(null);
 
-async function load() {
+onMounted(async () => {
     const { data } = await api.get(`/customers/reconciliations/${route.params.id}`);
     reconciliation.value = castResource(data);
-}
-onMounted(load);
+});
 </script>
 
 <template>
@@ -25,24 +25,42 @@ onMounted(load);
         <Loader v-if="! reconciliation" />
 
         <template v-else>
-            <FullWidthBox :title="`Reconciliation #${reconciliation.id}`" :collapsible="false" class="mb-6">
-                <dl class="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-                    <div class="flex gap-2">
-                        <dt class="w-32 shrink-0 font-medium text-gray-500">Customer</dt>
-                        <dd>
-                            <RouterLink v-if="reconciliation.customer" :to="routeUrl('customers.show', reconciliation.customer.id)" class="text-red-600 hover:underline">{{ reconciliation.customer.name }}</RouterLink>
-                            <span v-else>—</span>
-                        </dd>
-                    </div>
-                    <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Reference</dt><dd>{{ reconciliation.reference ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Date</dt><dd>{{ reconciliation.date }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Created by</dt><dd>{{ reconciliation.user ?? '—' }} · {{ reconciliation.created_at ?? '—' }}</dd></div>
-                </dl>
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr] mb-6">
+                <CustomerDetails :customer="reconciliation.customer" />
 
-                <template #footer>
-                    <RouterLink :to="routeUrl('customerReconciliations.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to list</RouterLink>
-                </template>
-            </FullWidthBox>
+                <FullWidthBox title="Reconciliation" :collapsible="false">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <tbody>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">ID</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ reconciliation.id }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Reference</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ reconciliation.reference }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Date</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ reconciliation.on_date }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Created by</th>
+                            <td class="border border-gray-300 px-2 py-2">
+                                {{ reconciliation.user.name }}
+                                <br/>
+                                {{ reconciliation.created_at }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="border border-gray-300 px-2 py-2">
+                                <p class="font-bold text-gray-600 pb-2">Notes: </p>
+                                {{ reconciliation.notes }}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </FullWidthBox>
+            </div>
 
             <FullWidthBox title="Linked transactions" :collapsible="false">
                 <div class="overflow-x-auto">

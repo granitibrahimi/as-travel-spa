@@ -109,11 +109,13 @@ export const useFormOptionsStore = defineStore('formOptions', {
         personClassifications: (state) => state.data.person_classifications ?? [],
         taskSources: (state) => state.data.task_sources ?? [],
         destinations: (state) => state.data.destinations ?? [],
+        accountClassifications: (state) => state.data.account_classifications ?? [],
         accounts: (state) => state.data.accounts ?? [],
         taxTypes: (state) => state.data.tax_types ?? [],
         paymentMethodTypes: (state) => state.data.payment_method_types ?? [],
         cashAccounts: (state) => state.data.cash_accounts ?? [],
         userLogTypes: (state) => state.data.user_log_types ?? [],
+        customerInvoiceDocumentTypes: (state) => state.data.customer_invoice_document_types ?? [],
         transactionStatusOptions: (state) => state.data.transaction_status_options ?? [],
         // Generic accessor: formOptions.options('payment_methods').
         options: (state) => (key) => state.data[key] ?? [],

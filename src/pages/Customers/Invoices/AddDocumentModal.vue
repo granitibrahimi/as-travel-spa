@@ -1,11 +1,10 @@
 <script setup>
-import { ref, watch } from 'vue';
+import {computed, ref, watch} from 'vue';
 import api from '../../../helpers/api';
 import Button from '../../../components/Button.vue';
 import Select from '../../../components/Form/Select.vue';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 
-// Upload a PDF document (tickets/hotel/visa/transfer) for an invoice. Document
-// types come from the api list endpoint so they stay in sync with the backend.
 const props = defineProps({
     invoice: { type: Object, default: null },
     show: { type: Boolean, default: false },
@@ -13,28 +12,12 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'uploaded']);
 
-const types = ref([]);
+const formOptions = useFormOptionsStore();
+const types = computed(() => toOptions(formOptions.customerInvoiceDocumentTypes));
 const type = ref(null);
 const file = ref(null);
 const uploading = ref(false);
 const error = ref('');
-
-watch(() => props.show, async (open) => {
-    if (!open || !props.invoice) {
-        return;
-    }
-
-    error.value = '';
-    type.value = null;
-    file.value = null;
-
-    try {
-        const { data } = await api.get(`/customers/invoices/${props.invoice.id}/documents`);
-        types.value = data.types ?? [];
-    } catch {
-        types.value = [];
-    }
-});
 
 function onFileChange(event) {
     file.value = event.target.files?.[0] ?? null;

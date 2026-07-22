@@ -154,7 +154,7 @@ watch(filters, () => {
                 <Loader v-if="! customer"/>
 
                 <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <CustomerDetails :customer="customer"/>
+                    <CustomerDetails :customer="customer" :show-view-link="false" :boxed="false" />
 
                     <Loader v-if="! stats"/>
 
@@ -267,7 +267,7 @@ watch(filters, () => {
                                     </RouterLink>
                                     <span v-else>{{ transaction.id }} | {{ transaction.reference }}</span>
                                 </td>
-                                <td class="border border-gray-300 px-2 py-2">{{ transaction.type }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ transaction.type.name }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
                                     {{ money(transaction.open_amount) }}
                                 </td>
@@ -278,7 +278,7 @@ watch(filters, () => {
                                     <span v-if="transaction.is_closed" class="text-green-600">✓</span>
                                     {{ transaction.status }}
                                 </td>
-                                <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ transaction.user }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ transaction.user.name }}</td>
                             </tr>
                             <tr v-if="transactions.data.length > 0" class="bg-gray-50 font-semibold">
                                 <td colspan="3" class="border border-gray-300 px-2 py-2 text-right">TOTAL</td>

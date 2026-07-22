@@ -13,12 +13,17 @@ const CustomersStatements = () => import('../../pages/Customers/Customers/Statem
 const CustomerInvoiceShow = () => import('../../pages/Customers/Invoices/Show.vue');
 const CustomerInvoiceCreate = () => import('../../pages/Customers/Invoices/Create.vue');
 const CustomerInvoiceEdit = () => import('../../pages/Customers/Invoices/Edit.vue');
-const CustomerInvoiceChange = () => import('../../pages/Customers/Invoices/Change.vue');
+const CustomerInvoiceChangeCustomer = () => import('../../pages/Customers/Invoices/ChangeCustomer.vue');
+const CustomerInvoiceChangeAgent = () => import('../../pages/Customers/Invoices/ChangeAgent.vue');
+const CustomerInvoiceChangeDate = () => import('../../pages/Customers/Invoices/ChangeDate.vue');
+const CustomerInvoiceChangeDueDate = () => import('../../pages/Customers/Invoices/ChangeDueDate.vue');
 const CustomerCreditNoteShow = () => import('../../pages/Customers/CreditNotes/Show.vue');
 const CustomerCreditNoteCreate = () => import('../../pages/Customers/CreditNotes/Create.vue');
 const CustomerCreditNoteEdit = () => import('../../pages/Customers/CreditNotes/Edit.vue');
 const CustomerPaymentShow = () => import('../../pages/Customers/Payments/Show.vue');
-const CustomerPaymentManage = () => import('../../pages/Customers/Payments/Manage.vue');
+const CustomerPaymentsIndex = () => import('../../pages/Customers/Payments/Index.vue');
+const CustomerPaymentCreate = () => import('../../pages/Customers/Payments/Create.vue');
+const CustomerPaymentEdit = () => import('../../pages/Customers/Payments/Edit.vue');
 const CustomerGiftCardShow = () => import('../../pages/Customers/GiftCards/Show.vue');
 const CustomerGiftCardsIndex = () => import('../../pages/Customers/GiftCards/Index.vue');
 const CustomerGiftCardsCreate = () => import('../../pages/Customers/GiftCards/Create.vue');
@@ -53,7 +58,7 @@ export default [
     { path: '/customers/:customer/invoices/create', name: 'customerInvoices.create', component: CustomerInvoiceCreate },
     { path: '/customers/:customer/credit-notes/create', name: 'customerCreditNotes.create', component: CustomerCreditNoteCreate },
     { path: '/customers/:customer/pro-invoices/create', name: 'customerProInvoices.create', component: ProInvoiceCreate },
-    { path: '/customers/:customer/payments/create', name: 'customerPayments.create', component: CustomerPaymentManage },
+    { path: '/customers/:customer/payments/create', name: 'customerPayments.create', component: CustomerPaymentCreate },
     { path: '/customers/:customer/gift-cards/create', name: 'customerGiftCards.create', component: CustomerGiftCardsCreate },
     { path: '/customers/projects', name: 'customerProjects.list', component: ProjectsList, props: { mode: 'active' } },
     { path: '/customers/projects/finished', name: 'customerProjects.finished', component: ProjectsList, props: { mode: 'finished' } },
@@ -65,14 +70,15 @@ export default [
     { path: '/customers/:id/edit', name: 'customers.edit', component: CustomersEdit },
     { path: '/customers/customers/:id', name: 'customers.show', component: CustomersShow },
     { path: '/customers/invoices/:id/edit', name: 'customerInvoices.edit', component: CustomerInvoiceEdit },
-    { path: '/customers/invoices/:id/change-customer', name: 'customerInvoices.changeCustomer', component: CustomerInvoiceChange, props: { field: 'customer' } },
-    { path: '/customers/invoices/:id/change-agent', name: 'customerInvoices.changeAgent', component: CustomerInvoiceChange, props: { field: 'agent' } },
-    { path: '/customers/invoices/:id/change-date', name: 'customerInvoices.changeDate', component: CustomerInvoiceChange, props: { field: 'date' } },
-    { path: '/customers/invoices/:id/change-due-date', name: 'customerInvoices.changeDueDate', component: CustomerInvoiceChange, props: { field: 'dueDate' } },
+    { path: '/customers/invoices/:id/change-customer', name: 'customerInvoices.changeCustomer', component: CustomerInvoiceChangeCustomer },
+    { path: '/customers/invoices/:id/change-agent', name: 'customerInvoices.changeAgent', component: CustomerInvoiceChangeAgent },
+    { path: '/customers/invoices/:id/change-date', name: 'customerInvoices.changeDate', component: CustomerInvoiceChangeDate },
+    { path: '/customers/invoices/:id/change-due-date', name: 'customerInvoices.changeDueDate', component: CustomerInvoiceChangeDueDate },
     { path: '/customers/invoices/:id', name: 'customerInvoices.show', component: CustomerInvoiceShow },
     { path: '/customers/credit-notes/:id/edit', name: 'customerCreditNotes.edit', component: CustomerCreditNoteEdit },
     { path: '/customers/credit-notes/:id', name: 'customerCreditNotes.show', component: CustomerCreditNoteShow },
-    { path: '/customers/payments/:id/edit', name: 'customerPayments.edit', component: CustomerPaymentManage },
+    { path: '/customers/payments', name: 'customerPayments.list', component: CustomerPaymentsIndex },
+    { path: '/customers/payments/:id/edit', name: 'customerPayments.edit', component: CustomerPaymentEdit },
     { path: '/customers/payments/:id', name: 'customerPayments.show', component: CustomerPaymentShow },
     { path: '/customers/gift-cards', name: 'customerGiftCards.list', component: CustomerGiftCardsIndex },
     { path: '/customers/reconciliations', name: 'customerReconciliations.list', component: CustomerReconciliationsIndex },

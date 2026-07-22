@@ -72,9 +72,7 @@ async function submit() {
 
         <form v-else class="space-y-6" @submit.prevent="submit">
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
-                <FullWidthBox title="Customer" :collapsible="false">
-                    <CustomerDetails v-if="customer" :customer="customer"/>
-                </FullWidthBox>
+                <CustomerDetails v-if="customer" :customer="customer" />
 
                 <FullWidthBox title="Gift card details" :collapsible="false">
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">

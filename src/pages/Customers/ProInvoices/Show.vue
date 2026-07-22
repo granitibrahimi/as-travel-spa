@@ -28,10 +28,7 @@ onMounted(async () => {
 
         <template v-else>
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
-                <FullWidthBox title="Customer" :collapsible="false">
-                    <CustomerDetails v-if="proInvoice.customer" :customer="proInvoice.customer" />
-                    <p v-else class="text-sm text-gray-400">No customer linked.</p>
-                </FullWidthBox>
+                <CustomerDetails :customer="proInvoice.customer" />
 
                 <FullWidthBox title="Pro-invoice" :collapsible="false">
                     <template #actions>

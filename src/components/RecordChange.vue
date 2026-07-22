@@ -85,7 +85,7 @@ async function submit() {
     <AppLayout :title="title">
         <div class="grid gap-4 md:grid-cols-2">
             <FullWidthBox title="Current customer" :collapsible="false">
-                <CustomerDetails v-if="customer" :customer="customer" />
+                <CustomerDetails v-if="customer" :customer="customer" :boxed="false" />
                 <Loader v-else />
             </FullWidthBox>
 

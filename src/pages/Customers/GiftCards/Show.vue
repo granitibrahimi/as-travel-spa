@@ -24,9 +24,7 @@ onMounted(async() => {
 
         <template v-else>
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
-                <FullWidthBox title="Customer" :collapsible="false">
-                    <CustomerDetails :customer="giftCard.customer" />
-                </FullWidthBox>
+                <CustomerDetails :customer="giftCard.customer" />
 
                 <FullWidthBox title="Gift Cards" :collapsible="false">
                         <table class="w-full border-collapse border border-gray-300 text-sm">
