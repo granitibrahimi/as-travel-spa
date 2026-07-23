@@ -1,14 +1,21 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
+import DropdownMenu from '../../../components/DropdownMenu.vue';
 
 const auth = useAuthStore();
+
+function rowActions(user) {
+    return [
+        ...(auth.can('vacations.showRequests') ? [{ label: 'Requests', href: routeUrl('vacations.requests', { user: user.id }) }] : []),
+        ...(user.balance_id && auth.can('vacations.editBalance') ? [{ label: 'Balance', href: routeUrl('vacations.balance', user.balance_id) }] : []),
+    ];
+}
 
 const users = ref(null);
 const loading = ref(false);
@@ -17,7 +24,7 @@ async function fetchUsers() {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/vacations');
+        const { data } = await api.get('/users/vacations');
         users.value = data.data;
     } finally {
         loading.value = false;
@@ -58,8 +65,8 @@ onMounted(() => fetchUsers());
                                     <span v-else class="text-gray-400">—</span>
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">
-                                    <RouterLink v-if="auth.can('vacations.showRequests')" :to="routeUrl('vacations.requests', { user: user.id })" class="text-red-700 hover:underline">Requests</RouterLink>
-                                    <RouterLink v-if="user.balance_id && auth.can('vacations.editBalance')" :to="routeUrl('vacations.balance', user.balance_id)" class="ml-2 text-red-700 hover:underline">Balance</RouterLink>
+                                    <DropdownMenu v-if="rowActions(user).length" :items="rowActions(user)" />
+                                    <span v-else class="text-gray-400">—</span>
                                 </td>
                             </tr>
                         </tbody>

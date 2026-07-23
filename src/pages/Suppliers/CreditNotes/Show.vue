@@ -25,20 +25,46 @@ onMounted(load);
 
         <template v-else>
             <FullWidthBox :title="`Credit note ${creditNote.gen_id}`" :collapsible="false" class="mb-6">
-                <dl class="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Supplier</dt><dd>{{ creditNote.supplier.name ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Reference</dt><dd>{{ creditNote.reference ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Agent</dt><dd>{{ creditNote.agent ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Date</dt><dd>{{ creditNote.on_date }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Amount</dt><dd class="tabular-nums">{{ money(creditNote.amount) }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Paid</dt><dd class="tabular-nums">{{ money(creditNote.paid_amount) }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Open</dt><dd class="tabular-nums" :class="creditNote.open_amount > 0 ? 'text-amber-600' : 'text-green-600'">{{ money(creditNote.open_amount) }}</dd></div>
-                    <div v-if="creditNote.customer_credit_note" class="flex gap-2">
-                        <dt class="w-36 shrink-0 font-medium text-gray-500">Customer credit note</dt>
-                        <dd><RouterLink :to="routeUrl('customerCreditNotes.show', creditNote.customer_credit_note.id)" class="text-red-600 hover:underline">{{ creditNote.customer_credit_note.gen_id }}</RouterLink></dd>
-                    </div>
-                    <div class="flex gap-2 sm:col-span-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Notes</dt><dd class="whitespace-pre-line">{{ creditNote.notes ?? '—' }}</dd></div>
-                </dl>
+                <table class="w-full border-collapse border border-gray-300 text-sm">
+                    <tbody>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Supplier</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ creditNote.supplier.name ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Reference</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ creditNote.reference ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Agent</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ creditNote.agent ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Date</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ creditNote.on_date }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Amount</th>
+                            <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ money(creditNote.amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Paid</th>
+                            <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ money(creditNote.paid_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Open</th>
+                            <td class="border border-gray-300 px-2 py-2 tabular-nums" :class="creditNote.open_amount > 0 ? 'text-amber-600' : 'text-green-600'">{{ money(creditNote.open_amount) }}</td>
+                        </tr>
+                        <tr v-if="creditNote.customer_credit_note">
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Customer credit note</th>
+                            <td class="border border-gray-300 px-2 py-2"><RouterLink :to="routeUrl('customerCreditNotes.show', creditNote.customer_credit_note.id)" class="text-red-600 hover:underline">{{ creditNote.customer_credit_note.gen_id }}</RouterLink></td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Notes</th>
+                            <td class="border border-gray-300 px-2 py-2 whitespace-pre-line">{{ creditNote.notes ?? '-' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
 
                 <template #footer>
                     <RouterLink :to="routeUrl('suppliers.show', creditNote.supplier.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to supplier</RouterLink>

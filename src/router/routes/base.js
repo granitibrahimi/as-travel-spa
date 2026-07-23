@@ -32,35 +32,45 @@ const MessagesShow = () => import('../../pages/Base/Messages/Show.vue');
 const StaticOffersIndex = () => import('../../pages/StaticOffers/Index.vue');
 const StaticOffersManage = () => import('../../pages/StaticOffers/Manage.vue');
 const StaticOffersShow = () => import('../../pages/StaticOffers/Show.vue');
+const OnlineCredentialsIndex = () => import('../../pages/Base/OnlineSystemCredentials/Index.vue');
+const OnlineCredentialsShow = () => import('../../pages/Base/OnlineSystemCredentials/Show.vue');
 
 export default [
     { path: '/departures', name: 'departures.list', component: DeparturesIndex },
     { path: '/departures/overview', name: 'departures.overview', component: DeparturesOverview },
+
     { path: '/meal-types', name: 'mealTypes.list', component: MealTypesIndex },
     { path: '/meal-types/create', name: 'mealTypes.create', component: MealTypesManage },
     { path: '/meal-types/:id/edit', name: 'mealTypes.edit', component: MealTypesManage },
+
     { path: '/countries', name: 'countries.list', component: CountriesIndex },
     { path: '/countries/:id/edit', name: 'countries.edit', component: CountriesManage },
+
     { path: '/products', name: 'products.list', component: ProductsIndex },
     { path: '/products/create', name: 'products.create', component: ProductsManage },
     { path: '/products/:id/edit', name: 'products.edit', component: ProductsManage },
+
     { path: '/hotels', name: 'hotels.list', component: HotelsIndex },
     { path: '/hotels/create', name: 'hotels.create', component: HotelsManage },
     { path: '/hotels/:id/edit', name: 'hotels.edit', component: HotelsManage },
+
     { path: '/destinations', name: 'destinations.list', component: DestinationsIndex },
     { path: '/destinations/create', name: 'destinations.create', component: DestinationsManage },
     { path: '/destinations/merge', name: 'destinations.merge', component: DestinationsMerge },
     { path: '/destinations/parent', name: 'destinations.parent', component: DestinationsParent },
     { path: '/destinations/:id/edit', name: 'destinations.edit', component: DestinationsManage },
+
     { path: '/parent-destinations', name: 'parentDestinations.list', component: ParentDestinationsIndex },
     { path: '/parent-destinations/create', name: 'parentDestinations.create', component: ParentDestinationsManage },
     { path: '/parent-destinations/:id/edit', name: 'parentDestinations.edit', component: ParentDestinationsManage },
     { path: '/parent-destinations/:id/destinations', name: 'parentDestinations.children', component: ParentDestinationsChildren },
+
     { path: '/announcements', name: 'announcements.list', component: AnnouncementsIndex },
     { path: '/announcements/create', name: 'announcements.create', component: AnnouncementsManage },
     { path: '/announcements/new', name: 'announcements.new', component: AnnouncementsNew },
     { path: '/announcements/:id/edit', name: 'announcements.edit', component: AnnouncementsManage },
     { path: '/announcements/:id/statistics', name: 'announcements.statistics', component: AnnouncementsStatistics },
+
     { path: '/messages', name: 'messages.list', component: MessagesIndex },
     { path: '/messages/create', name: 'messages.create', component: MessagesCreate },
     { path: '/messages/:id', name: 'messages.show', component: MessagesShow },
@@ -72,4 +82,7 @@ export default [
     { path: '/sent-emails/:id', name: 'sentEmails.show', component: SentEmailsShow },
     { path: '/quickbooks/sync', name: 'quickBooksSync.list', component: QuickBooksSyncIndex },
     { path: '/quickbooks/sync/:id', name: 'quickBooksSync.show', component: QuickBooksSyncShow },
+
+    { path: '/online-credentials', name: 'onlineCredentials.list', component: OnlineCredentialsIndex },
+    { path: '/online-credentials/:id', name: 'onlineCredentials.show', component: OnlineCredentialsShow },
 ];

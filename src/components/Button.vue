@@ -27,18 +27,24 @@ const spinnerClass = computed(() => [
     props.size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4',
 ]);
 
+// Border rule: every button keeps a `border` (width) on the base, and each
+// variant sets its OWN border color exactly once — so there is never a
+// `border-transparent`/`border-gray-300` conflict (whose winner would depend on
+// stylesheet order, not class order). A white-background / dark-text button
+// (secondary) therefore ALWAYS shows a visible border; the borderless variants
+// (primary/danger) use a transparent border to keep the same height as the
+// bordered ones and the 38px form controls. Any new white/dark button — here or
+// hand-rolled elsewhere — must follow this: white background ⇒ visible border.
 const classes = computed(() => [
-    // Transparent border on the base so borderless variants (primary/danger)
-    // are the same height as bordered ones and the 38px form controls.
-    'inline-flex items-center justify-center gap-1.5 rounded border border-transparent font-normal transition-colors disabled:opacity-60 disabled:pointer-events-none',
+    'inline-flex items-center justify-center gap-1.5 rounded border font-normal transition-colors disabled:opacity-60 disabled:pointer-events-none',
     {
         md: 'px-4 py-1.5 text-base leading-normal',
         sm: 'px-3 py-1 text-sm',
     }[props.size],
     {
-        primary: 'bg-red-600 text-white hover:bg-red-700',
-        secondary: 'border border-gray-300 bg-white hover:bg-gray-50',
-        danger: 'bg-red-50 text-red-600 hover:bg-red-100',
+        primary: 'border-transparent bg-red-600 text-white hover:bg-red-700',
+        secondary: 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
+        danger: 'border-transparent bg-red-50 text-red-600 hover:bg-red-100',
     }[props.variant],
 ]);
 </script>

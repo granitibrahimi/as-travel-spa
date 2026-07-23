@@ -13,13 +13,13 @@ import InputText from '../../../components/Form/InputText.vue';
 import InputNumber from '../../../components/Form/InputNumber.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import Select from '../../../components/Form/Select.vue';
+import Loader from '../../../components/Loader.vue';
+import SupplierDetails from '../../../components/SupplierDetails.vue';
 
 const route = useRoute();
 const router = useRouter();
 
-const depositId = route.params.id ?? null;
-const supplierId = route.params.supplierId ?? null;
-const isEdit = Boolean(depositId);
+const supplierId = route.params.supplierId;
 
 const form = reactive({
     payment_method_id: null,
@@ -32,6 +32,7 @@ const form = reactive({
 
 const formOptions = useFormOptionsStore();
 const paymentMethods = computed(() => toOptions(formOptions.paymentMethods));
+const supplier = ref(null);
 const errors = ref({});
 const processing = ref(false);
 const loaded = ref(false);
@@ -39,19 +40,8 @@ const loaded = ref(false);
 // Backend speaks d.m.Y; the date input speaks Y-m-d.
 
 onMounted(async () => {
-    if (isEdit) {
-        const { data } = await api.get(`/supplier-deposits/${depositId}`);
-        const deposit = castResource(data);
-        Object.assign(form, {
-            payment_method_id: deposit.payment_method_id,
-            amount: deposit.amount,
-            on_date: deposit.on_date ?? '',
-            reference: deposit.reference ?? '',
-            transaction_nr: deposit.transaction_nr ?? '',
-            notes: deposit.notes ?? '',
-        });
-    }
-
+    const { data } = await api.get(`/suppliers/${supplierId}`);
+    supplier.value = castResource(data);
     loaded.value = true;
 });
 
@@ -66,13 +56,8 @@ async function submit() {
     const payload = { ...form };
 
     try {
-        if (isEdit) {
-            await api.put(`/supplier-deposits/${depositId}`, payload);
-            router.push(routeUrl('supplierDeposits.show', depositId));
-        } else {
-            const { data } = await api.post(`/suppliers/${supplierId}/deposits`, payload);
-            router.push(routeUrl('supplierDeposits.show', castMutation(data).id));
-        }
+        const { data } = await api.post(`/suppliers/${supplierId}/deposits`, payload);
+        router.push(routeUrl('supplierDeposits.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -86,29 +71,34 @@ async function submit() {
     }
 }
 
-const cancelTo = isEdit ? routeUrl('supplierDeposits.show', depositId) : routeUrl('suppliers.show', supplierId);
+const cancelTo = routeUrl('suppliers.show', supplierId);
 </script>
 
 <template>
-    <AppLayout :title="isEdit ? 'Edit deposit' : 'New deposit'">
-        <form class="space-y-6" @submit.prevent="submit">
-            <FullWidthBox title="Deposit details" :collapsible="false">
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Select v-model="form.payment_method_id" :options="paymentMethods" label="Payment method *" :error="errors.payment_method_id" />
-                    <InputNumber v-model="form.amount" label="Amount *" :error="errors.amount" />
-                    <DateInput v-model="form.on_date" label="Date *" :error="errors.on_date" />
-                    <InputText v-model="form.transaction_nr" label="Transaction #" :error="errors.transaction_nr" />
-                    <InputText v-model="form.reference" label="Reference" :error="errors.reference" />
-                </div>
-                <div class="mt-4">
-                    <Textarea v-model="form.notes" label="Notes" :error="errors.notes" />
-                </div>
-            </FullWidthBox>
+    <AppLayout title="New deposit" fluid>
+        <Loader v-if="! loaded" />
+        <form v-else class="space-y-6" @submit.prevent="submit">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
+                <SupplierDetails v-if="supplier" :supplier="supplier" />
+
+                <FullWidthBox title="Deposit details" :collapsible="false">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Select v-model="form.payment_method_id" :options="paymentMethods" label="Payment method *" :error="errors.payment_method_id" />
+                        <InputNumber v-model="form.amount" label="Amount *" :error="errors.amount" />
+                        <DateInput v-model="form.on_date" label="Date *" :error="errors.on_date" />
+                        <InputText v-model="form.transaction_nr" label="Transaction #" :error="errors.transaction_nr" />
+                        <InputText v-model="form.reference" label="Reference" :error="errors.reference" />
+                    </div>
+                    <div class="mt-4">
+                        <Textarea v-model="form.notes" label="Notes" :error="errors.notes" />
+                    </div>
+                </FullWidthBox>
+            </div>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
                 <RouterLink :to="cancelTo" class="rounded border border-gray-300 px-4 py-1.5 text-sm hover:bg-gray-50">Cancel</RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing || ! loaded">
-                    {{ processing ? 'Saving…' : (isEdit ? 'Update deposit' : 'Create deposit') }}
+                    {{ processing ? 'Saving…' : 'Create deposit' }}
                 </Button>
             </footer>
         </form>

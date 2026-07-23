@@ -13,7 +13,12 @@ const RolesManage = () => import('../../pages/Users/Roles/Manage.vue');
 const RolesPermissions = () => import('../../pages/Users/Roles/Permissions.vue');
 const NotificationsIndex = () => import('../../pages/Users/Notifications/Index.vue');
 const NotificationsShow = () => import('../../pages/Users/Notifications/Show.vue');
-
+const VacationsOverview = () => import('../../pages/Users/Vacations/Overview.vue');
+const VacationsApply = () => import('../../pages/Users/Vacations/Apply.vue');
+const VacationsRequests = () => import('../../pages/Users/Vacations/Requests.vue');
+const VacationsShow = () => import('../../pages/Users/Vacations/Show.vue');
+const VacationsEdit = () => import('../../pages/Users/Vacations/Edit.vue');
+const VacationsEditBalance = () => import('../../pages/Users/Vacations/EditBalance.vue');
 export default [
     // Permissions
     { path: '/users/permissions/create', name: 'userPermissions.create', component: PermissionsCreate },
@@ -41,4 +46,11 @@ export default [
     { path: '/users/users/:id/edit', name: 'users.edit', component: UsersManage },
     { path: '/users/users/:id', name: 'users.show', component: UsersShow },
     { path: '/users/password', name: 'users.editPassword', component: UsersPassword },
+
+    { path: '/users/vacations', name: 'vacations.list', component: VacationsOverview },
+    { path: '/users/vacations/apply', name: 'vacations.apply', component: VacationsApply },
+    { path: '/users/vacations/requests', name: 'vacations.requests', component: VacationsRequests },
+    { path: '/users/vacations/:userId/balance', name: 'vacations.balance', component: VacationsEditBalance },
+    { path: '/users/vacations/:id/edit', name: 'vacations.edit', component: VacationsEdit },
+    { path: '/users/vacations/:id', name: 'vacations.show', component: VacationsShow },
 ];

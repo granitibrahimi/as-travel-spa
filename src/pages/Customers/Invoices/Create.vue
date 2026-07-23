@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import {RouterLink, useRoute, useRouter} from 'vue-router';
 import api from '../../../helpers/api';
 import { castResource, castMutation } from '../../../types/responses.js';
 import { money } from '../../../helpers/money';
@@ -174,13 +174,10 @@ async function save() {
 </script>
 
 <template>
-    <AppLayout title="New invoice" fluid>
+    <AppLayout :title="'New Invoice for ' + customer?.full_name" fluid>
         <FullWidthBox title="New invoice" :collapsible="false" class="mb-6">
             <template #actions>
-                <label class="cursor-pointer text-sm text-red-700 hover:underline">
-                    {{ importing ? 'Importing…' : 'Import from Excel' }}
-                    <input type="file" accept=".xls,.xlsx" class="hidden" :disabled="importing" @change="importExcel">
-                </label>
+
             </template>
 
             <dl class="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
@@ -268,12 +265,27 @@ async function save() {
             </div>
         </FullWidthBox>
 
-        <div class="mb-6 flex items-center justify-between">
-            <Button type="button" @click="addOrder">+ Add order</Button>
-            <div class="flex gap-2">
-                <Button type="button" @click="router.back()">Cancel</Button>
-                <Button type="button" variant="primary" :loading="saving" @click="save">Create invoice</Button>
+        <footer class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
+                <Button type="button" @click="addOrder">+ Add order</Button>
+                <div class="flex gap-2">
+
+
+
+                    <Button variant="secondary" size="sm" class="mr-6">
+
+
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V13.5Zm0 2.25h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V18Zm2.498-6.75h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V13.5Zm0 2.25h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V18Zm2.504-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5Zm0 2.25h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V18Zm2.498-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5ZM8.25 6h7.5v2.25h-7.5V6ZM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 0 0 2.25 2.25h10.5a2.25 2.25 0 0 0 2.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0 0 12 2.25Z" />
+                        </svg>
+                        <label class="cursor-pointer">
+                            {{ importing ? 'Importing…' : 'Import from Excel' }}
+                            <input type="file" accept=".xls,.xlsx" class="hidden" :disabled="importing" @change="importExcel">
+                        </label>
+                    </Button>
+                    <Button type="button" @click="router.back()">Cancel</Button>
+                    <Button type="button" variant="primary" :loading="saving" @click="save">Create invoice</Button>
             </div>
-        </div>
+        </footer>
+
     </AppLayout>
 </template>

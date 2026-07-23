@@ -25,22 +25,54 @@ onMounted(load);
 
         <template v-else>
             <FullWidthBox :title="`Bill ${bill.gen_id}`" :collapsible="false" class="mb-6">
-                <dl class="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Supplier</dt><dd>{{ bill.supplier.name ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Reference</dt><dd>{{ bill.reference ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Status</dt><dd>{{ bill.status ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Agent</dt><dd>{{ bill.agent ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Date</dt><dd>{{ bill.on_date }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Due date</dt><dd>{{ bill.due_date ?? '—' }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Amount</dt><dd class="tabular-nums">{{ money(bill.amount) }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Paid</dt><dd class="tabular-nums">{{ money(bill.paid_amount) }}</dd></div>
-                    <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Open</dt><dd class="tabular-nums" :class="bill.open_amount > 0 ? 'text-amber-600' : 'text-green-600'">{{ money(bill.open_amount) }}</dd></div>
-                    <div v-if="bill.customer_invoice" class="flex gap-2">
-                        <dt class="w-36 shrink-0 font-medium text-gray-500">Customer invoice</dt>
-                        <dd><RouterLink :to="routeUrl('customerInvoices.show', bill.customer_invoice.id)" class="text-red-600 hover:underline">{{ bill.customer_invoice.gen_id }}</RouterLink></dd>
-                    </div>
-                    <div class="flex gap-2 sm:col-span-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Notes</dt><dd class="whitespace-pre-line">{{ bill.notes ?? '—' }}</dd></div>
-                </dl>
+                <table class="w-full border-collapse border border-gray-300 text-sm">
+                    <tbody>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Supplier</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ bill.supplier.name ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Reference</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ bill.reference ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Status</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ bill.status ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Agent</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ bill.agent ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Date</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ bill.on_date }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Due date</th>
+                            <td class="border border-gray-300 px-2 py-2">{{ bill.due_date ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Amount</th>
+                            <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ money(bill.amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Paid</th>
+                            <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ money(bill.paid_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Open</th>
+                            <td class="border border-gray-300 px-2 py-2 tabular-nums" :class="bill.open_amount > 0 ? 'text-amber-600' : 'text-green-600'">{{ money(bill.open_amount) }}</td>
+                        </tr>
+                        <tr v-if="bill.customer_invoice">
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Customer invoice</th>
+                            <td class="border border-gray-300 px-2 py-2"><RouterLink :to="routeUrl('customerInvoices.show', bill.customer_invoice.id)" class="text-red-600 hover:underline">{{ bill.customer_invoice.gen_id }}</RouterLink></td>
+                        </tr>
+                        <tr>
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Notes</th>
+                            <td class="border border-gray-300 px-2 py-2 whitespace-pre-line">{{ bill.notes ?? '-' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
 
                 <template #footer>
                     <RouterLink :to="routeUrl('suppliers.show', bill.supplier.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to supplier</RouterLink>

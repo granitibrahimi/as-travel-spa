@@ -101,7 +101,12 @@ const rowActions = (journal) => [
                             <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No journals found.</td>
                         </tr>
                         <tr v-for="journal in (loading ? [] : apiResponse?.data ?? [])" :key="journal.id" class="hover:bg-gray-50">
-                            <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ journal.gen_id }}</td>
+                            <td class="border border-gray-300 px-2 py-2 font-mono text-xs">
+                                <RouterLink v-if="auth.can('journals.show')" :to="routeUrl('journals.show', journal.id)" class="text-red-700 hover:underline">
+                                    {{ journal.id }}# {{ journal.gen_id }}
+                                </RouterLink>
+                                <template v-else>{{ journal.id }}# {{ journal.gen_id }}</template>
+                            </td>
                             <td class="border border-gray-300 px-2 py-2">{{ journal.on_date }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ journal.reference }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(journal.amount) }}</td>

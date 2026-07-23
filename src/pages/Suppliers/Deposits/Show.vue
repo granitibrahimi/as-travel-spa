@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
@@ -11,6 +11,7 @@ import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
+import SupplierDetails from '../../../components/SupplierDetails.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -24,6 +25,16 @@ async function load() {
 }
 
 onMounted(load);
+
+const rows = computed(() => deposit.value ? [
+    ['Amount', money(deposit.value.amount)],
+    ['Payment method', deposit.value.payment_method],
+    ['Date', deposit.value.on_date],
+    ['Transaction #', deposit.value.transaction_nr],
+    ['Reference', deposit.value.reference],
+    ['Created by', deposit.value.user],
+    ['Notes', deposit.value.notes],
+] : []);
 
 const confirmingDelete = ref(false);
 const deleting = ref(false);
@@ -65,17 +76,18 @@ async function convertToPayment() {
 <template>
     <AppLayout :title="deposit ? `Deposit ${deposit.gen_id}` : 'Deposit'" fluid>
         <Loader v-if="! deposit" />
-        <FullWidthBox v-else :title="`Deposit ${deposit.gen_id}`" :collapsible="false">
-            <dl class="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-                <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Supplier</dt><dd>{{ deposit.supplier?.name ?? '—' }}</dd></div>
-                <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Amount</dt><dd class="tabular-nums">{{ money(deposit.amount) }}</dd></div>
-                <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Payment method</dt><dd>{{ deposit.payment_method ?? '—' }}</dd></div>
-                <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Date</dt><dd>{{ deposit.on_date }}</dd></div>
-                <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Transaction #</dt><dd>{{ deposit.transaction_nr ?? '—' }}</dd></div>
-                <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Reference</dt><dd>{{ deposit.reference ?? '—' }}</dd></div>
-                <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Created by</dt><dd>{{ deposit.user ?? '—' }}</dd></div>
-                <div class="flex gap-2"><dt class="w-32 shrink-0 font-medium text-gray-500">Notes</dt><dd class="whitespace-pre-line">{{ deposit.notes ?? '—' }}</dd></div>
-            </dl>
+        <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
+            <SupplierDetails :supplier="deposit.supplier" />
+
+            <FullWidthBox :title="`Deposit ${deposit.gen_id}`" :collapsible="false">
+            <table class="w-full border-collapse border border-gray-300 text-sm">
+                <tbody>
+                    <tr v-for="[label, value] in rows" :key="label">
+                        <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">{{ label }}</th>
+                        <td class="border border-gray-300 px-2 py-2 whitespace-pre-line">{{ value ?? '-' }}</td>
+                    </tr>
+                </tbody>
+            </table>
 
             <template #footer>
                 <div class="flex flex-wrap items-center gap-3">
@@ -87,7 +99,8 @@ async function convertToPayment() {
                     <Button v-if="auth.can('supplierDeposits.delete')" variant="danger" size="sm" @click="confirmingDelete = true">Delete</Button>
                 </div>
             </template>
-        </FullWidthBox>
+            </FullWidthBox>
+        </div>
 
         <ConfirmDialog
             :show="confirmingDelete"

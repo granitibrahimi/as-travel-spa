@@ -14,8 +14,9 @@ async function fetchMapping() {
 
     try {
         const { data } = await api.get('/accounts/mapping');
-        settings.value = data.settings;
-        mappings.value = data.mappings;
+        const payload = data.data ?? data;
+        settings.value = payload.settings;
+        mappings.value = payload.mappings;
     } finally {
         loading.value = false;
     }
