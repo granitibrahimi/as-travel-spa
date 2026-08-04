@@ -18,18 +18,26 @@ const classification = ref('');
 // Classification options come from the shared form-options store.
 const classifications = computed(() => toOptions(formOptions.accountClassifications));
 
-// A row's `classification` is serialized as a readable label, while the option
-// value may be the enum's int or its label — match tolerantly against both.
+// A row's `classification` is serialized as an object ({ id, name }); the
+// selected option value is the classification id. Match on the id, falling
+// back to the readable name — and tolerate a plain id/label shape too.
 function matchesClassification(row) {
     if (! classification.value) {
         return true;
     }
 
-    const selected = classifications.value.find((option) => String(option.value) === String(classification.value));
-    const rowValue = String(row.classification ?? '').toLowerCase();
+    const selected = String(classification.value);
+    const rc = row.classification;
+    const rowId = String(rc?.id ?? rc ?? '');
 
-    return rowValue === String(classification.value).toLowerCase()
-        || (selected && rowValue === String(selected.label).toLowerCase());
+    if (rowId === selected) {
+        return true;
+    }
+
+    const option = classifications.value.find((o) => String(o.value) === selected);
+    const rowName = String(rc?.name ?? rc ?? '').toLowerCase();
+
+    return option ? rowName === String(option.label).toLowerCase() : false;
 }
 
 async function fetchAccounts() {

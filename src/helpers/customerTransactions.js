@@ -2,12 +2,12 @@
 // `type` is the enum display name, `id` the record id) to its in-SPA detail
 // route. Returns null for types without a detail page.
 const PATHS = {
-    Invoice: 'customer-invoices',
-    'Credit Note': 'customer-credit-notes',
-    Payment: 'customer-payments',
-    'Gift Card': 'customer-gift-cards',
-    Reimbursement: 'customer-refunds',
-    Journal: 'journals',
+    1: 'customers/invoices',
+    2: 'customers/credit-notes',
+    3: 'customers/payments',
+    4: 'customers/gift-cards',
+    5: 'customers/refunds',
+    6: 'journals',
 };
 
 export function customerTransactionPath({ type, id }) {

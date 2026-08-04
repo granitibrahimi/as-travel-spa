@@ -2,7 +2,25 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { isDark } from '../helpers/theme';
 import ThemeToggle from '../components/ThemeToggle.vue';
+
+// Deterministic star field for the night scene: seeded so the sky keeps the
+// same layout across re-renders instead of reshuffling on every theme toggle.
+const seeded = (seed) => {
+    const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+
+    return x - Math.floor(x);
+};
+
+// Kept above the mountain silhouettes (top ≤ 55%) so none are buried in a hill.
+const stars = Array.from({ length: 48 }, (_, i) => ({
+    top: `${seeded(i + 1) * 55}%`,
+    left: `${seeded(i + 60) * 98}%`,
+    size: `${(1 + seeded(i + 120) * 1.8).toFixed(2)}px`,
+    delay: `${(seeded(i + 180) * 4).toFixed(2)}s`,
+    duration: `${(2.5 + seeded(i + 240) * 3).toFixed(2)}s`,
+}));
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -39,8 +57,30 @@ async function submit() {
 <template>
     <!-- Travel-agency backdrop: a full-viewport illustrated scene rendered
          entirely with CSS + inline SVG (no external assets). -->
-    <div class="travel-bg" aria-hidden="true">
-        <div class="travel-bg__sun"></div>
+    <div class="travel-bg" :class="{ 'travel-bg--night': isDark }" aria-hidden="true">
+        <!-- Night: moon + twinkling stars + the odd shooting star.
+             Day: the warm sun glow. -->
+        <template v-if="isDark">
+            <div class="travel-bg__stars">
+                <span
+                    v-for="(star, i) in stars"
+                    :key="i"
+                    class="travel-bg__star"
+                    :style="{
+                        top: star.top,
+                        left: star.left,
+                        width: star.size,
+                        height: star.size,
+                        animationDelay: star.delay,
+                        animationDuration: star.duration,
+                    }"
+                ></span>
+            </div>
+            <div class="travel-bg__moon"></div>
+            <div class="travel-bg__shooting-star"></div>
+        </template>
+        <div v-else class="travel-bg__sun"></div>
+
         <div class="travel-bg__cloud travel-bg__cloud--1"></div>
         <div class="travel-bg__cloud travel-bg__cloud--2"></div>
         <div class="travel-bg__cloud travel-bg__cloud--3"></div>
@@ -177,7 +217,111 @@ async function submit() {
     height: 45%;
 }
 
+/* ---------------------------------------------------------------------------
+   Night scene (theme toggle → dark). Overrides the daytime palette and swaps
+   the sun for a moon + star field.
+   --------------------------------------------------------------------------- */
+.travel-bg--night {
+    background: linear-gradient(180deg, #070b1c 0%, #0f1733 32%, #1b2450 58%, #2b2a56 82%, #3b2f52 100%);
+}
+
+/* Moon, in the sun's old spot, with a soft halo and a few craters. */
+.travel-bg__moon {
+    position: absolute;
+    top: 8%;
+    right: 12%;
+    width: 108px;
+    height: 108px;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 34% 30%, #fffdf5 0%, #f4ecd2 48%, #d8cdae 100%);
+    box-shadow:
+        0 0 30px 8px rgba(254, 249, 219, 0.35),
+        0 0 90px 30px rgba(191, 219, 254, 0.18);
+    animation: travel-moon-glow 9s ease-in-out infinite;
+}
+
+/* Craters — two soft dimples on the moon's surface. */
+.travel-bg__moon::before,
+.travel-bg__moon::after {
+    content: '';
+    position: absolute;
+    border-radius: 9999px;
+    background: rgba(148, 137, 105, 0.28);
+}
+.travel-bg__moon::before { top: 26%; left: 24%; width: 22px; height: 22px; }
+.travel-bg__moon::after { top: 56%; left: 52%; width: 14px; height: 14px; }
+
+@keyframes travel-moon-glow {
+    0%, 100% { box-shadow: 0 0 30px 8px rgba(254, 249, 219, 0.35), 0 0 90px 30px rgba(191, 219, 254, 0.18); }
+    50% { box-shadow: 0 0 38px 12px rgba(254, 249, 219, 0.45), 0 0 110px 38px rgba(191, 219, 254, 0.24); }
+}
+
+.travel-bg__stars {
+    position: absolute;
+    inset: 0;
+}
+
+.travel-bg__star {
+    position: absolute;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.5);
+    animation-name: travel-twinkle;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+}
+
+@keyframes travel-twinkle {
+    0%, 100% { opacity: 0.25; transform: scale(0.85); }
+    50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* A single shooting star that streaks across every ~12s. */
+.travel-bg__shooting-star {
+    position: absolute;
+    top: 14%;
+    left: -8%;
+    width: 120px;
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.9) 100%);
+    opacity: 0;
+    animation: travel-shoot 12s linear infinite;
+}
+
+@keyframes travel-shoot {
+    0% { opacity: 0; transform: translate(0, 0) rotate(18deg); }
+    3% { opacity: 1; }
+    14% { opacity: 0; transform: translate(70vw, 34vh) rotate(18deg); }
+    100% { opacity: 0; transform: translate(70vw, 34vh) rotate(18deg); }
+}
+
+/* Clouds become thin, dim night haze — heavier blur so no hard pill edges
+   show against the dark sky. */
+.travel-bg--night .travel-bg__cloud {
+    background: rgba(148, 163, 184, 0.16);
+    filter: blur(18px);
+}
+
+/* Cool the flight path + plane down so they don't glow red against the sky.
+   CSS wins over the SVG presentation attributes. */
+.travel-bg--night .travel-bg__flight path { stroke: rgba(148, 163, 184, 0.5); }
+.travel-bg--night .travel-bg__flight g path:first-child { fill: #e2e8f0; }
+.travel-bg--night .travel-bg__flight g path:not(:first-child) { fill: #94a3b8; }
+
+/* Deepen the mountain silhouettes for a moonlit horizon. */
+.travel-bg--night .travel-bg__mountains path:nth-child(1) { fill: rgba(30, 41, 70, 0.75); }
+.travel-bg--night .travel-bg__mountains path:nth-child(2) { fill: rgba(18, 26, 48, 0.85); }
+.travel-bg--night .travel-bg__mountains path:nth-child(3) { fill: rgba(8, 12, 28, 0.95); }
+
 @media (prefers-reduced-motion: reduce) {
-    .travel-bg__cloud { animation: none; }
+    .travel-bg__cloud,
+    .travel-bg__moon,
+    .travel-bg__star,
+    .travel-bg__shooting-star { animation: none; }
+
+    /* Without the twinkle keyframes the stars would sit at their 0% opacity. */
+    .travel-bg__star { opacity: 0.8; }
+    .travel-bg__shooting-star { display: none; }
 }
 </style>

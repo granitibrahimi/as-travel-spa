@@ -64,7 +64,5 @@
     color: #64748b;
 }
 
-/* Dim the bright login travel scene so it isn't blinding in dark mode. */
-.dark .travel-bg {
-    filter: brightness(0.55) saturate(0.9);
-}
+/* The login travel scene has its own night variant (moon + stars) driven by
+   `.travel-bg--night` in Login.vue — no blanket dimming needed here. */

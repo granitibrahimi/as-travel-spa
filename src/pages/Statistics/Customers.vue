@@ -13,7 +13,7 @@ import Loader from '../../components/Loader.vue';
 import { useReport } from '../../composables/useReport.js';
 import { useFormOptionsStore } from '../../stores/formOptions.js';
 
-const { loading, error, data, load } = useReport('/statistics/customers/customers');
+const { loading, error, data, load } = useReport('/statistics/customers');
 
 const formOptions = useFormOptionsStore();
 

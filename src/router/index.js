@@ -11,6 +11,7 @@ import customers from './routes/customers';
 import finance from './routes/finance';
 import base from './routes/base';
 import flights from './routes/flights';
+import statistics from './routes/statistics';
 import hr from './routes/hr';
 import crm from './routes/crm';
 import users from './routes/users';
@@ -25,6 +26,7 @@ const routes = [
     ...users,
     ...base,
     ...flights,
+    ...statistics,
     ...hr,
     ...crm,
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
