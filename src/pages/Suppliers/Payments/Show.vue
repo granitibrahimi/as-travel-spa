@@ -20,7 +20,7 @@ const auth = useAuthStore();
 const payment = ref(null);
 
 async function load() {
-    const { data } = await api.get(`/supplier-payments/${route.params.id}`);
+    const { data } = await api.get(`/suppliers/payments/${route.params.id}`);
     payment.value = castResource(data);
 }
 
@@ -48,7 +48,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/supplier-payments/${payment.value.id}`);
+        await api.delete(`/suppliers/payments/${payment.value.id}`);
         router.push(payment.value.supplier ? routeUrl('suppliers.show', payment.value.supplier.id) : routeUrl('supplierPayments.list'));
     } finally {
         deleting.value = false;
@@ -66,7 +66,7 @@ async function confirmConvert() {
     converting.value = true;
 
     try {
-        const { data } = await api.post(`/supplier-payments/${payment.value.id}/convert-to-deposit`);
+        const { data } = await api.post(`/suppliers/payments/${payment.value.id}/convert-to-deposit`);
         router.push(routeUrl('supplierDeposits.show', castMutation(data).id));
     } catch (error) {
         converting.value = false;

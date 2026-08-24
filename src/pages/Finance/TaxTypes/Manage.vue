@@ -27,7 +27,7 @@ const processing = ref(false);
 
 onMounted(async () => {
     if (isEdit) {
-        const { data } = await api.get(`/tax-types/${id}`);
+        const { data } = await api.get(`/finance/tax-types/${id}`);
         const taxType = castResource(data);
         Object.assign(form, {
             name: taxType.name ?? '',
@@ -48,7 +48,7 @@ async function submit() {
     errors.value = {};
 
     try {
-        await (isEdit ? api.put(`/tax-types/${id}`, form) : api.post('/tax-types', form));
+        await (isEdit ? api.put(`/finance/tax-types/${id}`, form) : api.post('/finance/tax-types', form));
         router.push(routeUrl('taxTypes.list'));
     } catch (error) {
         if (error.response?.status === 422) {

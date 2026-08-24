@@ -38,7 +38,7 @@ const actions = computed(() => {
 });
 
 onMounted(async () => {
-    const { data } = await api.get(`/z-reports/${id}`);
+    const { data } = await api.get(`/finance/z-reports/${id}`);
     report.value = castResource(data);
 });
 
@@ -50,7 +50,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/z-reports/${id}`);
+        await api.delete(`/finance/z-reports/${id}`);
         router.push(routeUrl('zReports.list'));
     } finally {
         deleting.value = false;

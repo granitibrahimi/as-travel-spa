@@ -13,7 +13,7 @@ const route = useRoute();
 const creditNote = ref(null);
 
 async function load() {
-    const { data } = await api.get(`/supplier-credit-notes/${route.params.id}`);
+    const { data } = await api.get(`/suppliers/credit-notes/${route.params.id}`);
     creditNote.value = castResource(data);
 }
 onMounted(load);

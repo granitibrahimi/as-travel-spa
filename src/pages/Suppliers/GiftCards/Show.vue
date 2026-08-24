@@ -20,7 +20,7 @@ const auth = useAuthStore();
 const giftCard = ref(null);
 
 async function load() {
-    const { data } = await api.get(`/supplier-gift-cards/${route.params.id}`);
+    const { data } = await api.get(`/suppliers/gift-cards/${route.params.id}`);
     giftCard.value = castResource(data);
 }
 
@@ -45,7 +45,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/supplier-gift-cards/${giftCard.value.id}`);
+        await api.delete(`/suppliers/gift-cards/${giftCard.value.id}`);
         router.push(giftCard.value.supplier ? routeUrl('suppliers.show', giftCard.value.supplier.id) : routeUrl('supplierGiftCards.list'));
     } finally {
         deleting.value = false;

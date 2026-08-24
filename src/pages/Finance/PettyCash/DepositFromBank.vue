@@ -43,7 +43,7 @@ async function submit() {
     errors.value = {};
 
     try {
-        const { data } = await api.post('/petty-cash/deposit-from-bank', form);
+        const { data } = await api.post('/finance/petty-cash/deposit-from-bank', form);
         router.push(routeUrl('accountTransfers.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {

@@ -25,7 +25,7 @@ async function fetchRefunds(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/supplier-refunds', {
+        const { data } = await api.get('/suppliers/refunds', {
             params: {
                 q: search.value || undefined,
                 open: openOnly.value ? 1 : undefined,
@@ -51,7 +51,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/supplier-refunds/${toDelete.value.id}`);
+        await api.delete(`/suppliers/refunds/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchRefunds(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {

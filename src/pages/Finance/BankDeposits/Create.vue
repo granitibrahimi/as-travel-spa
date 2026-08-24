@@ -32,7 +32,7 @@ const form = reactive({
 });
 
 onMounted(async () => {
-    const { data: undeposited } = await api.get('/bank-deposits/undeposited-payments');
+    const { data: undeposited } = await api.get('/finance/bank-deposits/undeposited-payments');
 
     rows.value = (undeposited.payments ?? []).map((payment) => ({
         ...payment,
@@ -80,7 +80,7 @@ async function submit() {
     };
 
     try {
-        const { data } = await api.post('/bank-deposits', payload);
+        const { data } = await api.post('/finance/bank-deposits', payload);
         router.push(routeUrl('bankDeposits.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {

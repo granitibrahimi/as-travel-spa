@@ -48,7 +48,7 @@ const form = reactive({
 
 onMounted(async () => {
     const journal = isEdit
-        ? await api.get(`/journals/${id}`).then((r) => castResource(r.data))
+        ? await api.get(`/finance/journals/${id}`).then((r) => castResource(r.data))
         : null;
 
     if (journal) {
@@ -114,8 +114,8 @@ async function submit() {
 
     try {
         const { data } = await (isEdit
-            ? api.put(`/journals/${id}`, payload)
-            : api.post('/journals', payload));
+            ? api.put(`/finance/journals/${id}`, payload)
+            : api.post('/finance/journals', payload));
         router.push(routeUrl('journals.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {
@@ -161,7 +161,7 @@ async function submit() {
                         <div class="lg:col-span-2">
                             <AsyncSelect
                                 v-model="entry.customer_supplier"
-                                url="/journals/relations"
+                                url="/finance/journals/relations"
                                 placeholder="Customer / supplier"
                                 :initial-option="entry.customer_supplier ? { id: entry.customer_supplier, name: entry.relation_label } : null"
                             />

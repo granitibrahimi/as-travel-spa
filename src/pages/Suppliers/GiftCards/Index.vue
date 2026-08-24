@@ -23,7 +23,7 @@ async function fetchGiftCards(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/supplier-gift-cards', { params: { q: search.value || undefined, page } });
+        const { data } = await api.get('/suppliers/gift-cards', { params: { q: search.value || undefined, page } });
         apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
@@ -43,7 +43,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/supplier-gift-cards/${toDelete.value.id}`);
+        await api.delete(`/suppliers/gift-cards/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchGiftCards(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {

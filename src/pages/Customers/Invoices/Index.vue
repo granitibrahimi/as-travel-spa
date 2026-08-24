@@ -56,8 +56,6 @@ async function fetchInvoices(page = 1) {
     } finally {
         if (request === controller) {
             loading.value = false;
-
-            console.log(apiResponse);
         }
     }
 }
@@ -106,7 +104,7 @@ function onInvoiceDeleted() {
                             <th class="border border-gray-300 px-2 py-2">Destination</th>
                             <th class="border border-gray-300 px-2 py-2" style="width: 160px;">Agent</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Amount</th>
-                            <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Paid</th>
+                            <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Debt</th>
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 90px;">Actions</th>
                         </tr>
                     </thead>
@@ -126,7 +124,9 @@ function onInvoiceDeleted() {
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ invoice.destination ?? '-' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ invoice.user.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(invoice.amount) }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(invoice.paid_amount) }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums" :class="invoice.debt > 0 ? 'text-amber-600' : 'font-medium text-green-600'">
+                                {{ invoice.debt > 0 ? money(invoice.debt) : 'Paid' }}
+                            </td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <button
                                     type="button"

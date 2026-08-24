@@ -13,7 +13,7 @@ async function fetchMapping() {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/accounts/mapping');
+        const { data } = await api.get('/finance/accounts/mapping');
         const payload = data.data ?? data;
         settings.value = payload.settings;
         mappings.value = payload.mappings;

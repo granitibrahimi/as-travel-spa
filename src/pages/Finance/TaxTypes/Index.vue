@@ -30,7 +30,7 @@ async function fetchTaxTypes(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/tax-types', {
+        const { data } = await api.get('/finance/tax-types', {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
@@ -56,7 +56,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/tax-types/${toDelete.value.id}`);
+        await api.delete(`/finance/tax-types/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchTaxTypes(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {

@@ -15,7 +15,7 @@
 //   const { data } = await api.get('/customers/customers');
 //   const { data: rows, pagination } = castPaginated(data);
 //
-//   const { data } = await api.post('/expenses', payload);
+//   const { data } = await api.post('/finance/expenses', payload);
 //   const { id } = castMutation(data);               // works for create AND update
 //
 // When you DON'T know the kind (e.g. a generic interceptor), `castResponse(body)`

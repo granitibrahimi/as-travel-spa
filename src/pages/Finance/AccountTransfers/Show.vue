@@ -24,7 +24,7 @@ const deleting = ref(false);
 const title = computed(() => (transfer.value ? `Transfer ${transfer.value.gen_id}` : `Transfer #${id}`));
 
 onMounted(async () => {
-    const { data } = await api.get(`/account-transfers/${id}`);
+    const { data } = await api.get(`/finance/account-transfers/${id}`);
     transfer.value = castResource(data);
 });
 
@@ -36,7 +36,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/account-transfers/${id}`);
+        await api.delete(`/finance/account-transfers/${id}`);
         router.push(routeUrl('accountTransfers.list'));
     } finally {
         deleting.value = false;

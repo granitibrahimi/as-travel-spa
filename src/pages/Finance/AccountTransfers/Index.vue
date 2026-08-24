@@ -31,7 +31,7 @@ async function fetchTransfers(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/account-transfers', {
+        const { data } = await api.get('/finance/account-transfers', {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
@@ -57,7 +57,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/account-transfers/${toDelete.value.id}`);
+        await api.delete(`/finance/account-transfers/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchTransfers(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {

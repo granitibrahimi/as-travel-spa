@@ -30,7 +30,7 @@ async function fetchPaymentMethods(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/payment-methods', {
+        const { data } = await api.get('/finance/payment-methods', {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
@@ -56,7 +56,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/payment-methods/${toDelete.value.id}`);
+        await api.delete(`/finance/payment-methods/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchPaymentMethods(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {

@@ -32,7 +32,7 @@ async function loadSales(date) {
     loadingSales.value = true;
 
     try {
-        const { data } = await api.get('/z-reports/sales-for-date', { params: { date: date || undefined } });
+        const { data } = await api.get('/finance/z-reports/sales-for-date', { params: { date: date || undefined } });
         sales.value = data.sales ?? [];
         form.included = sales.value.map((sale) => sale.id);
 
@@ -78,7 +78,7 @@ async function submit() {
     errors.value = {};
 
     try {
-        const { data } = await api.post('/z-reports', form);
+        const { data } = await api.post('/finance/z-reports', form);
         router.push(routeUrl('zReports.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {

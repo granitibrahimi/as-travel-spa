@@ -41,7 +41,7 @@ const canEditAmount = ref(true);
 // Backend speaks d.m.Y; the date input speaks Y-m-d.
 
 onMounted(async () => {
-    const { data } = await api.get(`/supplier-payments/${paymentId}`);
+    const { data } = await api.get(`/suppliers/payments/${paymentId}`);
     const payment = castResource(data);
     supplier.value = payment.supplier ?? null;
     Object.assign(form, {
@@ -68,7 +68,7 @@ async function submit() {
     const payload = { ...form };
 
     try {
-        await api.put(`/supplier-payments/${paymentId}`, payload);
+        await api.put(`/suppliers/payments/${paymentId}`, payload);
         router.push(routeUrl('supplierPayments.show', paymentId));
     } catch (error) {
         if (error.response?.status === 422) {

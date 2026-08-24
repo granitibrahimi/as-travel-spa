@@ -24,7 +24,7 @@ async function fetchDeposits(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/supplier-deposits', { params: { q: search.value || undefined, page } });
+        const { data } = await api.get('/suppliers/deposits', { params: { q: search.value || undefined, page } });
         apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
@@ -44,7 +44,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/supplier-deposits/${toDelete.value.id}`);
+        await api.delete(`/suppliers/deposits/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchDeposits(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
@@ -64,7 +64,7 @@ async function confirmConvert() {
     converting.value = true;
 
     try {
-        const { data } = await api.post(`/supplier-deposits/${toConvert.value.id}/convert-to-payment`);
+        const { data } = await api.post(`/suppliers/deposits/${toConvert.value.id}/convert-to-payment`);
         router.push(routeUrl('supplierPayments.show', castMutation(data).id));
     } finally {
         converting.value = false;

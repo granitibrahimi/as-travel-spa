@@ -100,7 +100,7 @@ async function confirmDelete() {
 
     try {
         const removed = toDelete.value;
-        await api.delete(`/suppliers/${removed.id}`);
+        await api.delete(`/suppliers/suppliers/${removed.id}`);
         toDelete.value = null;
         emit('deleted', removed);
         emit('close');

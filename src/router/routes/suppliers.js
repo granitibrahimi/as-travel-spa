@@ -1,4 +1,5 @@
 const SuppliersIndex = () => import('../../pages/Suppliers/Suppliers/Index.vue');
+const SuppliersExport = () => import('../../pages/Suppliers/Suppliers/Export.vue');
 const SuppliersManage = () => import('../../pages/Suppliers/Suppliers/Manage.vue');
 const SuppliersShow = () => import('../../pages/Suppliers/Suppliers/Show.vue');
 const SuppliersReconcile = () => import('../../pages/Suppliers/Suppliers/Reconcile.vue');
@@ -29,6 +30,7 @@ const SupplierRefundsShow = () => import('../../pages/Suppliers/Refunds/Show.vue
 export default [
     { path: '/suppliers', name: 'suppliers.list', component: SuppliersIndex },
     { path: '/suppliers/create', name: 'suppliers.create', component: SuppliersManage },
+    { path: '/suppliers/export', name: 'suppliers.export', component: SuppliersExport },
     { path: '/suppliers/:id', name: 'suppliers.show', component: SuppliersShow },
     { path: '/suppliers/:id/edit', name: 'suppliers.edit', component: SuppliersManage },
     { path: '/suppliers/:id/statements', name: 'suppliers.statements', component: SuppliersStatements },

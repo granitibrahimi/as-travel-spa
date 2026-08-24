@@ -27,7 +27,7 @@ const form = reactive({
 });
 
 onMounted(async () => {
-    const { data } = await api.get('/petty-cash/undeposited-payments');
+    const { data } = await api.get('/finance/petty-cash/undeposited-payments');
     rows.value = (data.payments ?? []).map((payment) => ({
         ...payment,
         included: false,
@@ -71,7 +71,7 @@ async function submit() {
     };
 
     try {
-        const { data } = await api.post('/petty-cash/deposit', payload);
+        const { data } = await api.post('/finance/petty-cash/deposit', payload);
         router.push(routeUrl('accountTransfers.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {

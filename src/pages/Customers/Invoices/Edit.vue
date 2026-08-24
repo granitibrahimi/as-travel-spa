@@ -246,7 +246,7 @@ async function save() {
                     <div class="space-y-4 lg:col-span-1">
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">Vendor</label>
-                            <AsyncSelect v-model="order.supplier" url="/suppliers/autosuggest" :initial-option="order.supplierOption" placeholder="Search for a supplier…" />
+                            <AsyncSelect v-model="order.supplier" url="/suppliers/suppliers/autosuggest" :initial-option="order.supplierOption" placeholder="Search for a supplier…" />
                         </div>
                         <Select v-model="order.product" label="Product" :options="productOptions" placeholder="Choose product…" />
                         <div>

@@ -18,7 +18,7 @@ const journal = ref(null);
 const title = computed(() => (journal.value ? `Journal ${journal.value.gen_id}` : `Journal #${id}`));
 
 onMounted(async () => {
-    const { data } = await api.get(`/journals/${id}`);
+    const { data } = await api.get(`/finance/journals/${id}`);
     journal.value = castResource(data);
 });
 </script>

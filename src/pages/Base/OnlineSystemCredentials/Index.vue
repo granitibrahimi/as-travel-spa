@@ -210,7 +210,7 @@ const rowActions = (row) => [
             <form class="space-y-4" @submit.prevent="submit">
                 <AsyncSelect
                     v-model="form.vendor_id"
-                    url="/suppliers"
+                    url="/suppliers/suppliers"
                     :initial-option="supplierInitial"
                     label="Supplier *"
                     placeholder="Search supplier…"

@@ -26,7 +26,7 @@ onMounted(async () => {
     }
 
     try {
-        const { data } = await api.get(`/account-transactions/journal/${type}/${reference}`);
+        const { data } = await api.get(`/finance/account-transactions/journal/${type}/${reference}`);
         journal.value = castResource(data);
     } finally {
         loading.value = false;

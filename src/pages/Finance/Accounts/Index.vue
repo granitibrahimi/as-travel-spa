@@ -44,7 +44,7 @@ async function fetchAccounts() {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/accounts');
+        const { data } = await api.get('/finance/accounts');
         accounts.value = data.data;
     } finally {
         loading.value = false;

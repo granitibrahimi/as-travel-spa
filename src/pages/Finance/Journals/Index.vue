@@ -31,7 +31,7 @@ async function fetchJournals(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/journals', {
+        const { data } = await api.get('/finance/journals', {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
@@ -57,7 +57,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/journals/${toDelete.value.id}`);
+        await api.delete(`/finance/journals/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchJournals(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {

@@ -30,7 +30,7 @@ async function fetchSuppliers(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/suppliers', {
+        const { data } = await api.get('/suppliers/suppliers', {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });

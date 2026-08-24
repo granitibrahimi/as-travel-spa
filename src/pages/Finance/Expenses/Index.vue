@@ -31,7 +31,7 @@ async function fetchExpenses(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/expenses', {
+        const { data } = await api.get('/finance/expenses', {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
@@ -57,7 +57,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/expenses/${toDelete.value.id}`);
+        await api.delete(`/finance/expenses/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchExpenses(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {

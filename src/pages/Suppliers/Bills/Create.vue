@@ -64,7 +64,7 @@ function removeRow(index) {
 }
 
 onMounted(async () => {
-    const {data} = await api.get(`/suppliers/${supplierId}`);
+    const {data} = await api.get(`/suppliers/suppliers/${supplierId}`);
     supplier.value = castResource(data);
     loaded.value = true;
 });
@@ -80,7 +80,7 @@ async function submit() {
     const payload = {...form};
 
     try {
-        const {data} = await api.post(`/suppliers/${supplierId}/bills`, payload);
+        const {data} = await api.post(`/suppliers/suppliers/${supplierId}/bills`, payload);
         router.push(routeUrl('supplierBills.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {

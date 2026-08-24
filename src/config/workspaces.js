@@ -228,9 +228,9 @@ export const workspaces = [
             {
                 label: 'Accounts',
                 items: [
-                    { label: 'All Accounts', to: '/accounts', can: 'accounts.list' },
-                    { label: 'Account Types', to: '/accounts/types', can: 'accounts.types' },
-                    { label: 'Mapping', to: '/accounts/mapping', can: 'accounts.mapping' },
+                    { label: 'All Accounts', to: '/finance/accounts', can: 'accounts.list' },
+                    { label: 'Account Types', to: '/finance/accounts/types', can: 'accounts.types' },
+                    { label: 'Mapping', to: '/finance/accounts/mapping', can: 'accounts.mapping' },
                 ],
             },
             {
@@ -253,67 +253,69 @@ export const workspaces = [
                 items: [
                     { label: 'All Suppliers', to: '/suppliers', can: 'suppliers.list' },
                     { label: 'New Supplier', to: '/suppliers/create', can: 'suppliers.create' },
-                    { label: 'Deposits', to: '/supplier-deposits', can: 'supplierDeposits.list' },
-                    { label: 'Payments', to: '/supplier-payments', can: 'supplierPayments.list' },
-                    { label: 'Gift Cards', to: '/supplier-gift-cards', can: 'supplierGiftCards.list' },
-                    { label: 'Refunds', to: '/supplier-refunds', can: 'supplierRefunds.list' },
+                    { label: 'Export', to: '/suppliers/export', can: 'suppliers.export' },
+                    { label: 'Bills', to: '/suppliers/bills', can: 'supplierBills.list' },
+                    { label: 'Deposits', to: '/suppliers/deposits', can: 'supplierDeposits.list' },
+                    { label: 'Payments', to: '/suppliers/payments', can: 'supplierPayments.list' },
+                    { label: 'Gift Cards', to: '/suppliers/gift-cards', can: 'supplierGiftCards.list' },
+                    { label: 'Refunds', to: '/suppliers/refunds', can: 'supplierRefunds.list' },
                 ],
             },
             {
                 label: 'Payment Methods',
                 items: [
-                    { label: 'All Payment Methods', to: '/payment-methods', can: 'paymentMethods.list' },
-                    { label: 'New Payment Method', to: '/payment-methods/create', can: 'paymentMethods.create' },
+                    { label: 'All Payment Methods', to: '/finance/payment-methods', can: 'paymentMethods.list' },
+                    { label: 'New Payment Method', to: '/finance/payment-methods/create', can: 'paymentMethods.create' },
                 ],
             },
             {
                 label: 'Journals',
                 items: [
-                    { label: 'All Journals', to: '/journals', can: 'journals.list' },
-                    { label: 'New Journal', to: '/journals/create', can: 'journals.create' },
+                    { label: 'All Journals', to: '/finance/journals', can: 'journals.list' },
+                    { label: 'New Journal', to: '/finance/journals/create', can: 'journals.create' },
                 ],
             },
             {
                 label: 'Account Transfers',
                 items: [
-                    { label: 'All Transfers', to: '/account-transfers', can: 'accountTransfers.list' },
-                    { label: 'New Transfer', to: '/account-transfers/create', can: 'accountTransfers.create' },
+                    { label: 'All Transfers', to: '/finance/account-transfers', can: 'accountTransfers.list' },
+                    { label: 'New Transfer', to: '/finance/account-transfers/create', can: 'accountTransfers.create' },
                 ],
             },
             {
                 label: 'Petty Cash',
                 items: [
-                    { label: 'Transfers List', to: '/petty-cash', can: 'pettyCash.list' },
-                    { label: 'Daily Cash to Petty Cash', to: '/petty-cash/deposit', can: 'pettyCash.deposit' },
-                    { label: 'Bank to Petty Cash', to: '/petty-cash/deposit-from-bank', can: 'pettyCash.depositFromBank' },
+                    { label: 'Transfers List', to: '/finance/petty-cash', can: 'pettyCash.list' },
+                    { label: 'Daily Cash to Petty Cash', to: '/finance/petty-cash/deposit', can: 'pettyCash.deposit' },
+                    { label: 'Bank to Petty Cash', to: '/finance/petty-cash/deposit-from-bank', can: 'pettyCash.depositFromBank' },
                 ],
             },
             {
                 label: 'Z-Reports',
                 items: [
-                    { label: 'All Z-Reports', to: '/z-reports', can: 'zReports.list' },
-                    { label: 'New Z-Report', to: '/z-reports/create', can: 'zReports.create' },
+                    { label: 'All Z-Reports', to: '/finance/z-reports', can: 'zReports.list' },
+                    { label: 'New Z-Report', to: '/finance/z-reports/create', can: 'zReports.create' },
                 ],
             },
             {
                 label: 'Bank Deposits',
                 items: [
-                    { label: 'All Bank Deposits', to: '/bank-deposits', can: 'bankDeposits.list' },
-                    { label: 'New Bank Deposit', to: '/bank-deposits/create', can: 'bankDeposits.create' },
+                    { label: 'All Bank Deposits', to: '/finance/bank-deposits', can: 'bankDeposits.list' },
+                    { label: 'New Bank Deposit', to: '/finance/bank-deposits/create', can: 'bankDeposits.create' },
                 ],
             },
             {
                 label: 'Expenses',
                 items: [
-                    { label: 'All Expenses', to: '/expenses', can: 'expenses.list' },
-                    { label: 'New Expense', to: '/expenses/create', can: 'expenses.create' },
+                    { label: 'All Expenses', to: '/finance/expenses', can: 'expenses.list' },
+                    { label: 'New Expense', to: '/finance/expenses/create', can: 'expenses.create' },
                 ],
             },
             {
                 label: 'Tax Types',
                 items: [
-                    { label: 'All Tax Types', to: '/tax-types', can: 'taxTypes.list' },
-                    { label: 'New Tax Type', to: '/tax-types/create', can: 'taxTypes.create' },
+                    { label: 'All Tax Types', to: '/finance/tax-types', can: 'taxTypes.list' },
+                    { label: 'New Tax Type', to: '/finance/tax-types/create', can: 'taxTypes.create' },
                 ],
             },
             {

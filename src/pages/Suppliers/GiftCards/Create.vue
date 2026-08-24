@@ -33,7 +33,7 @@ const processing = ref(false);
 const loaded = ref(false);
 
 onMounted(async () => {
-    const {data} = await api.get(`/suppliers/${supplierId}`);
+    const {data} = await api.get(`/suppliers/suppliers/${supplierId}`);
     supplier.value = castResource(data);
     loaded.value = true;
 });
@@ -49,7 +49,7 @@ async function submit() {
     const payload = { ...form };
 
     try {
-        const {data} = await api.post(`/suppliers/${supplierId}/gift-cards`, payload);
+        const {data} = await api.post(`/suppliers/suppliers/${supplierId}/gift-cards`, payload);
         router.push(routeUrl('supplierGiftCards.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {

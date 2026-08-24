@@ -35,7 +35,7 @@ async function fetchTypes() {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/accounts/types');
+        const { data } = await api.get('/finance/accounts/types');
         types.value = data.data;
     } finally {
         loading.value = false;

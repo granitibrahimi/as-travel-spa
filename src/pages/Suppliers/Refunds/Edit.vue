@@ -42,7 +42,7 @@ const loaded = ref(false);
 // Backend speaks d.m.Y; the date input speaks Y-m-d.
 
 onMounted(async () => {
-    const { data } = await api.get(`/supplier-refunds/${refundId}`);
+    const { data } = await api.get(`/suppliers/refunds/${refundId}`);
     const refund = castResource(data);
     supplier.value = refund.supplier ?? null;
     Object.assign(form, {
@@ -53,7 +53,7 @@ onMounted(async () => {
         notes: refund.notes ?? '',
     });
 
-    const available = await api.get('/supplier-refunds/available-amount', {
+    const available = await api.get('/suppliers/refunds/available-amount', {
         params: { supplier_id: refund.supplier?.id ?? undefined },
     });
     availableAmount.value = castResource(available.data).available_amount;
@@ -72,7 +72,7 @@ async function submit() {
     const payload = { ...form };
 
     try {
-        await api.put(`/supplier-refunds/${refundId}`, payload);
+        await api.put(`/suppliers/refunds/${refundId}`, payload);
         router.push(routeUrl('supplierRefunds.show', refundId));
     } catch (error) {
         if (error.response?.status === 422) {

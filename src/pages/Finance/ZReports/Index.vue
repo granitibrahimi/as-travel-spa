@@ -38,7 +38,7 @@ async function fetchReports(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/z-reports', {
+        const { data } = await api.get('/finance/z-reports', {
             signal: controller.signal,
             params: {
                 q: filters.q || undefined,
@@ -76,7 +76,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/z-reports/${toDelete.value.id}`);
+        await api.delete(`/finance/z-reports/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchReports(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {

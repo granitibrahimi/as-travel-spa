@@ -32,7 +32,7 @@ const processing = ref(false);
 const loaded = ref(false);
 
 onMounted(async () => {
-    const {data} = await api.get(`/supplier-gift-cards/${giftCardId}`);
+    const {data} = await api.get(`/suppliers/gift-cards/${giftCardId}`);
     const giftCard = castResource(data);
     form.amount = giftCard.amount;
     form.notes = giftCard.notes ?? '';
@@ -56,7 +56,7 @@ async function submit() {
     };
 
     try {
-        await api.put(`/supplier-gift-cards/${giftCardId}`, payload);
+        await api.put(`/suppliers/gift-cards/${giftCardId}`, payload);
         router.push(routeUrl('supplierGiftCards.show', giftCardId));
     } catch (error) {
         if (error.response?.status === 422) {

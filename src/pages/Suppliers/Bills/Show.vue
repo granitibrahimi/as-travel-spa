@@ -13,7 +13,7 @@ const route = useRoute();
 const bill = ref(null);
 
 async function load() {
-    const { data } = await api.get(`/supplier-bills/${route.params.id}`);
+    const { data } = await api.get(`/suppliers/bills/${route.params.id}`);
     bill.value = castResource(data);
 }
 onMounted(load);

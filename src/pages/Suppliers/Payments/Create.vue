@@ -40,7 +40,7 @@ const loaded = ref(false);
 // Backend speaks d.m.Y; the date input speaks Y-m-d.
 
 onMounted(async () => {
-    const { data } = await api.get(`/suppliers/${supplierId}`);
+    const { data } = await api.get(`/suppliers/suppliers/${supplierId}`);
     supplier.value = castResource(data);
     loaded.value = true;
 });
@@ -56,7 +56,7 @@ async function submit() {
     const payload = { ...form };
 
     try {
-        const { data } = await api.post(`/suppliers/${supplierId}/payments`, payload);
+        const { data } = await api.post(`/suppliers/suppliers/${supplierId}/payments`, payload);
         router.push(routeUrl('supplierPayments.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {

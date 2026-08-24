@@ -18,7 +18,7 @@ const expense = ref(null);
 const title = computed(() => (expense.value ? `Expense ${expense.value.gen_id}` : `Expense #${id}`));
 
 onMounted(async () => {
-    const { data } = await api.get(`/expenses/${id}`);
+    const { data } = await api.get(`/finance/expenses/${id}`);
     expense.value = castResource(data);
 });
 </script>

@@ -44,13 +44,13 @@ const loaded = ref(false);
 // Backend speaks d.m.Y; the date input speaks Y-m-d.
 
 onMounted(async () => {
-    const supplierResponse = await api.get(`/suppliers/${supplierId}`);
+    const supplierResponse = await api.get(`/suppliers/suppliers/${supplierId}`);
     supplier.value = castResource(supplierResponse.data);
 
     // The available amount for this supplier comes from its own endpoint; keep
     // the loader up until it lands so the amount's max is set before the form
     // shows.
-    const { data } = await api.get('/supplier-refunds/available-amount', {
+    const { data } = await api.get('/suppliers/refunds/available-amount', {
         params: { supplier_id: supplierId ?? undefined },
     });
     availableAmount.value = castResource(data).available_amount;
@@ -80,7 +80,7 @@ async function submit() {
     const payload = { ...form };
 
     try {
-        const { data } = await api.post(`/suppliers/${supplierId}/refunds`, payload);
+        const { data } = await api.post(`/suppliers/suppliers/${supplierId}/refunds`, payload);
         router.push(routeUrl('supplierRefunds.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {

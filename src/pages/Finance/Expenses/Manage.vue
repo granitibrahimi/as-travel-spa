@@ -40,7 +40,7 @@ const form = reactive({
 
 onMounted(async () => {
     const expense = isEdit
-        ? await api.get(`/expenses/${id}`).then((r) => castResource(r.data))
+        ? await api.get(`/finance/expenses/${id}`).then((r) => castResource(r.data))
         : null;
 
     if (expense) {
@@ -94,8 +94,8 @@ async function submit() {
 
     try {
         const { data } = await (isEdit
-            ? api.put(`/expenses/${id}`, payload)
-            : api.post('/expenses', payload));
+            ? api.put(`/finance/expenses/${id}`, payload)
+            : api.post('/finance/expenses', payload));
         router.push(routeUrl('expenses.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {

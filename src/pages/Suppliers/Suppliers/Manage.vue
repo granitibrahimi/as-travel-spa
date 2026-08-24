@@ -36,7 +36,7 @@ onMounted(async () => {
         return;
     }
 
-    const { data } = await api.get(`/suppliers/${supplierId}`);
+    const { data } = await api.get(`/suppliers/suppliers/${supplierId}`);
     const supplier = castResource(data);
 
     Object.assign(form, {
@@ -63,10 +63,10 @@ async function submit() {
 
     try {
         if (isEdit) {
-            await api.put(`/suppliers/${supplierId}`, form);
+            await api.put(`/suppliers/suppliers/${supplierId}`, form);
             router.push(routeUrl('suppliers.show', supplierId));
         } else {
-            const { data } = await api.post('/suppliers', form);
+            const { data } = await api.post('/suppliers/suppliers', form);
             router.push(routeUrl('suppliers.show', castMutation(data).id));
         }
     } catch (error) {

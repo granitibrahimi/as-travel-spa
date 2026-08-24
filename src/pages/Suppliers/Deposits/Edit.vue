@@ -40,7 +40,7 @@ const loaded = ref(false);
 // Backend speaks d.m.Y; the date input speaks Y-m-d.
 
 onMounted(async () => {
-    const { data } = await api.get(`/supplier-deposits/${depositId}`);
+    const { data } = await api.get(`/suppliers/deposits/${depositId}`);
     const deposit = castResource(data);
     supplier.value = deposit.supplier ?? null;
     Object.assign(form, {
@@ -66,7 +66,7 @@ async function submit() {
     const payload = { ...form };
 
     try {
-        await api.put(`/supplier-deposits/${depositId}`, payload);
+        await api.put(`/suppliers/deposits/${depositId}`, payload);
         router.push(routeUrl('supplierDeposits.show', depositId));
     } catch (error) {
         if (error.response?.status === 422) {

@@ -39,7 +39,7 @@ const ready = ref(false);
 
 onMounted(async () => {
     const method = isEdit
-        ? await api.get(`/payment-methods/${id}`).then((r) => castResource(r.data))
+        ? await api.get(`/finance/payment-methods/${id}`).then((r) => castResource(r.data))
         : null;
 
     if (method) {
@@ -69,7 +69,7 @@ async function submit() {
     errors.value = {};
 
     try {
-        await (isEdit ? api.put(`/payment-methods/${id}`, form) : api.post('/payment-methods', form));
+        await (isEdit ? api.put(`/finance/payment-methods/${id}`, form) : api.post('/finance/payment-methods', form));
         router.push(routeUrl('paymentMethods.list'));
     } catch (error) {
         if (error.response?.status === 422) {

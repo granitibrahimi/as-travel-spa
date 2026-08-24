@@ -48,7 +48,7 @@ const actions = computed(() => {
 });
 
 async function load() {
-    const { data } = await api.get(`/bank-deposits/${id}`);
+    const { data } = await api.get(`/finance/bank-deposits/${id}`);
     deposit.value = castResource(data);
 }
 
@@ -62,7 +62,7 @@ async function approve() {
     approving.value = true;
 
     try {
-        await api.post(`/bank-deposits/${id}/approve`);
+        await api.post(`/finance/bank-deposits/${id}/approve`);
         await load();
     } finally {
         approving.value = false;
@@ -77,7 +77,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/bank-deposits/${id}`);
+        await api.delete(`/finance/bank-deposits/${id}`);
         router.push(routeUrl('bankDeposits.list'));
     } finally {
         deleting.value = false;

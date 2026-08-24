@@ -38,7 +38,7 @@ const form = reactive({
 
 onMounted(async () => {
     const transfer = isEdit
-        ? await api.get(`/account-transfers/${id}`).then((r) => castResource(r.data))
+        ? await api.get(`/finance/account-transfers/${id}`).then((r) => castResource(r.data))
         : null;
 
     if (transfer) {
@@ -64,8 +64,8 @@ async function submit() {
 
     try {
         const { data } = await (isEdit
-            ? api.put(`/account-transfers/${id}`, form)
-            : api.post('/account-transfers', form));
+            ? api.put(`/finance/account-transfers/${id}`, form)
+            : api.post('/finance/account-transfers', form));
         router.push(routeUrl('accountTransfers.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {

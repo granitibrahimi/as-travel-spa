@@ -48,7 +48,7 @@ const difference = computed(() => Math.round((debitTotal.value - creditTotal.val
 const balanced = computed(() => debitTotal.value > 0 && difference.value === 0);
 
 async function fetchSupplier() {
-    const { data } = await api.get(`/suppliers/${id}`);
+    const { data } = await api.get(`/suppliers/suppliers/${id}`);
     supplier.value = castResource(data);
 }
 
@@ -59,7 +59,7 @@ async function fetchDebit(page = 1) {
     debitLoading.value = true;
 
     try {
-        const { data } = await api.get(`/suppliers/${id}/reconcile/debit-transactions`, {
+        const { data } = await api.get(`/suppliers/suppliers/${id}/reconcile/debit-transactions`, {
             signal: controller.signal,
             params: {
                 search: debitSearch.value || undefined,
@@ -86,7 +86,7 @@ async function fetchCredit(page = 1) {
     creditLoading.value = true;
 
     try {
-        const { data } = await api.get(`/suppliers/${id}/reconcile/credit-transactions`, {
+        const { data } = await api.get(`/suppliers/suppliers/${id}/reconcile/credit-transactions`, {
             signal: controller.signal,
             params: {
                 search: creditSearch.value || undefined,
@@ -126,7 +126,7 @@ async function submit() {
     errors.value = [];
 
     try {
-        await api.post(`/suppliers/${id}/reconcile`, {
+        await api.post(`/suppliers/suppliers/${id}/reconcile`, {
             debit_links: { ...debitAmounts },
             credit_links: { ...creditAmounts },
         });

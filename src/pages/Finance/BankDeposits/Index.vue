@@ -31,7 +31,7 @@ async function fetchDeposits(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/bank-deposits', {
+        const { data } = await api.get('/finance/bank-deposits', {
             signal: controller.signal,
             params: { q: search.value || undefined, page },
         });
@@ -57,7 +57,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/bank-deposits/${toDelete.value.id}`);
+        await api.delete(`/finance/bank-deposits/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchDeposits(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {

@@ -31,7 +31,7 @@ const stats = ref(null);
 const title = computed(() => supplier.value?.full_name ?? '');
 
 async function fetchSummary() {
-    const { data } = await api.get(`/suppliers/${id}/summary`);
+    const { data } = await api.get(`/suppliers/suppliers/${id}/summary`);
     stats.value = data.data;
 }
 
@@ -57,7 +57,7 @@ async function fetchTransactions(page = 1) {
     loadingTransactions.value = true;
 
     try {
-        const { data } = await api.get(`/suppliers/${id}/transactions`, {
+        const { data } = await api.get(`/suppliers/suppliers/${id}/transactions`, {
             signal: controller.signal,
             params: {
                 from: filters.from || undefined,
@@ -82,7 +82,7 @@ async function fetchTransactions(page = 1) {
 }
 
 onMounted(async () => {
-    const { data } = await api.get(`/suppliers/${id}`);
+    const { data } = await api.get(`/suppliers/suppliers/${id}`);
     supplier.value = data.data;
 
     filters.from = supplier.value.transaction_filters.from;
@@ -99,7 +99,7 @@ watch(filters, () => {
     }
 });
 
-// Native delete through the JSON API (DELETE api/v1/suppliers/{id}).
+// Native delete through the JSON API (DELETE api/v1/suppliers/suppliers/{id}).
 const confirmingDelete = ref(false);
 const deleting = ref(false);
 
@@ -111,7 +111,7 @@ async function deleteSupplier() {
     deleting.value = true;
 
     try {
-        await api.delete(`/suppliers/${id}`);
+        await api.delete(`/suppliers/suppliers/${id}`);
         router.push(routeUrl('suppliers.list'));
     } finally {
         deleting.value = false;

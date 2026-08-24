@@ -20,7 +20,7 @@ const auth = useAuthStore();
 const refund = ref(null);
 
 async function load() {
-    const { data } = await api.get(`/supplier-refunds/${route.params.id}`);
+    const { data } = await api.get(`/suppliers/refunds/${route.params.id}`);
     refund.value = castResource(data);
 }
 
@@ -47,7 +47,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/supplier-refunds/${refund.value.id}`);
+        await api.delete(`/suppliers/refunds/${refund.value.id}`);
         router.push(refund.value.supplier ? routeUrl('suppliers.show', refund.value.supplier.id) : routeUrl('supplierRefunds.list'));
     } finally {
         deleting.value = false;
