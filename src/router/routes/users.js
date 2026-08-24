@@ -19,6 +19,11 @@ const VacationsRequests = () => import('../../pages/Users/Vacations/Requests.vue
 const VacationsShow = () => import('../../pages/Users/Vacations/Show.vue');
 const VacationsEdit = () => import('../../pages/Users/Vacations/Edit.vue');
 const VacationsEditBalance = () => import('../../pages/Users/Vacations/EditBalance.vue');
+const WorkScheduleCalendar = () => import('../../pages/Users/WorkSchedule/Calendar.vue');
+const WorkScheduleIndex = () => import('../../pages/Users/WorkSchedule/Index.vue');
+const OfficialHolidaysIndex = () => import('../../pages/Users/OfficialHolidays/Index.vue');
+const OfficialHolidaysManage = () => import('../../pages/Users/OfficialHolidays/Manage.vue');
+
 export default [
     // Permissions
     { path: '/users/permissions/create', name: 'userPermissions.create', component: PermissionsCreate },
@@ -53,4 +58,10 @@ export default [
     { path: '/users/vacations/:userId/balance', name: 'vacations.balance', component: VacationsEditBalance },
     { path: '/users/vacations/:id/edit', name: 'vacations.edit', component: VacationsEdit },
     { path: '/users/vacations/:id', name: 'vacations.show', component: VacationsShow },
+
+    { path: '/users/work-schedule', name: 'workSchedule.calendar', component: WorkScheduleCalendar },
+    { path: '/users/work-schedule/edit', name: 'workSchedule.list', component: WorkScheduleIndex },
+    { path: '/users/official-holidays', name: 'officialHolidays.list', component: OfficialHolidaysIndex },
+    { path: '/users/official-holidays/create', name: 'officialHolidays.create', component: OfficialHolidaysManage },
+    { path: '/users/official-holidays/:id/edit', name: 'officialHolidays.edit', component: OfficialHolidaysManage },
 ];

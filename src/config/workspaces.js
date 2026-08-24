@@ -30,7 +30,7 @@ export const workspaces = [
             {
                 label: 'Work Schedule',
                 items: [
-                    { label: 'Work Schedule', to: '/work-schedule', can: 'workSchedule.list' },
+                    { label: 'Work Schedule', to: '/users/work-schedule', can: 'workSchedule.list' },
                 ],
             },
             {
@@ -198,9 +198,9 @@ export const workspaces = [
             {
                 label: 'Vacations',
                 items: [
-                    { label: 'All Requests', to: '/vacations', can: 'vacation.viewAllUsers' },
-                    { label: 'Apply for Vacation', to: '/vacations/apply', can: 'vacations.applyForm' },
-                    { label: 'Official Holidays', to: '/official-holidays', can: 'officialHolidays.list' },
+                    { label: 'All Requests', to: '/users/vacations', can: 'vacation.viewAllUsers' },
+                    { label: 'Apply for Vacation', to: '/users/vacations/apply', can: 'vacations.applyForm' },
+                    { label: 'Official Holidays', to: '/users/official-holidays', can: 'officialHolidays.list' },
                 ],
             },
             {
@@ -213,8 +213,8 @@ export const workspaces = [
             {
                 label: 'Work Schedule',
                 items: [
-                    { label: 'Work Schedule', to: '/work-schedule', can: 'workSchedule.calendar' },
-                    { label: 'Edit Work Schedule', to: '/work-schedule/edit', can: 'workSchedule.index' },
+                    { label: 'Work Schedule', to: '/users/work-schedule', can: 'workSchedule.calendar' },
+                    { label: 'Edit Work Schedule', to: '/users/work-schedule/edit', can: 'workSchedule.index' },
                 ],
             },
         ],

@@ -21,7 +21,7 @@ async function fetchHolidays() {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/official-holidays');
+        const { data } = await api.get('/users/official-holidays');
         holidays.value = data.data;
     } finally {
         loading.value = false;
@@ -38,7 +38,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/official-holidays/${toDelete.value.id}`);
+        await api.delete(`/users/official-holidays/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchHolidays();
     } finally {
