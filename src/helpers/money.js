@@ -9,5 +9,5 @@ export function money(value) {
     const number = Number(value ?? 0);
     const safe = Number.isFinite(number) ? number : 0;
 
-    return `${safe.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+    return `${safe.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€`;
 }

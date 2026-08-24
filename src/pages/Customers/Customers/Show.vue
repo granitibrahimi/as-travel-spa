@@ -3,7 +3,7 @@ import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {RouterLink, useRoute, useRouter} from 'vue-router';
 import {money} from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
-import { castPaginated } from '../../../types/responses.js';
+import {castPaginated} from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Select from '../../../components/Form/Select.vue';
@@ -125,7 +125,10 @@ watch(filters, () => {
             <FullWidthBox :title="title ? `Customer: ${title}` : 'Customer'" :collapsible="false">
                 <template #actions>
                     <div class="flex items-center gap-2">
-                        <RouterLink :to="routeUrl('customers.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to Customers</RouterLink>
+                        <RouterLink :to="routeUrl('customers.list')"
+                                    class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to
+                            Customers
+                        </RouterLink>
 
                         <RouterLink
                             v-if="customer && auth.can('customerInvoices.create')"
@@ -154,7 +157,7 @@ watch(filters, () => {
                 <Loader v-if="! customer"/>
 
                 <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <CustomerDetails :customer="customer" :show-view-link="false" :boxed="false" />
+                    <CustomerDetails :customer="customer" :show-view-link="false" :boxed="false"/>
 
                     <Loader v-if="! stats"/>
 
@@ -255,9 +258,7 @@ watch(filters, () => {
                         <template v-if="! loadingTransactions && transactions">
                             <tr v-for="transaction in transactions.data" :key="`${transaction.type}-${transaction.id}`"
                                 class="hover:bg-gray-50">
-                                <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{
-                                        transaction.date
-                                    }}
+                                <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ transaction.date }}
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 font-medium">
                                     <RouterLink v-if="customerTransactionPath(transaction)"
@@ -278,7 +279,10 @@ watch(filters, () => {
                                     <span v-if="transaction.is_closed" class="text-green-600">✓</span>
                                     {{ transaction.status }}
                                 </td>
-                                <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ transaction.user.name }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-gray-600">{{
+                                        transaction.user.name
+                                    }}
+                                </td>
                             </tr>
                             <tr v-if="transactions.data.length > 0" class="bg-gray-50 font-semibold">
                                 <td colspan="3" class="border border-gray-300 px-2 py-2 text-right">TOTAL</td>
@@ -293,7 +297,8 @@ watch(filters, () => {
                     </table>
                 </div>
 
-                <ApiPagination v-if="transactions" :paginator="transactions.pagination" class="mt-4" @page="fetchTransactions"/>
+                <ApiPagination v-if="transactions" :paginator="transactions.pagination" class="mt-4"
+                               @page="fetchTransactions"/>
             </FullWidthBox>
         </div>
     </AppLayout>

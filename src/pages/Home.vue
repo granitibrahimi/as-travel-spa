@@ -3,15 +3,17 @@ import AppLayout from '../layouts/AppLayout.vue';
 import { useAuthStore } from '../stores/auth';
 import { useLayoutStore } from '../stores/layout';
 import CrmDashboard from './Dashboards/CrmDashboard.vue';
+import AdministratorDashboard from './Dashboards/AdministratorDashboard.vue';
 
 const auth = useAuthStore();
 const layout = useLayoutStore();
 </script>
 
 <template>
-    <AppLayout title="Home">
+    <AppLayout title="Home" fluid>
         <!-- Each workspace gets its own dashboard here; others fall back to the welcome banner. -->
         <CrmDashboard v-if="layout.activeWorkspace === 'crm'" />
+        <AdministratorDashboard v-else-if="layout.activeWorkspace === 'administration'" />
 
         <div v-else class="space-y-4">
             <h1 class="text-2xl font-bold">Welcome, {{ auth.user?.name }}</h1>

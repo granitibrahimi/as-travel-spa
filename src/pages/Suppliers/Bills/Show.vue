@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
@@ -7,10 +7,16 @@ import { routeUrl } from '../../../helpers/route.js';
 import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
+import SupplierDetails from '../../../components/SupplierDetails.vue';
 import Loader from '../../../components/Loader.vue';
+import Alert from '../../../components/Alert.vue';
 
 const route = useRoute();
 const bill = ref(null);
+
+const connectedTotal = computed(() =>
+    (bill.value?.connected ?? []).reduce((sum, link) => sum + Number(link.amount ?? 0), 0),
+);
 
 async function load() {
     const { data } = await api.get(`/suppliers/bills/${route.params.id}`);
@@ -24,99 +30,105 @@ onMounted(load);
         <Loader v-if="! bill" />
 
         <template v-else>
-            <FullWidthBox :title="`Bill ${bill.gen_id}`" :collapsible="false" class="mb-6">
-                <table class="w-full border-collapse border border-gray-300 text-sm">
-                    <tbody>
-                        <tr>
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Supplier</th>
-                            <td class="border border-gray-300 px-2 py-2">{{ bill.supplier.name ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Reference</th>
-                            <td class="border border-gray-300 px-2 py-2">{{ bill.reference ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Status</th>
-                            <td class="border border-gray-300 px-2 py-2">{{ bill.status ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Agent</th>
-                            <td class="border border-gray-300 px-2 py-2">{{ bill.agent ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Date</th>
-                            <td class="border border-gray-300 px-2 py-2">{{ bill.on_date }}</td>
-                        </tr>
-                        <tr>
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Due date</th>
-                            <td class="border border-gray-300 px-2 py-2">{{ bill.due_date ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Amount</th>
-                            <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ money(bill.amount) }}</td>
-                        </tr>
-                        <tr>
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Paid</th>
-                            <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ money(bill.paid_amount) }}</td>
-                        </tr>
-                        <tr>
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Open</th>
-                            <td class="border border-gray-300 px-2 py-2 tabular-nums" :class="bill.open_amount > 0 ? 'text-amber-600' : 'text-green-600'">{{ money(bill.open_amount) }}</td>
-                        </tr>
-                        <tr v-if="bill.customer_invoice">
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Customer invoice</th>
-                            <td class="border border-gray-300 px-2 py-2"><RouterLink :to="routeUrl('customerInvoices.show', bill.customer_invoice.id)" class="text-red-600 hover:underline">{{ bill.customer_invoice.gen_id }}</RouterLink></td>
-                        </tr>
-                        <tr>
-                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Notes</th>
-                            <td class="border border-gray-300 px-2 py-2 whitespace-pre-line">{{ bill.notes ?? '-' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <Alert v-if="bill.customer_invoice" type="info" class="mb-6">
+                This Bill is created from an Invoice (<RouterLink :to="routeUrl('customerInvoices.show', bill.customer_invoice.id)" class="font-medium underline">{{ bill.customer_invoice.gen_id }}</RouterLink>). It cannot be Edited or Deleted. Changes on the Customer Invoice will be reflected here as well.
+            </Alert>
 
-                <template #footer>
-                    <RouterLink :to="routeUrl('suppliers.show', bill.supplier.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to supplier</RouterLink>
-                </template>
-            </FullWidthBox>
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
+                <SupplierDetails :supplier="bill.supplier" />
 
-            <FullWidthBox v-if="bill.lines.length" title="Line items" :collapsible="false" class="mb-6">
+                <FullWidthBox :title="`Bill ${bill.gen_id}`" :collapsible="false">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <tbody>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Reference</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ bill.reference ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Status</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ bill.status ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Agent</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ bill.agent ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Date</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ bill.on_date }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Due date</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ bill.due_date ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Amount</th>
+                                <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ money(bill.amount) }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Paid</th>
+                                <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ money(bill.paid_amount) }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Open</th>
+                                <td class="border border-gray-300 px-2 py-2 tabular-nums" :class="bill.open_amount > 0 ? 'text-amber-600' : 'text-green-600'">{{ money(bill.open_amount) }}</td>
+                            </tr>
+                            <tr v-if="bill.customer_invoice">
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Customer invoice</th>
+                                <td class="border border-gray-300 px-2 py-2"><RouterLink :to="routeUrl('customerInvoices.show', bill.customer_invoice.id)" class="text-red-600 hover:underline">{{ bill.customer_invoice.gen_id }}</RouterLink></td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Notes</th>
+                                <td class="border border-gray-300 px-2 py-2 whitespace-pre-line">{{ bill.notes ?? '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </FullWidthBox>
+            </div>
+
+            <FullWidthBox v-if="bill.lines.length" title="Line items" :collapsible="false" class="mt-6">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="border-b text-left text-gray-500">
-                                <th class="py-2 pr-2">Category</th>
-                                <th class="py-2 pr-2">Description</th>
-                                <th class="py-2 pr-2">Tax</th>
-                                <th class="py-2 pl-2 text-right">Amount</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">ID</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Category</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Description</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right">Amount</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Tax Type</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="line in bill.lines" :key="line.id" class="border-b last:border-0">
-                                <td class="py-2 pr-2">{{ line.category ?? '—' }}</td>
-                                <td class="py-2 pr-2">{{ line.description ?? '—' }}</td>
-                                <td class="py-2 pr-2">{{ line.tax ?? '—' }}</td>
-                                <td class="py-2 pl-2 text-right tabular-nums">{{ money(line.amount) }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ line.id}}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ line.category }}</td>
+                                <td class="border border-gray-300 px-2 py-2 whitespace-pre-line">{{ line.description }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(line.amount) }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ line.tax ?? '—' }}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </FullWidthBox>
 
-            <FullWidthBox v-if="bill.connected.length" title="Connected transactions" :collapsible="false">
+            <FullWidthBox v-if="bill.connected.length" title="Connected transactions" :collapsible="false" class="mt-6">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
-                            <tr class="border-b text-left text-gray-500">
-                                <th class="py-2 pr-2">Reference</th>
-                                <th class="py-2 pr-2">Date</th>
-                                <th class="py-2 pl-2 text-right">Amount</th>
+                            <tr class="text-left text-gray-500">
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Reference</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Date</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(link, i) in bill.connected" :key="i" class="border-b last:border-0">
-                                <td class="py-2 pr-2">{{ link.reference }}</td>
-                                <td class="py-2 pr-2">{{ link.date }}</td>
-                                <td class="py-2 pl-2 text-right tabular-nums">{{ money(link.amount) }}</td>
+                            <tr v-for="(link, i) in bill.connected" :key="i" class="hover:bg-gray-50">
+                                <td class="border border-gray-300 px-2 py-2">{{ link.reference }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ link.date }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(link.amount) }}</td>
+                            </tr>
+                            <tr>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right" colspan="2">Total</th>
+                                <td class="border border-gray-300 px-2 py-2 text-right font-medium tabular-nums">{{ money(connectedTotal) }}</td>
                             </tr>
                         </tbody>
                     </table>
