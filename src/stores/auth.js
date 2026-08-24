@@ -89,6 +89,11 @@ export const useAuthStore = defineStore('auth', {
             this.user = null;
             setToken(null);
             disconnectEcho();
+
+            // Wipe everything cached in localStorage on logout (form options,
+            // theme, layout prefs, …) — not just the token — so nothing from
+            // this session lingers for the next person on a shared machine.
+            localStorage.clear();
         },
     },
 });
