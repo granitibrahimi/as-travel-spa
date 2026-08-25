@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
+import { castResource } from '../../../types/responses.js';
 import { money } from '../../../helpers/money';
 import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore } from '../../../stores/formOptions';
@@ -10,6 +11,7 @@ import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import Select from '../../../components/Form/Select.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
@@ -30,6 +32,16 @@ const orders = ref([]);
 const loading = ref(true);
 const saving = ref(false);
 const error = ref('');
+const errors = ref({});
+
+// Validation errors come back keyed like `orders.0.supplier` / `orders.0.persons.1.sold_value`.
+function orderError(orderIndex, field) {
+    return errors.value[`orders.${orderIndex}.${field}`];
+}
+
+function personError(orderIndex, personIndex, field) {
+    return errors.value[`orders.${orderIndex}.persons.${personIndex}.${field}`];
+}
 
 // Pessimistic edit lock: another user editing blocks saving here.
 const lockedBy = ref(null);
@@ -85,6 +97,8 @@ async function load() {
             sold_value: person.sold_value,
             buying_value: person.buying_value,
             tkt_number: person.tkt_number ?? '',
+            bill_id: person.bill_id ?? null,
+            qb_link: person.qb_link ?? null,
         })),
     }));
 
@@ -143,6 +157,29 @@ const removeOrder = (index) => orders.value.splice(index, 1);
 const addPerson = (order) => order.persons.push(blankPerson());
 const removePerson = (order, index) => order.persons.splice(index, 1);
 
+// Re-pull a single person from the DB (e.g. after it was updated elsewhere)
+// and patch the row in place, rather than reloading the whole invoice.
+async function refreshPerson(person) {
+    if (person._refreshing) {
+        return;
+    }
+
+    person._refreshing = true;
+
+    try {
+        const { data } = await api.get(`/customers/invoice-order-person/${person.id}`);
+        const updated = castResource(data);
+        person.name_surname = updated.name_surname ?? '';
+        person.tkt_number = updated.tkt_number ?? '';
+        person.sold_value = updated.sold_value;
+        person.buying_value = updated.buying_value;
+        person.bill_id = updated.bill_id ?? null;
+        person.qb_link = updated.qb_link ?? null;
+    } finally {
+        person._refreshing = false;
+    }
+}
+
 // Duplicate an order (with its persons, as new rows) right below it.
 function copyOrder(index) {
     const src = orders.value[index];
@@ -167,6 +204,7 @@ async function save() {
 
     saving.value = true;
     error.value = '';
+    errors.value = {};
 
     try {
         const payload = {
@@ -191,7 +229,14 @@ async function save() {
         await api.put(`/customers/invoices/${route.params.id}`, payload);
         router.push(routeUrl('customerInvoices.show', route.params.id));
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Could not save the invoice.';
+        if (e.response?.status === 422) {
+            errors.value = Object.fromEntries(
+                Object.entries(e.response.data.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
+            );
+            error.value = e.response.data.message ?? 'Please fix the errors below.';
+        } else {
+            error.value = e.response?.data?.message ?? 'Could not save the invoice.';
+        }
     } finally {
         saving.value = false;
     }
@@ -244,54 +289,67 @@ async function save() {
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <!-- Order fields -->
                     <div class="space-y-4 lg:col-span-1">
-                        <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">Vendor</label>
-                            <AsyncSelect v-model="order.supplier" url="/suppliers/suppliers/autosuggest" :initial-option="order.supplierOption" placeholder="Search for a supplier…" />
-                        </div>
-                        <Select v-model="order.product" label="Product" :options="productOptions" placeholder="Choose product…" />
-                        <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">Destination</label>
-                            <AsyncSelect v-model="order.destination" url="/destinations/autosuggest" :initial-option="order.destinationOption" placeholder="Search for a destination…" />
-                        </div>
+                        <AsyncSelect v-model="order.supplier" label="Vendor" url="/suppliers/suppliers/autosuggest" :initial-option="order.supplierOption" placeholder="Search for a supplier…" :error="orderError(oi, 'supplier')" />
+                        <Select v-model="order.product" label="Product" :options="productOptions" placeholder="Choose product…" :error="orderError(oi, 'product')" />
+                        <AsyncSelect v-model="order.destination" label="Destination" url="/destinations/autosuggest" :initial-option="order.destinationOption" placeholder="Search for a destination…" :error="orderError(oi, 'destination')" />
                         <div class="grid grid-cols-2 gap-3">
-                            <DateInput v-model="order.start_date" label="Starting date" />
-                            <DateInput v-model="order.return_date" label="Return date" />
+                            <DateInput v-model="order.start_date" label="Starting date" :error="orderError(oi, 'start_date')" />
+                            <DateInput v-model="order.return_date" label="Return date" :error="orderError(oi, 'return_date')" />
                         </div>
-                        <Textarea v-model="order.extra_info" label="Extra comments" :rows="3" />
+                        <Textarea v-model="order.extra_info" label="Extra comments" :rows="3" :error="orderError(oi, 'extra_info')" />
                     </div>
 
                     <!-- Persons -->
-                    <div class="overflow-x-auto lg:col-span-2">
-                        <table class="w-full min-w-[560px] border-collapse text-sm">
-                            <thead>
-                                <tr class="text-left text-xs font-semibold uppercase text-gray-500">
-                                    <th class="px-2 py-2">Name and surname</th>
-                                    <th class="px-2 py-2" style="width: 150px;">TKT Number</th>
-                                    <th class="px-2 py-2" style="width: 130px;">Sold value</th>
-                                    <th class="px-2 py-2" style="width: 130px;">Buying value</th>
-                                    <th class="px-2 py-2 text-center" style="width: 60px;">Delete</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(person, pi) in order.persons" :key="pi" class="align-top">
-                                    <td class="px-2 py-2"><InputText v-model="person.name_surname" /></td>
-                                    <td class="px-2 py-2"><InputText v-model="person.tkt_number" /></td>
-                                    <td class="px-2 py-2"><InputText v-model="person.sold_value" type="number" :disabled="soldLocked" /></td>
-                                    <td class="px-2 py-2"><InputText v-model="person.buying_value" type="number" /></td>
-                                    <td class="px-2 py-2 text-center">
-                                        <button
-                                            v-if="order.persons.length > 1"
-                                            type="button"
-                                            class="inline-flex h-8 w-8 items-center justify-center rounded bg-red-600 text-white hover:bg-red-700"
-                                            aria-label="Remove person"
-                                            @click="removePerson(order, pi)"
-                                        >
-                                            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Z"/></svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="space-y-6 lg:col-span-2">
+                        <div
+                            v-for="(person, pi) in order.persons"
+                            :key="pi"
+                            class="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 sm:grid-cols-[1fr_1fr_auto]"
+                        >
+                            <div class="space-y-4">
+                                <InputText v-model="person.name_surname" label="Name and surname" :error="personError(oi, pi, 'name_surname')" />
+                                <InputText v-model="person.tkt_number" label="TKT Number" :error="personError(oi, pi, 'tkt_number')" />
+                            </div>
+                            <div class="space-y-4">
+                                <InputNumber v-model="person.sold_value" label="Sold value" :disabled="soldLocked" :error="personError(oi, pi, 'sold_value')" />
+                                <InputNumber v-model="person.buying_value" label="Buying value" :error="personError(oi, pi, 'buying_value')" />
+                            </div>
+                            <div class="flex flex-row gap-2 sm:flex-col sm:justify-center">
+                                <a
+                                    v-if="person.bill_id"
+                                    :href="routeUrl('supplierBills.show', person.bill_id)"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded bg-blue-600 text-white hover:bg-blue-700"
+                                    aria-label="View bill"
+                                    title="View bill"
+                                >
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>
+                                </a>
+                                <button
+                                    v-if="person.id"
+                                    type="button"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                                    aria-label="Refresh from database"
+                                    title="Refresh from database"
+                                    :disabled="person._refreshing"
+                                    @click="refreshPerson(person)"
+                                >
+                                    <svg class="h-4 w-4" :class="{ 'animate-spin': person._refreshing }" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                    </svg>
+                                </button>
+                                <button
+                                    v-if="order.persons.length > 1"
+                                    type="button"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded bg-red-600 text-white hover:bg-red-700"
+                                    aria-label="Remove person"
+                                    @click="removePerson(order, pi)"
+                                >
+                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Z"/></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </FullWidthBox>

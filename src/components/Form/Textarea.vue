@@ -45,7 +45,8 @@ watch(() => props.modelValue, () => nextTick(resize));
                 :value="modelValue"
                 :rows="rows"
                 :style="rows > 1 ? { minHeight: `calc(${rows} * 1.5rem + 0.75rem)` } : null"
-                class="block w-full resize-none overflow-hidden rounded border border-gray-300 px-2 py-1.5 pr-5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                class="block w-full resize-none overflow-hidden rounded border px-2 py-1.5 pr-5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                :class="error ? 'border-red-500' : 'border-gray-300'"
                 @input="onInput"
             />
             <!-- Decorative resize-grip lines so it reads as a textarea. -->

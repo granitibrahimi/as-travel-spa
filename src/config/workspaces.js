@@ -63,13 +63,13 @@ export const workspaces = [
             {
                 label: 'Due Invoices',
                 items: [
-                    { label: 'Invoices', to: '/customers/invoices/due', can: 'customerInvoices.listAllDue' },
+                    { label: 'Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                 ],
             },
             {
                 label: 'Credit Notes',
                 items: [
-                    { label: 'Credit Notes', to: '/customers/credit-notes', can: 'customerCreditNotes.list' },
+                    { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
                 ],
             },
             {
@@ -123,19 +123,6 @@ export const workspaces = [
                 items: [
                     { label: 'List', to: '/hotels', can: 'hotels.list' },
                     { label: 'Create', to: '/hotels/create', can: 'hotels.create' },
-                ],
-            },
-            {
-                label: 'Meal Types',
-                items: [
-                    { label: 'All Meal Types', to: '/meal-types', can: 'mealTypes.list' },
-                    { label: 'New Meal Type', to: '/meal-types/create', can: 'mealTypes.create' },
-                ],
-            },
-            {
-                label: 'Countries',
-                items: [
-                    { label: 'All Countries', to: '/countries', can: 'countries.list' },
                 ],
             },
             {
@@ -244,6 +231,7 @@ export const workspaces = [
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
                     { label: 'Gift Cards', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
                     { label: 'Payments', to: '/customers/payments', canAny: ['customerPayments.viewAll', 'customerPayments.viewOwn'] },
+                    { label: 'Payments for Approval', to: '/customers/payments/for-approval', can: 'customerPayments.approve' },
                     { label: 'Reconciliations', to: '/customers/reconciliations', can: 'customerReconciliations.list' },
                     { label: 'Customer Transaction Links', to: '/customers/transaction-links', can: 'customerTransactionsLinks.list' },
                 ],
@@ -365,6 +353,19 @@ export const workspaces = [
                     { label: 'Active', to: '/customers/projects', can: 'customerProjects.list' },
                     { label: 'Finished', to: '/customers/projects/finished', can: 'customerProjects.finished' },
                     { label: 'Create', to: '/customers/projects/create', can: 'customerProjects.create' },
+                ],
+            },
+            {
+                label: 'Meal Types',
+                items: [
+                    { label: 'All Meal Types', to: '/meal-types', can: 'mealTypes.list' },
+                    { label: 'New Meal Type', to: '/meal-types/create', can: 'mealTypes.create' },
+                ],
+            },
+            {
+                label: 'Countries',
+                items: [
+                    { label: 'All Countries', to: '/countries', can: 'countries.list' },
                 ],
             },
             {

@@ -84,7 +84,6 @@ async function fetchTransactions(page = 1) {
         const pageResult = castPaginated(data);
         transactions.value = pageResult;
 
-        console.log(transactions);
         totalAmount.value = pageResult.extra.total_amount;
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
@@ -261,8 +260,8 @@ watch(filters, () => {
                                 <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ transaction.date }}
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 font-medium">
-                                    <RouterLink v-if="customerTransactionPath(transaction)"
-                                                :to="customerTransactionPath(transaction)"
+                                    <RouterLink v-if="customerTransactionPath(transaction.type.id, transaction.id)"
+                                                :to="customerTransactionPath(transaction.type.id, transaction.id)"
                                                 class="text-red-600 hover:underline">{{ transaction.id }} |
                                         {{ transaction.reference }}
                                     </RouterLink>
@@ -286,7 +285,9 @@ watch(filters, () => {
                             </tr>
                             <tr v-if="transactions.data.length > 0" class="bg-gray-50 font-semibold">
                                 <td colspan="3" class="border border-gray-300 px-2 py-2 text-right">TOTAL</td>
-                                <td class="border border-gray-300 px-2 py-2"/>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
+                                    {{ money(transactions.extra.total_open_amount) }}
+                                </td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
                                     {{ money(transactions.extra.total_amount) }}
                                 </td>

@@ -10,7 +10,7 @@ const PATHS = {
     6: 'journals',
 };
 
-export function customerTransactionPath({ type, id }) {
+export function customerTransactionPath( type, id) {
     const segment = PATHS[type];
 
     return segment ? `/${segment}/${id}` : null;

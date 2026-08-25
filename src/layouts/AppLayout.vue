@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useLayoutStore } from '../stores/layout';
@@ -28,16 +28,24 @@ function updateData() {
 
 const canSeeNotifications = computed(() => auth.can('userNotifications.list'));
 
-// Resolve the active workspace once the user is known.
-onMounted(() => {
-    if (!layout.activeWorkspace) {
-        layout.init();
+// Resolve the active workspace once the user is known. Keyed off
+// `sessionActive` (not a plain onMounted) because the app now mounts before
+// `auth.bootstrap()` resolves (see main.js): this AppLayout instance can
+// render before `auth.user` — and its permissions — are available. Re-running
+// `layout.init()` here is idempotent (it re-derives the same choice from
+// localStorage/`auth.user.workspace`), so it's safe to fire on every mount
+// once the session is ready, not just the first one.
+watch(() => auth.sessionActive, (sessionActive) => {
+    if (!sessionActive) {
+        return;
     }
+
+    layout.init();
 
     if (canSeeNotifications.value) {
         notifications.fetchUnread();
     }
-});
+}, { immediate: true });
 
 const containerClass = computed(() => (props.fluid ? 'w-full px-6' : 'max-w-6xl mx-auto px-6'));
 
@@ -91,10 +99,23 @@ const isGroupCollapsed = (group) => {
     return false;
 };
 
+// Accordion: expanding a group collapses every other group in the current
+// workspace's navigation, so at most one is open at a time.
 function toggleGroup(label) {
     const group = navigation.value.find((item) => item.label === label);
-    const next = group ? !isGroupCollapsed(group) : true;
-    collapsedGroups.value = { ...collapsedGroups.value, [label]: next };
+    const opening = group ? isGroupCollapsed(group) : true;
+    const next = { ...collapsedGroups.value };
+
+    if (opening) {
+        navigation.value.forEach((item) => {
+            if (!item.separator && item.label !== label) {
+                next[item.label] = true;
+            }
+        });
+    }
+
+    next[label] = !opening;
+    collapsedGroups.value = next;
 
     try {
         window.localStorage.setItem(NAV_STORAGE_KEY, JSON.stringify(collapsedGroups.value));

@@ -35,7 +35,8 @@ function onChange(event) {
             v-bind="$attrs"
             :value="modelValue ?? ''"
             :disabled="disabled"
-            class="w-full appearance-none rounded border border-gray-300 bg-white py-1.5 pl-3 pr-10 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:bg-gray-100 disabled:text-gray-500"
+            class="w-full appearance-none rounded border bg-white py-1.5 pl-3 pr-10 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:bg-gray-100 disabled:text-gray-500"
+            :class="error ? 'border-red-500' : 'border-gray-300'"
             @change="onChange"
         >
             <option v-if="placeholder !== null" value="">{{ placeholder }}</option>

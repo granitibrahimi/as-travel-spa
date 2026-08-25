@@ -194,7 +194,7 @@ onMounted(() => {
                                     <RouterLink v-if="customerTransactionPath(transaction)" :to="customerTransactionPath(transaction)" class="text-red-600 hover:underline">{{ transaction.id }} | {{ transaction.reference }}</RouterLink>
                                     <span v-else>{{ transaction.id }} | {{ transaction.reference }}</span>
                                 </td>
-                                <td class="border border-gray-300 px-2 py-2">{{ transaction.type }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ transaction.type.name }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(transaction.open_amount) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(transaction.amount) }}</td>
                                 <td class="border border-gray-300 px-2 py-2">

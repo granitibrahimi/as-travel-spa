@@ -17,6 +17,14 @@ export const useAuthStore = defineStore('auth', {
 
     getters: {
         isAuthenticated: (state) => Boolean(state.token),
+
+        // True once bootstrap has resolved *and* the session is valid — i.e.
+        // `user` is actually populated. Session-dependent side effects
+        // (presence, notifications) should key off this rather than
+        // `isAuthenticated`, since the app now mounts before bootstrap
+        // finishes (see main.js) and `isAuthenticated` can be optimistically
+        // true (persisted token) before `/me` has confirmed it.
+        sessionActive: (state) => state.ready && Boolean(state.token),
     },
 
     actions: {

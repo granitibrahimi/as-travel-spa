@@ -10,6 +10,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import Select from '../../../components/Form/Select.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
@@ -30,6 +31,16 @@ const orders = ref([]);
 const saving = ref(false);
 const importing = ref(false);
 const error = ref('');
+const errors = ref({});
+
+// Validation errors come back keyed like `orders.0.supplier` / `orders.0.persons.1.sold_value`.
+function orderError(orderIndex, field) {
+    return errors.value[`orders.${orderIndex}.${field}`];
+}
+
+function personError(orderIndex, personIndex, field) {
+    return errors.value[`orders.${orderIndex}.persons.${personIndex}.${field}`];
+}
 
 const productOptions = computed(() => formOptions.products.map((product) => ({ value: product.id, label: product.name })));
 
@@ -119,6 +130,7 @@ async function importExcel(event) {
 
     importing.value = true;
     error.value = '';
+    errors.value = {};
 
     try {
         const payload = new FormData();
@@ -143,6 +155,7 @@ async function save() {
 
     saving.value = true;
     error.value = '';
+    errors.value = {};
 
     try {
         const payload = {
@@ -166,7 +179,14 @@ async function save() {
         const { data } = await api.post('/customers/invoices', payload);
         router.push(routeUrl('customerInvoices.show', castMutation(data).id));
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Could not create the invoice.';
+        if (e.response?.status === 422) {
+            errors.value = Object.fromEntries(
+                Object.entries(e.response.data.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
+            );
+            error.value = e.response.data.message ?? 'Please fix the errors below.';
+        } else {
+            error.value = e.response?.data?.message ?? 'Could not create the invoice.';
+        }
     } finally {
         saving.value = false;
     }
@@ -213,54 +233,43 @@ async function save() {
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <!-- Order fields -->
                 <div class="space-y-4 lg:col-span-1">
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Vendor</label>
-                        <AsyncSelect v-model="order.supplier" url="/suppliers/suppliers/autosuggest" :initial-option="order.supplierOption" placeholder="Search for a supplier…" />
-                    </div>
-                    <Select v-model="order.product" label="Product" :options="productOptions" placeholder="Choose product…" />
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Destination</label>
-                        <AsyncSelect v-model="order.destination" url="/destinations/autosuggest" :initial-option="order.destinationOption" placeholder="Search for a destination…" />
-                    </div>
+                    <AsyncSelect v-model="order.supplier" label="Vendor" url="/suppliers/suppliers/autosuggest" :initial-option="order.supplierOption" placeholder="Search for a supplier…" :error="orderError(oi, 'supplier')" />
+                    <Select v-model="order.product" label="Product" :options="productOptions" placeholder="Choose product…" :error="orderError(oi, 'product')" />
+                    <AsyncSelect v-model="order.destination" label="Destination" url="/destinations/autosuggest" :initial-option="order.destinationOption" placeholder="Search for a destination…" :error="orderError(oi, 'destination')" />
                     <div class="grid grid-cols-2 gap-3">
-                        <DateInput v-model="order.start_date" label="Starting date" />
-                        <DateInput v-model="order.return_date" label="Return date" />
+                        <DateInput v-model="order.start_date" label="Starting date" :error="orderError(oi, 'start_date')" />
+                        <DateInput v-model="order.return_date" label="Return date" :error="orderError(oi, 'return_date')" />
                     </div>
-                    <Textarea v-model="order.extra_info" label="Extra comments" :rows="3" />
+                    <Textarea v-model="order.extra_info" label="Extra comments" :rows="3" :error="orderError(oi, 'extra_info')" />
                 </div>
 
                 <!-- Persons -->
-                <div class="overflow-x-auto lg:col-span-2">
-                    <table class="w-full min-w-[560px] border-collapse text-sm">
-                        <thead>
-                            <tr class="text-left text-xs font-semibold uppercase text-gray-500">
-                                <th class="px-2 py-2">Name and surname</th>
-                                <th class="px-2 py-2">TKT Number</th>
-                                <th class="px-2 py-2" style="width: 130px;">Sold value</th>
-                                <th class="px-2 py-2" style="width: 130px;">Buying value</th>
-                                <th class="px-2 py-2 text-center" style="width: 60px;">Delete</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(person, pi) in order.persons" :key="pi" class="align-top">
-                                <td class="px-2 py-2"><InputText v-model="person.name_surname" /></td>
-                                <td class="px-2 py-2"><InputText v-model="person.tkt_number" /></td>
-                                <td class="px-2 py-2"><InputText v-model="person.sold_value" type="number" /></td>
-                                <td class="px-2 py-2"><InputText v-model="person.buying_value" type="number" /></td>
-                                <td class="px-2 py-2 text-center">
-                                    <button
-                                        v-if="order.persons.length > 1"
-                                        type="button"
-                                        class="inline-flex h-8 w-8 items-center justify-center rounded bg-red-600 text-white hover:bg-red-700"
-                                        aria-label="Remove person"
-                                        @click="removePerson(order, pi)"
-                                    >
-                                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Z"/></svg>
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="space-y-6 lg:col-span-2">
+                    <div
+                        v-for="(person, pi) in order.persons"
+                        :key="pi"
+                        class="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 sm:grid-cols-[1fr_1fr_auto]"
+                    >
+                        <div class="space-y-4">
+                            <InputText v-model="person.name_surname" label="Name and surname" :error="personError(oi, pi, 'name_surname')" />
+                            <InputText v-model="person.tkt_number" label="TKT Number" :error="personError(oi, pi, 'tkt_number')" />
+                        </div>
+                        <div class="space-y-4">
+                            <InputNumber v-model="person.sold_value" label="Sold value" :error="personError(oi, pi, 'sold_value')" />
+                            <InputNumber v-model="person.buying_value" label="Buying value" :error="personError(oi, pi, 'buying_value')" />
+                        </div>
+                        <div class="flex flex-row gap-2 sm:flex-col sm:justify-center">
+                            <button
+                                v-if="order.persons.length > 1"
+                                type="button"
+                                class="inline-flex h-8 w-8 items-center justify-center rounded bg-red-600 text-white hover:bg-red-700"
+                                aria-label="Remove person"
+                                @click="removePerson(order, pi)"
+                            >
+                                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Z"/></svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </FullWidthBox>

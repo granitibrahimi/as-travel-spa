@@ -39,16 +39,20 @@ setForbiddenHandler(() => {
     }
 });
 
-// Resolve any persisted token into a user before the first render, so the
-// route guard sees the correct auth state and we don't flash the login page.
+// Resolve any persisted token into a user before the first render. Pages and
+// stores (e.g. AppLayout's workspace/nav resolution) read `auth.user` once at
+// mount and don't all react to it arriving later, so we wait for bootstrap
+// here rather than mount optimistically. The static boot splash in
+// index.html covers this wait visually, so it no longer costs a blank screen.
 auth.bootstrap().finally(() => {
     app.use(router);
 
     // Join/leave the online-users presence channel, subscribe to real-time
-    // notifications, and arm the idle auto-logout with auth state. Echo is
-    // already connected by the auth store on login/bootstrap.
-    watch(() => auth.isAuthenticated, (isAuthenticated) => {
-        if (isAuthenticated) {
+    // notifications, and arm the idle auto-logout with auth state.
+    // `sessionActive` (ready + token) rather than `isAuthenticated` (token
+    // only), so this never fires before `auth.user` is actually populated.
+    watch(() => auth.sessionActive, (sessionActive) => {
+        if (sessionActive) {
             presence.join();
             notifications.subscribe();
 

@@ -18,7 +18,8 @@ defineEmits(['update:modelValue']);
             v-bind="$attrs"
             :value="modelValue"
             :type="type"
-            class="w-full rounded border border-gray-300 px-2 py-1.5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:bg-gray-100"
+            class="w-full rounded border px-2 py-1.5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:bg-gray-100"
+            :class="error ? 'border-red-500' : 'border-gray-300'"
             @input="$emit('update:modelValue', $event.target.value)"
         >
         <p v-if="error" class="mt-1 text-xs text-red-600">{{ error }}</p>

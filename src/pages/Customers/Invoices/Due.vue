@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useAuthStore } from '../../../stores/auth.js';
 import { useFormOptionsStore } from '../../../stores/formOptions.js';
 import { money } from '../../../helpers/money.js';
-import api from '../../../helpers/api.js';
+import api, { getUsersAutosuggestEndpoint } from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -141,7 +141,7 @@ async function saveContact() {
             <FullWidthBox title="Filters" :collapsible="false">
                 <form class="grid grid-cols-1 gap-3 md:grid-cols-3" @submit.prevent="fetchDue()">
                     <InputText v-model="filters.q" label="Search" placeholder="Invoice ID or ticket…" />
-                    <AsyncSelect v-model="filters.agent" :url="agentsUrl" label="Agent" placeholder="All agents" />
+                    <AsyncSelect v-model="filters.agent" :url="getUsersAutosuggestEndpoint()" label="Agent" placeholder="All agents" />
 
                     <SearchSelect v-model="filters.parent_destination" :options="parentDestinationOptions" label="Parent Destination" placeholder="All" />
                     <Select v-model="filters.customer_type" :options="customerTypes" label="Customer Type" placeholder="All types" />

@@ -5,7 +5,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { castResource, castMutation } from '../../../types/responses.js';
-import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
+import { usePaymentMethodsRepository } from '../../../repositories/paymentMethods.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -30,8 +30,9 @@ const form = reactive({
     notes: '',
 });
 
-const formOptions = useFormOptionsStore();
-const paymentMethods = computed(() => toOptions(formOptions.paymentMethods));
+const paymentMethodsRepo = usePaymentMethodsRepository();
+// A deposit is money paid out to the supplier — outgoing methods only.
+const paymentMethods = computed(() => paymentMethodsRepo.outgoing());
 const supplier = ref(null);
 const errors = ref({});
 const processing = ref(false);
