@@ -1,7 +1,6 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useAuthStore } from '../../../stores/auth.js';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
@@ -11,10 +10,8 @@ import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
-import DropdownMenu from '../../../components/DropdownMenu.vue';
 import Loader from '../../../components/Loader.vue';
-
-const auth = useAuthStore();
+import ProInvoiceActions from './Actions.vue';
 
 const apiResponse = ref(null);
 const loading = ref(false);
@@ -57,10 +54,15 @@ onMounted(fetchProInvoices);
 // keep the full value in the title tooltip.
 const oneLine = (value) => (value ? value.replace(/\s+/g, ' ').trim() : '');
 
-const rowActions = (row) => [
-    ...(auth.can('customerProInvoices.show') ? [{ label: 'View', href: routeUrl('customerProInvoices.show', row.id) }] : []),
-    ...(auth.can('customerProInvoices.edit') ? [{ label: 'Edit', href: routeUrl('customerProInvoices.edit', row.id) }] : []),
-];
+// Actions side overlay for the row picked via the ⋯ button (Actions.vue —
+// same component used on ProInvoices/Show.vue).
+const selected = ref(null);
+
+// After a delete from the actions overlay, refresh the current page.
+function onProInvoiceDeleted() {
+    selected.value = null;
+    fetchProInvoices(apiResponse.value?.pagination?.current_page ?? 1);
+}
 </script>
 
 <template>
@@ -106,7 +108,18 @@ const rowActions = (row) => [
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ row.user?.name ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap text-gray-500">{{ row.created_at }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
-                                <DropdownMenu :items="rowActions(row)" />
+                                <button
+                                    type="button"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                                    aria-label="Pro-invoice actions"
+                                    @click="selected = row"
+                                >
+                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="5" r="1.8" />
+                                        <circle cx="12" cy="12" r="1.8" />
+                                        <circle cx="12" cy="19" r="1.8" />
+                                    </svg>
+                                </button>
                             </td>
                         </tr>
                     </tbody>
@@ -115,5 +128,13 @@ const rowActions = (row) => [
 
             <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchProInvoices" />
         </FullWidthBox>
+
+        <!-- Per-pro-invoice actions — defined locally and permission-gated (Actions.vue). -->
+        <ProInvoiceActions
+            :pro-invoice="selected"
+            :show="Boolean(selected)"
+            @close="selected = null"
+            @deleted="onProInvoiceDeleted"
+        />
     </AppLayout>
 </template>

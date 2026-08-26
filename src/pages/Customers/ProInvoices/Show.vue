@@ -1,20 +1,20 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
-import { useAuthStore } from '../../../stores/auth.js';
+import { useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
-import Button from '../../../components/Button.vue';
 import Loader from '../../../components/Loader.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
+import ProInvoiceActions from './Actions.vue';
 
 const route = useRoute();
-const auth = useAuthStore();
+const router = useRouter();
 const proInvoice = ref(null);
+const actionsOpen = ref(false);
 
 onMounted(async () => {
     const { data } = await api.get(`/customers/pro-invoices/${route.params.id}`);
@@ -32,9 +32,18 @@ onMounted(async () => {
 
                 <FullWidthBox title="Pro-invoice" :collapsible="false">
                     <template #actions>
-                        <RouterLink v-if="auth.can('customerProInvoices.edit')" :to="routeUrl('customerProInvoices.edit', proInvoice.id)">
-                            <Button variant="primary">Edit</Button>
-                        </RouterLink>
+                        <button
+                            type="button"
+                            class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                            aria-label="Pro-invoice actions"
+                            @click="actionsOpen = true"
+                        >
+                            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="5" r="1.8" />
+                                <circle cx="12" cy="12" r="1.8" />
+                                <circle cx="12" cy="19" r="1.8" />
+                            </svg>
+                        </button>
                     </template>
 
                     <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -75,6 +84,14 @@ onMounted(async () => {
                     </table>
                 </FullWidthBox>
             </div>
+
+            <ProInvoiceActions
+                :pro-invoice="proInvoice"
+                :show="actionsOpen"
+                :show-view-action="false"
+                @close="actionsOpen = false"
+                @deleted="router.push(routeUrl('customers.show', proInvoice.customer.id))"
+            />
         </template>
     </AppLayout>
 </template>

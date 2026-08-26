@@ -1,16 +1,20 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
+import PaymentActions from './Actions.vue';
 
 const route = useRoute();
+const router = useRouter();
 const payment = ref(null);
+const actionsOpen = ref(false);
 
 const connectedTotal = computed(() =>
     (payment.value?.connected ?? []).reduce((sum, link) => sum + Number(link.amount ?? 0), 0),
@@ -31,15 +35,26 @@ onMounted(async () => {
                 <CustomerDetails :customer="payment.customer" />
 
                 <FullWidthBox title="Payment details" :collapsible="false">
+                    <template #actions>
+                        <button
+                            type="button"
+                            class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                            aria-label="Payment actions"
+                            @click="actionsOpen = true"
+                        >
+                            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="5" r="1.8" />
+                                <circle cx="12" cy="12" r="1.8" />
+                                <circle cx="12" cy="19" r="1.8" />
+                            </svg>
+                        </button>
+                    </template>
+
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <tbody>
                             <tr>
                                 <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">ID</th>
-                                <td class="border border-gray-300 px-2 py-2">{{ payment.id }}</td>
-                            </tr>
-                            <tr>
-                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">GEN ID</th>
-                                <td class="border border-gray-300 px-2 py-2 font-medium">{{ payment.gen_id }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ payment.id }} | {{ payment.gen_id }}</td>
                             </tr>
                             <tr>
                                 <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Date</th>
@@ -55,7 +70,7 @@ onMounted(async () => {
                             </tr>
                             <tr>
                                 <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Payment method</th>
-                                <td class="border border-gray-300 px-2 py-2">{{ payment.payment_method ?? '—' }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ payment.payment_method.name }}</td>
                             </tr>
                             <tr>
                                 <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Transaction #</th>
@@ -96,7 +111,7 @@ onMounted(async () => {
                         </thead>
                         <tbody>
                             <tr v-for="link in payment.connected" :key="link.id" class="hover:bg-gray-50">
-                                <td class="border border-gray-300 px-2 py-2">{{ link.type }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ link.type.name }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ link.reference }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(link.amount) }}</td>
                             </tr>
@@ -108,6 +123,14 @@ onMounted(async () => {
                     </table>
                 </div>
             </FullWidthBox>
+
+            <PaymentActions
+                :payment="payment"
+                :show="actionsOpen"
+                :show-view-action="false"
+                @close="actionsOpen = false"
+                @deleted="router.push(routeUrl('customers.show', payment.customer.id))"
+            />
         </template>
     </AppLayout>
 </template>
