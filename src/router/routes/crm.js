@@ -13,7 +13,7 @@ export default [
     { path: '/tasks/dashboard', name: 'tasks.dashboard', component: TasksDashboard },
     { path: '/tasks/create', name: 'tasks.create', component: TasksCreate },
     { path: '/tasks/:id', name: 'tasks.show', component: TasksShow },
-    { path: '/support', name: 'support.list', component: SupportIndex },
-    { path: '/support/create', name: 'support.create', component: SupportCreate },
-    { path: '/support/:id', name: 'support.show', component: SupportShow },
+    { path: '/support', name: 'supportTickets.list', component: SupportIndex },
+    { path: '/support/create', name: 'supportTickets.create', component: SupportCreate },
+    { path: '/support/:id', name: 'supportTickets.show', component: SupportShow },
 ];

@@ -51,7 +51,7 @@ const statusClass = (status) => ({
 }[status] ?? 'bg-gray-100 text-gray-600');
 
 const rowActions = (ticket) => [
-    { label: 'View', href: routeUrl('support.show', ticket.id) },
+    { label: 'View', href: routeUrl('supportTickets.show', ticket.id) },
 ];
 </script>
 
@@ -94,7 +94,7 @@ const rowActions = (ticket) => [
                         <tr v-for="ticket in (loading ? [] : apiResponse?.data ?? [])" :key="ticket.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ ticket.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="routeUrl('support.show', ticket.id)" class="text-red-600 hover:underline">{{ ticket.title }}</RouterLink>
+                                <RouterLink :to="routeUrl('supportTickets.show', ticket.id)" class="text-red-600 hover:underline">{{ ticket.title }}</RouterLink>
                                 <span v-if="ticket.has_attachment" class="ml-1 text-xs text-gray-400">📎</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
@@ -116,7 +116,7 @@ const rowActions = (ticket) => [
             <template #footer>
                 <RouterLink
                     v-if="auth.can('supportTickets.create')"
-                    :to="routeUrl('support.create')"
+                    :to="routeUrl('supportTickets.create')"
                     class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
                 >+ New ticket</RouterLink>
             </template>

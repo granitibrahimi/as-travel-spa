@@ -39,7 +39,7 @@ async function submit() {
 
     try {
         const { data } = await api.post('/support-tickets', payload);
-        router.push(routeUrl('support.show', castMutation(data).id));
+        router.push(routeUrl('supportTickets.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -76,7 +76,7 @@ async function submit() {
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
-                <RouterLink :to="routeUrl('support.list')" class="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Cancel</RouterLink>
+                <RouterLink :to="routeUrl('supportTickets.list')" class="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Cancel</RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing">
                     {{ processing ? 'Creating…' : 'Create ticket' }}
                 </Button>

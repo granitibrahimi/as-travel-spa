@@ -102,7 +102,7 @@ async function downloadAttachment() {
                     </div>
 
                     <template #footer>
-                        <RouterLink :to="routeUrl('support.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to list</RouterLink>
+                        <RouterLink :to="routeUrl('supportTickets.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to list</RouterLink>
                     </template>
                 </FullWidthBox>
 
