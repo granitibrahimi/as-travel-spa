@@ -15,7 +15,6 @@ const route = useRoute();
 const invoice = ref(null);
 
 const endpoints = computed(() => ({
-    customer: `customers/customers/${invoice.value.customer.id}/details`,
     agentsSearch: 'users/autosuggest',
     submit: `/customers/invoices/${invoice.value.id}/agent`,
     redirect: `/customers/invoices/${invoice.value.id}`,
@@ -40,5 +39,6 @@ onMounted(async () => {
         :record-label="invoice.gen_id"
         :endpoints="endpoints"
         :current="current"
+        :customer="invoice.customer"
     />
 </template>

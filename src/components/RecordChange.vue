@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../helpers/api';
 import { useNotificationsStore } from '../stores/notifications.js';
@@ -9,13 +9,14 @@ import CustomerDetails from './CustomerDetails.vue';
 import AsyncSelect from './Form/AsyncSelect.vue';
 import InputText from './Form/InputText.vue';
 import Textarea from './Form/Textarea.vue';
-import Loader from './Loader.vue';
 
 /**
- * Two-column change page: the record's current customer details on the left
- * (loaded from the API), a field-specific form on the right. The form submits
- * over the API to the existing update endpoint and, on success, navigates to
- * the record's show page.
+ * Two-column change page: the record's current customer details on the left,
+ * a field-specific form on the right. The customer is passed in as-is from
+ * the record's own endpoint (e.g. the invoice's embedded `customer`) rather
+ * than fetched separately — the invoice/record endpoint already returns it in
+ * full. The form submits over the API to the existing update endpoint and, on
+ * success, navigates to the record's show page.
  */
 const props = defineProps({
     // One of: customer | agent | date | dueDate
@@ -24,16 +25,11 @@ const props = defineProps({
     recordLabel: { type: String, default: '' },
     endpoints: { type: Object, required: true },
     current: { type: Object, default: () => ({}) },
+    customer: { type: Object, required: true },
 });
 
 const router = useRouter();
 const notifications = useNotificationsStore();
-const customer = ref(null);
-
-onMounted(async () => {
-    const { data } = await api.get(props.endpoints.customer);
-    customer.value = data.data;
-});
 
 const form = reactive({
     customer_id: null,
@@ -85,8 +81,7 @@ async function submit() {
     <AppLayout :title="title">
         <div class="grid gap-4 md:grid-cols-2">
             <FullWidthBox title="Current customer" :collapsible="false">
-                <CustomerDetails v-if="customer" :customer="customer" :boxed="false" />
-                <Loader v-else />
+                <CustomerDetails :customer="customer" :boxed="false" />
             </FullWidthBox>
 
             <FullWidthBox :title="title" :collapsible="false">

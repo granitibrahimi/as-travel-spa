@@ -86,9 +86,19 @@ try {
 
 const isActive = (to) => route.path === to;
 
-// The user's explicit toggle always wins and is persisted per group. With no
-// explicit choice a group defaults to open, so switching workspace shows its
-// groups expanded rather than all collapsed.
+// With no explicit per-group choice yet (fresh login, or a workspace whose
+// groups have never been toggled), only the group containing the current
+// page starts open — everything else starts collapsed, keeping the "at most
+// one open" accordion invariant from the very first render instead of only
+// once the user has clicked something.
+const defaultOpenGroupLabel = computed(() => {
+    const accordionGroups = navigation.value.filter((item) => !item.separator && item.items.length > 1);
+    const activeGroup = accordionGroups.find((group) => group.items.some((item) => isActive(item.to)));
+
+    return (activeGroup ?? accordionGroups[0])?.label ?? null;
+});
+
+// The user's explicit toggle always wins and is persisted per group.
 const isGroupCollapsed = (group) => {
     const override = collapsedGroups.value[group.label];
 
@@ -96,7 +106,7 @@ const isGroupCollapsed = (group) => {
         return Boolean(override);
     }
 
-    return false;
+    return group.label !== defaultOpenGroupLabel.value;
 };
 
 // Accordion: expanding a group collapses every other group in the current
