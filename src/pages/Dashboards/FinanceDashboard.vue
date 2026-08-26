@@ -2,10 +2,21 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import StatCard from '../../components/StatCard.vue';
+import FullWidthBox from '../../components/FullWidthBox.vue';
 import Loader from '../../components/Loader.vue';
 import api from '../../helpers/api';
 import { money } from '../../helpers/money';
 import { routeUrl } from '../../helpers/route.js';
+
+// Reports are plain navigation links (no data of their own), so they're
+// listed independent of the `metrics` fetch above and shown regardless of
+// whether that fetch succeeds.
+const reports = [
+    { label: 'Customer Invoices Report', to: routeUrl('financeReports.customerInvoices') },
+    { label: '4000 vs 5000', to: routeUrl('financeReports.accountComparison') },
+    { label: 'Sales Book (Libri i Shitjes)', to: routeUrl('financeReports.salesBook') },
+    { label: 'Purchases Book (Libri i Blerjeve)', to: routeUrl('financeReports.purchasesBook') },
+];
 
 // GET /dashboards/finance — shape:
 // { not_approved_cash: { count, amount }, not_approved_cash_b: { count, amount },
@@ -85,5 +96,18 @@ onMounted(async () => {
                 />
             </RouterLink>
         </div>
+
+        <FullWidthBox title="Reports" :collapsible="false">
+            <ul class="divide-y divide-gray-200">
+                <li v-for="report in reports" :key="report.to">
+                    <RouterLink :to="report.to" class="flex items-center justify-between px-1 py-2.5 text-sm text-gray-700 hover:text-red-600">
+                        {{ report.label }}
+                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </RouterLink>
+                </li>
+            </ul>
+        </FullWidthBox>
     </div>
 </template>

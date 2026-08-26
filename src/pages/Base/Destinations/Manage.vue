@@ -1,7 +1,10 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import api, {getDestinationsAutosuggestEndpoint} from '../../../helpers/api.js';
+import api, {
+    getDestinationsAutosuggestEndpoint,
+    getParentDestinationsAutosuggestEndpoint
+} from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -74,7 +77,7 @@ async function submit() {
                     <InputText v-model="form.name" label="Name *" placeholder="e.g. Male" :error="errors.name" />
                     <AsyncSelect
                         v-model="form.parent_destination_id"
-                        :url="getDestinationsAutosuggestEndpoint()"
+                        :url="getParentDestinationsAutosuggestEndpoint()"
                         :initial-option="parentInitial"
                         label="Parent destination *"
                         placeholder="Search parent destination…"
