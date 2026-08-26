@@ -7,9 +7,9 @@ import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
-import Button from '../../../components/Button.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
+import CopyButton from '../../../components/CopyButton.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -17,7 +17,7 @@ const id = route.params.id;
 
 const credential = ref(null);
 const password = ref(null);
-const revealing = ref(false);
+const revealed = ref(false);
 const corrupted = ref(false);
 const logs = ref(null);
 
@@ -27,16 +27,12 @@ async function fetchCredential() {
 }
 
 async function reveal() {
-    revealing.value = true;
     corrupted.value = false;
 
-    try {
-        const { data } = await api.post(`/online-system-credentials/${id}/reveal`);
-        password.value = data.password;
-        corrupted.value = Boolean(data.corrupted);
-    } finally {
-        revealing.value = false;
-    }
+    const { data } = await api.post(`/online-system-credentials/${id}/reveal`);
+    password.value = data.password;
+    corrupted.value = Boolean(data.corrupted);
+    revealed.value = true;
 }
 
 async function fetchLogs(page = 1) {
@@ -44,14 +40,13 @@ async function fetchLogs(page = 1) {
     logs.value = castPaginated(data);
 }
 
-function copyPassword() {
-    if (password.value) {
-        navigator.clipboard.writeText(password.value);
-    }
-}
-
 onMounted(async () => {
     await fetchCredential();
+
+    if (auth.can('onlineSystemCredentials.show')) {
+        await reveal();
+    }
+
     if (auth.can('onlineSystemCredentials.viewAccessLogs')) {
         await fetchLogs();
     }
@@ -68,23 +63,7 @@ onMounted(async () => {
                     <tbody>
                         <tr><th class="border border-gray-300 px-2 py-2 text-left text-gray-500" style="width:180px;">Title</th><td class="border border-gray-300 px-2 py-2">{{ credential.title || '—' }}</td></tr>
                         <tr><th class="border border-gray-300 px-2 py-2 text-left text-gray-500">Supplier</th><td class="border border-gray-300 px-2 py-2">{{ credential.supplier?.name ?? '—' }}</td></tr>
-                        <tr><th class="border border-gray-300 px-2 py-2 text-left text-gray-500">URL</th><td class="border border-gray-300 px-2 py-2"><a :href="credential.url" target="_blank" rel="noopener" class="text-red-700 hover:underline">{{ credential.url }}</a></td></tr>
-                        <tr><th class="border border-gray-300 px-2 py-2 text-left text-gray-500">Username</th><td class="border border-gray-300 px-2 py-2">{{ credential.username }}</td></tr>
                         <tr><th class="border border-gray-300 px-2 py-2 text-left text-gray-500">Agent code</th><td class="border border-gray-300 px-2 py-2">{{ credential.agent_code || '—' }}</td></tr>
-                        <tr>
-                            <th class="border border-gray-300 px-2 py-2 text-left text-gray-500">Password</th>
-                            <td class="border border-gray-300 px-2 py-2">
-                                <template v-if="password !== null">
-                                    <span class="font-mono">{{ password || '—' }}</span>
-                                    <button v-if="password" type="button" class="ml-2 text-xs text-gray-500 hover:text-gray-800" @click="copyPassword">copy</button>
-                                    <span v-if="corrupted" class="ml-2 text-xs text-red-600">Password is corrupted — please update it.</span>
-                                </template>
-                                <Button v-else-if="auth.can('onlineSystemCredentials.show')" size="sm" :disabled="revealing" @click="reveal">
-                                    {{ revealing ? 'Revealing…' : 'Reveal password' }}
-                                </Button>
-                                <span v-else class="text-gray-400">••••••••</span>
-                            </td>
-                        </tr>
                         <tr><th class="border border-gray-300 px-2 py-2 text-left text-gray-500">Note</th><td class="border border-gray-300 px-2 py-2 whitespace-pre-line">{{ credential.note || '—' }}</td></tr>
                     </tbody>
                 </table>
@@ -94,6 +73,45 @@ onMounted(async () => {
                         Back to list
                     </RouterLink>
                 </template>
+            </FullWidthBox>
+
+            <FullWidthBox title="Login Details" :collapsible="false">
+                <table class="w-full border-collapse border border-gray-300 text-sm">
+                    <tbody>
+                        <tr>
+                            <th class="border border-gray-300 px-2 py-2 text-left text-gray-500" style="width:180px;">URL</th>
+                            <td class="border border-gray-300 px-2 py-2">
+                                <div class="flex items-center gap-2">
+                                    <a :href="credential.url" target="_blank" rel="noopener" class="break-all text-red-700 hover:underline">{{ credential.url }}</a>
+                                    <CopyButton :value="credential.url" />
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="border border-gray-300 px-2 py-2 text-left text-gray-500">Username</th>
+                            <td class="border border-gray-300 px-2 py-2">
+                                <div class="flex items-center gap-2">
+                                    <span>{{ credential.username || '—' }}</span>
+                                    <CopyButton :value="credential.username" />
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="border border-gray-300 px-2 py-2 text-left text-gray-500">Password</th>
+                            <td class="border border-gray-300 px-2 py-2">
+                                <template v-if="auth.can('onlineSystemCredentials.show')">
+                                    <div v-if="revealed" class="flex items-center gap-2">
+                                        <span class="font-mono">{{ password || '—' }}</span>
+                                        <CopyButton v-if="password" :value="password" />
+                                        <span v-if="corrupted" class="text-xs text-red-600">Password is corrupted — please update it.</span>
+                                    </div>
+                                    <span v-else class="text-sm text-gray-400">Loading…</span>
+                                </template>
+                                <span v-else class="text-gray-400">••••••••</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </FullWidthBox>
 
             <FullWidthBox v-if="auth.can('onlineSystemCredentials.viewAccessLogs')" title="Access log" :collapsible="false">
