@@ -12,14 +12,11 @@ import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 // Customers/Invoices/Actions.vue). Actions are defined here, not served by
 // the API, and shown only when the user holds the action's permission.
 //
-// "Receipt" opens GET /customers/payments/{id}/print (confirmed endpoint);
-// its permission slug (`customerPayments.print`) is still a guess, matched
-// by symmetry with customerInvoices.print on Invoices/Actions.vue.
-//
-// TODO: "QB" follows the per-record `qb_link` field convention already used
-// for persons on Invoices/Show.vue (data-driven, not permission-gated there
-// either) — confirm `payment.qb_link` is the right field name once this is
-// wired against real data.
+// Endpoint/permission/field names below are verified against the backend
+// source (PrintCustomerPaymentAction, ShowCustomerPaymentAction — the field
+// name `qb_link` comes straight off its response — GetAccountTransactionJournalAction
+// + AccountTransactionType::fromSlug()) in
+// /Users/granit.ibrahimi/Projects/as-travel-platform-api.
 const props = defineProps({
     payment: { type: Object, default: null },
     show: { type: Boolean, default: false },
@@ -49,7 +46,7 @@ const groups = computed(() => {
         {
             label: 'Receipt',
             action: () => downloadFile(`/customers/payments/${payment.id}/print`, { fallbackName: `payment-${payment.gen_id ?? payment.id}.pdf` }),
-            can: 'customerPayments.print',
+            can: 'customerPayments.receipt',
         },
     ].filter(allowed);
 
@@ -77,7 +74,7 @@ const groups = computed(() => {
     // Customers/Invoices/Show.vue. Journal needs its permission.
     const links = [
         ...(payment.qb_link ? [{ label: 'QB', href: payment.qb_link }] : []),
-        { label: 'Journal', to: `/finance/account-transactions/journal/customers/payment/${payment.id}`, can: 'accountTransactions.journal' },
+        { label: 'Journal', to: `/finance/account-transactions/journal/customer-payment/${payment.id}`, can: 'accountTransactions.journal' },
     ].filter((item) => item.href || allowed(item));
 
     if (links.length) {

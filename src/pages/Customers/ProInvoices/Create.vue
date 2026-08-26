@@ -3,7 +3,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../../stores/auth.js';
 import api from '../../../helpers/api.js';
-import { castResource } from '../../../types/responses.js';
+import { castResource, castMutation } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { todayApiDate } from '../../../helpers/date.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -35,6 +35,7 @@ const form = reactive({
 const errors = ref({});
 const processing = ref(false);
 const success = ref(false);
+const createdId = ref(null);
 
 onMounted(async () => {
     const { data } = await api.get('customers/customers/' + customerId);
@@ -50,7 +51,8 @@ async function submit() {
     errors.value = {};
 
     try {
-        await api.post(`/customers/pro-invoices`, form);
+        const { data } = await api.post(`/customers/pro-invoices`, form);
+        createdId.value = castMutation(data).id;
         success.value = true;
     } catch (error) {
         if (error.response?.status === 422) {
@@ -67,7 +69,7 @@ async function submit() {
 
 function done() {
     success.value = false;
-    router.push(routeUrl('customers.show', customerId));
+    router.push(createdId.value ? routeUrl('customerProInvoices.show', createdId.value) : routeUrl('customers.show', customerId));
 }
 </script>
 

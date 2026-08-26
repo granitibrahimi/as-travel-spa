@@ -82,7 +82,7 @@ const groups = computed(() => {
         ...(customerId.value
             ? [{ label: 'Reconcile', to: routeUrl('customers.reconcile', customerId.value), can: 'customers.reconcile' }]
             : []),
-        { label: 'Journal', to: `/finance/account-transactions/journal/customers/invoice/${invoice.id}`, can: 'accountTransactions.journal' },
+        { label: 'Journal', to: `/finance/account-transactions/journal/customer-invoice/${invoice.id}`, can: 'accountTransactions.journal' },
         { label: 'Edit', to: routeUrl('customerInvoices.edit', invoice.id), canAny: ['customerInvoices.edit', 'customerInvoices.editOwnWithinTheDay'] },
     ].filter(allowed);
 

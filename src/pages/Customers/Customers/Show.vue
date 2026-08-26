@@ -11,6 +11,7 @@ import DateInput from '../../../components/Form/DateInput.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
 import CustomerActions from './Actions.vue';
+import ProInvoiceActions from '../ProInvoices/Actions.vue';
 import Loader from '../../../components/Loader.vue';
 import {useAuthStore} from '../../../stores/auth.js';
 import {useFormOptionsStore, toOptions} from '../../../stores/formOptions.js';
@@ -31,6 +32,9 @@ const title = computed(() => customer.value?.full_name ?? '');
 
 // Only load/show the transactions section for users who may view them.
 const canViewTransactions = computed(() => auth.canAny(['customerTransactions.all', 'customerTransactions.own']));
+
+// Only load/show the pro-invoices section for users who may view them.
+const canViewProInvoices = computed(() => auth.can('customerProInvoices.list'));
 
 async function fetchSummary() {
     const {data} = await api.get(`/customers/customers/${id}/summary`);
@@ -96,6 +100,47 @@ async function fetchTransactions(page = 1) {
     }
 }
 
+// Pro-invoices for this customer — same table as ProInvoices/Index.vue, just
+// pre-filtered by customer_id and without the search form.
+const proInvoices = ref(null);
+const loadingProInvoices = ref(false);
+let proInvoicesRequest = null;
+
+async function fetchProInvoices(page = 1) {
+    proInvoicesRequest?.abort();
+    const controller = new AbortController();
+    proInvoicesRequest = controller;
+    loadingProInvoices.value = true;
+
+    try {
+        const {data} = await api.get('/customers/pro-invoices', {
+            signal: controller.signal,
+            params: {customer_id: id, page},
+        });
+        proInvoices.value = castPaginated(data);
+    } catch (error) {
+        if (error.code !== 'ERR_CANCELED') {
+            throw error;
+        }
+    } finally {
+        if (proInvoicesRequest === controller) {
+            loadingProInvoices.value = false;
+        }
+    }
+}
+
+// Flight/hotel info are multi-line free text; show a single trimmed line and
+// keep the full value in the title tooltip (mirrors ProInvoices/Index.vue).
+const oneLine = (value) => (value ? value.replace(/\s+/g, ' ').trim() : '');
+
+// Actions side overlay for the pro-invoice row picked via the ⋯ button.
+const selectedProInvoice = ref(null);
+
+function onProInvoiceDeleted() {
+    selectedProInvoice.value = null;
+    fetchProInvoices(proInvoices.value?.pagination?.current_page ?? 1);
+}
+
 onMounted(async () => {
     const {data} = await api.get(`/customers/customers/${id}?transaction_filters=true`);
     customer.value = data.data;
@@ -108,6 +153,10 @@ onMounted(async () => {
 
     if (canViewTransactions.value) {
         await fetchTransactions();
+    }
+
+    if (canViewProInvoices.value) {
+        fetchProInvoices();
     }
 });
 
@@ -215,6 +264,61 @@ watch(filters, () => {
                 @deleted="router.push(routeUrl('customers.list'))"
             />
 
+            <FullWidthBox v-if="canViewProInvoices" title="Pro Invoices" :collapsible="false">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                        <tr class="text-left text-xs uppercase text-gray-500">
+                            <th class="border border-gray-300 px-2 py-2" style="width: 130px;">ID</th>
+                            <th class="border border-gray-300 px-2 py-2" style="width: 100px;">Date</th>
+                            <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Amount</th>
+                            <th class="border border-gray-300 px-2 py-2">Flight info</th>
+                            <th class="border border-gray-300 px-2 py-2">Hotel info</th>
+                            <th class="border border-gray-300 px-2 py-2" style="width: 150px;">Created by</th>
+                            <th class="border border-gray-300 px-2 py-2 whitespace-nowrap" style="width: 150px;">Created at</th>
+                            <th class="border border-gray-300 px-2 py-2 text-center" style="width: 90px;">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-if="loadingProInvoices || ! proInvoices">
+                            <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader/></td>
+                        </tr>
+                        <tr v-else-if="proInvoices.data.length === 0">
+                            <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No pro-invoices found.</td>
+                        </tr>
+                        <tr v-for="row in (loadingProInvoices ? [] : proInvoices?.data ?? [])" :key="row.id" class="hover:bg-gray-50">
+                            <td class="border border-gray-300 px-2 py-2 font-medium whitespace-nowrap">
+                                <RouterLink :to="routeUrl('customerProInvoices.show', row.id)" class="text-red-700 hover:underline">{{ row.gen_id }}</RouterLink>
+                            </td>
+                            <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ row.on_date }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.amount) }}</td>
+                            <td class="max-w-[16rem] truncate border border-gray-300 px-2 py-2 text-gray-600" :title="oneLine(row.flight_info)">{{ oneLine(row.flight_info) || '—' }}</td>
+                            <td class="max-w-[16rem] truncate border border-gray-300 px-2 py-2 text-gray-600" :title="oneLine(row.hotel_info)">{{ oneLine(row.hotel_info) || '—' }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ row.user?.name ?? '—' }}</td>
+                            <td class="border border-gray-300 px-2 py-2 whitespace-nowrap text-gray-500">{{ row.created_at }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-center">
+                                <button
+                                    type="button"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                                    aria-label="Pro-invoice actions"
+                                    @click="selectedProInvoice = row"
+                                >
+                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="5" r="1.8"/>
+                                        <circle cx="12" cy="12" r="1.8"/>
+                                        <circle cx="12" cy="19" r="1.8"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <ApiPagination v-if="proInvoices" :paginator="proInvoices.pagination" class="mt-4"
+                               @page="fetchProInvoices"/>
+            </FullWidthBox>
+
             <FullWidthBox v-if="canViewTransactions" title="List of all transactions" :collapsible="false">
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
                     <DateInput v-model="filters.from" label="From date"/>
@@ -302,5 +406,12 @@ watch(filters, () => {
                                @page="fetchTransactions"/>
             </FullWidthBox>
         </div>
+
+        <ProInvoiceActions
+            :pro-invoice="selectedProInvoice"
+            :show="Boolean(selectedProInvoice)"
+            @close="selectedProInvoice = null"
+            @deleted="onProInvoiceDeleted"
+        />
     </AppLayout>
 </template>
