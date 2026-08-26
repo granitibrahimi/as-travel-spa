@@ -27,7 +27,9 @@ async function load() {
         api.get('/quickbooks-sync/options'),
     ]);
     row.value = castResource(detail);
-    statuses.value = options.statuses;
+    // Keyed by id ({ "4": { value, label }, ... }), not an array — see the
+    // same fix/note in QuickBooksSync/Index.vue's fetchOptions().
+    statuses.value = Object.values(options.statuses);
     form.status = row.value.status_value;
     form.qb_id = row.value.qb_id ?? '';
 }

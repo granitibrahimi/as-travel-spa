@@ -15,3 +15,19 @@ export function customerTransactionPath( type, id) {
 
     return segment ? `/${segment}/${id}` : null;
 }
+
+// Some endpoints (the customer reconcile debit/credit transaction lists,
+// customer transaction links) return `type` as this same enum's display
+// label instead of its numeric id — reverse-map it and delegate.
+const LABEL_TYPE_IDS = {
+    Invoice: 1,
+    'Credit Note': 2,
+    Payment: 3,
+    'Gift Card': 4,
+    Refund: 5,
+    Journal: 6,
+};
+
+export function customerTransactionPathForLabel(label, id) {
+    return customerTransactionPath(LABEL_TYPE_IDS[label], id);
+}

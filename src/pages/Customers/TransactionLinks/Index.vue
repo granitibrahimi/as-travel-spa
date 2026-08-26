@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money';
-import { customerTransactionPath } from '../../../helpers/customerTransactions.js';
+import { customerTransactionPathForLabel } from '../../../helpers/customerTransactions.js';
 import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api';
 import { castPaginated } from '../../../types/responses.js';
@@ -114,8 +114,8 @@ const rowActions = (link) => [
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ link.type }}</td>
                             <td class="border border-gray-300 px-2 py-2">
                                 <RouterLink
-                                    v-if="customerTransactionPath({ type: link.type, id: link.transaction_id })"
-                                    :to="customerTransactionPath({ type: link.type, id: link.transaction_id })"
+                                    v-if="customerTransactionPathForLabel(link.type, link.transaction_id)"
+                                    :to="customerTransactionPathForLabel(link.type, link.transaction_id)"
                                     class="text-red-600 hover:underline"
                                 >{{ link.reference }}</RouterLink>
                                 <span v-else>{{ link.reference }}</span>

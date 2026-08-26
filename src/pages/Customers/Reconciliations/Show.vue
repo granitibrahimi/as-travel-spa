@@ -73,11 +73,11 @@ onMounted(async () => {
                         </thead>
                         <tbody>
                             <tr v-for="(link, i) in reconciliation.links" :key="i" class="border-b last:border-0">
-                                <td class="border border-gray-300 px-2 py-2">{{ link.type }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ link.type.name }}</td>
                                 <td class="border border-gray-300 px-2 py-2">
                                     <RouterLink
-                                        v-if="customerTransactionPath({ type: link.type.id, id: link.transaction_id })"
-                                        :to="customerTransactionPath({ type: link.type.id, id: link.transaction_id })"
+                                        v-if="customerTransactionPath(link.type.id, link.transaction_id)"
+                                        :to="customerTransactionPath(link.type.id, link.transaction_id)"
                                         class="text-red-600 hover:underline"
                                     >{{ link.reference ?? link.transaction_id }}</RouterLink>
                                     <span v-else>{{ link.reference ?? link.transaction_id }}</span>

@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
-import { customerTransactionPath } from '../../../helpers/customerTransactions.js';
+import { customerTransactionPathForLabel } from '../../../helpers/customerTransactions.js';
 import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
@@ -209,7 +209,7 @@ onMounted(() => {
                             <tbody>
                                 <tr v-for="row in debitRows.data" :key="row.key" class="border-b last:border-0">
                                     <td class="py-2 pr-2">
-                                        <RouterLink v-if="customerTransactionPath(row)" :to="customerTransactionPath(row)" class="text-red-600 hover:underline">{{ row.reference }}</RouterLink>
+                                        <RouterLink v-if="customerTransactionPathForLabel(row.type, row.id)" :to="customerTransactionPathForLabel(row.type, row.id)" class="text-red-600 hover:underline">{{ row.reference }}</RouterLink>
                                         <span v-else>{{ row.reference }}</span>
                                     </td>
                                     <td class="py-2 pr-2">{{ row.type }}</td>
@@ -264,7 +264,7 @@ onMounted(() => {
                             <tbody>
                                 <tr v-for="row in creditRows.data" :key="row.key" class="border-b last:border-0">
                                     <td class="py-2 pr-2">
-                                        <RouterLink v-if="customerTransactionPath(row)" :to="customerTransactionPath(row)" class="text-red-600 hover:underline">{{ row.reference }}</RouterLink>
+                                        <RouterLink v-if="customerTransactionPathForLabel(row.type, row.id)" :to="customerTransactionPathForLabel(row.type, row.id)" class="text-red-600 hover:underline">{{ row.reference }}</RouterLink>
                                         <span v-else>{{ row.reference }}</span>
                                     </td>
                                     <td class="py-2 pr-2">{{ row.type }}</td>

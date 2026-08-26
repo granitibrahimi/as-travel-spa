@@ -9,6 +9,7 @@ import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
 import InputText from '../../components/Form/InputText.vue';
 import Select from '../../components/Form/Select.vue';
+import SearchSelect from '../../components/Form/SearchSelect.vue';
 import ApiPagination from '../../components/ApiPagination.vue';
 import ConfirmDialog from '../../components/ConfirmDialog.vue';
 import DropdownMenu from '../../components/DropdownMenu.vue';
@@ -28,9 +29,13 @@ const retryingId = ref(null);
 
 async function fetchOptions() {
     const { data } = await api.get('/quickbooks-sync/options');
-    options.entities = data.entities;
-    options.statuses = data.statuses;
-    options.actions = data.actions;
+    // The API returns these keyed by id ({ "4": { value, label }, ... }), not
+    // as arrays — Select's onChange does an array .find() over its options,
+    // so they need to be arrays or every selection throws and silently never
+    // updates the v-model.
+    options.entities = Object.values(data.entities);
+    options.statuses = Object.values(data.statuses);
+    options.actions = Object.values(data.actions);
 }
 
 async function fetchRows(page = 1) {
@@ -39,9 +44,13 @@ async function fetchRows(page = 1) {
     try {
         const { data } = await api.get('/quickbooks-sync', {
             params: {
-                entity: form.entity || undefined,
-                status: form.status || undefined,
-                action: form.action || undefined,
+                // `entity`/`status`/`action` come from Select (unselected = null,
+                // not ''), and their option values can legitimately be falsy
+                // (e.g. a 0-valued enum) — use `??` so a falsy-but-selected value
+                // isn't dropped from the request the way `||` would drop it.
+                entity: form.entity ?? undefined,
+                status: form.status ?? undefined,
+                action: form.action ?? undefined,
                 entity_id: form.entity_id || undefined,
                 page,
             },
@@ -112,7 +121,7 @@ const statusClass = (status) => ({
         <div class="space-y-6">
             <FullWidthBox title="Filters" :collapsible="false">
                 <form class="grid grid-cols-1 gap-3 md:grid-cols-5" @submit.prevent="fetchRows()">
-                    <Select v-model="form.entity" :options="options.entities" label="Entity" placeholder="All entities" />
+                    <SearchSelect v-model="form.entity" :options="options.entities" label="Entity" placeholder="All entities" />
                     <Select v-model="form.status" :options="options.statuses" label="Status" placeholder="All statuses" />
                     <Select v-model="form.action" :options="options.actions" label="Action" placeholder="All actions" />
                     <InputText v-model="form.entity_id" label="Entity / QB ID" placeholder="ID…" />
