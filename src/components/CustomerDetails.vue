@@ -29,7 +29,8 @@ const auth = useAuthStore();
 const rows = computed(() => [
     ['ID', props.customer.id],
     ['Unique ID', props.customer.unique_id],
-    ['Type', props.customer.type],
+    ['Type', props.customer.type.name],
+    ['Inland', props.customer.is_inland ? 'Yes' : 'No'],
     ['Name', props.customer.full_name],
     ['VAT number', props.customer.vat_nr],
     ['Email', props.customer.email],

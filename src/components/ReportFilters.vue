@@ -9,6 +9,8 @@ import Button from './Button.vue';
 import DateInput from './Form/DateInput.vue';
 import AsyncSelect from './Form/AsyncSelect.vue';
 import { todayApiDate } from '../helpers/date';
+import { getParentDestinationsAutosuggestEndpoint } from '../helpers/api.js';
+
 
 const props = defineProps({
     showDestination: { type: Boolean, default: true },
@@ -17,11 +19,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['apply']);
-
-// Parent-destination lookup lives under /api/customers, a sibling of the api
-// client's /api/v1 base, so it uses an absolute URL (mirrors Invoices/Due.vue).
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-const parentDestinationsUrl = `${apiOrigin}/api/customers/destinations`;
 
 function apiMonthsAgo(months) {
     const date = new Date();
@@ -53,7 +50,7 @@ onMounted(apply);
         <AsyncSelect
             v-if="showDestination"
             v-model="parentDestinationId"
-            :url="parentDestinationsUrl"
+            :url="getParentDestinationsAutosuggestEndpoint()"
             label="Parent Destination"
             placeholder="All destinations"
             class="min-w-[200px]"

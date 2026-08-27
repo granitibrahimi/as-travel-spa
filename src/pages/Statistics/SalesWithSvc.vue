@@ -21,6 +21,23 @@ const chart = computed(() => ({
 }));
 
 const earningsPercentage = computed(() => `${(data.value?.totals?.earnings_percentage ?? 0).toFixed(1)} %`);
+
+// Per-month breakdown for the table above the chart — newest month first.
+const monthlyBreakdown = computed(() => {
+    const labels = data.value?.labels ?? [];
+    const sold = data.value?.series?.sold ?? [];
+    const earnings = data.value?.series?.earnings ?? [];
+
+    return labels
+        .map((label, i) => {
+            const soldValue = sold[i] ?? 0;
+            const earningsValue = earnings[i] ?? 0;
+            const percentage = soldValue ? Math.round((earningsValue / soldValue) * 100) : 0;
+
+            return { label, sold: soldValue, earnings: earningsValue, percentage };
+        })
+        .reverse();
+});
 </script>
 
 <template>
@@ -43,9 +60,52 @@ const earningsPercentage = computed(() => `${(data.value?.totals?.earnings_perce
                 </div>
 
                 <FullWidthBox title="Sold / earnings / buy per month" :collapsible="false">
-                    <div class="h-80"><Chart type="bar" :data="chart" /></div>
+                    <div class="always-scroll overflow-x-scroll">
+                        <table class="w-full border-collapse border border-gray-300 text-center text-sm">
+                            <thead>
+                                <tr class="text-gray-700">
+                                    <th v-for="month in monthlyBreakdown" :key="month.label" class="border border-gray-300 bg-gray-50 px-4 py-2 font-semibold whitespace-nowrap">
+                                        {{ month.label }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td v-for="month in monthlyBreakdown" :key="month.label" class="border border-gray-300 px-4 py-2 tabular-nums whitespace-nowrap">
+                                        <div>{{ money(month.sold) }}</div>
+                                        <div class="font-bold">{{ money(month.earnings) }}</div>
+                                        <div>{{ month.percentage }}%</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-6 h-80"><Chart type="bar" :data="chart" /></div>
                 </FullWidthBox>
             </template>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+/* Force a persistently visible horizontal scrollbar for the monthly table —
+   macOS/mobile overlay scrollbars hide themselves until actively scrolling,
+   which makes a wide table look uncroppable at a glance. */
+.always-scroll {
+    scrollbar-width: thin; /* Firefox */
+}
+
+.always-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.always-scroll::-webkit-scrollbar-track {
+    background: #f3f4f6;
+}
+
+.always-scroll::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 4px;
+}
+</style>

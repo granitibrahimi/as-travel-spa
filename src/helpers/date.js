@@ -96,6 +96,14 @@ export function apiDaysAgo(days) {
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
 }
 
+/** The 1st of the current local month as an API `d.m.Y` string (for a report's default "from"). */
+export function startOfMonthApiDate() {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+
+    return `01.${pad(now.getMonth() + 1)}.${now.getFullYear()}`;
+}
+
 
 
 /**

@@ -16,6 +16,26 @@ function filenameFromResponse(response, fallbackName) {
     return match ? decodeURIComponent(match[1]) : fallbackName;
 }
 
+// With `responseType: 'blob'`, axios blob-ifies the body of an error response
+// too (e.g. a 422 validation JSON payload), instead of parsing it like it
+// would for a normal JSON request — so `error.response.data.errors/message`
+// would otherwise be a Blob, not the parsed object callers expect. Re-parse
+// it in place so a validation error out of a download endpoint reads exactly
+// like one from any other endpoint.
+async function normalizeBlobError(error) {
+    const body = error?.response?.data;
+
+    if (body instanceof Blob && body.type.includes('json')) {
+        try {
+            error.response.data = JSON.parse(await body.text());
+        } catch {
+            // Not actually JSON — leave the error as-is.
+        }
+    }
+
+    return error;
+}
+
 /**
  * GET a server-rendered file as a blob and save it to disk. The server sets the
  * real filename via Content-Disposition; we fall back to `fallbackName`.
@@ -26,7 +46,14 @@ function filenameFromResponse(response, fallbackName) {
  * @param {object} [opts.config]       Extra axios config (e.g. `{ params }`).
  */
 export async function downloadFile(url, { fallbackName, config = {} } = {}) {
-    const response = await api.get(url, { responseType: 'blob', ...config });
+    let response;
+
+    try {
+        response = await api.get(url, { responseType: 'blob', ...config });
+    } catch (error) {
+        throw await normalizeBlobError(error);
+    }
+
     const filename = filenameFromResponse(response, fallbackName);
 
     const objectUrl = URL.createObjectURL(response.data);
@@ -72,6 +99,6 @@ export async function openFileInNewTab(url, { config = {}, type = 'application/p
         setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (error) {
         tab?.close();
-        throw error;
+        throw await normalizeBlobError(error);
     }
 }

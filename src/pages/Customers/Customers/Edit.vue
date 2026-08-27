@@ -11,6 +11,7 @@ import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import Select from '../../../components/Form/Select.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
+import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
 import Loader from '../../../components/Loader.vue';
 
 const route = useRoute();
@@ -25,6 +26,7 @@ const PRIVATE_TYPE = 2; // mirrors CustomerTypeEnum::Private on the platform
 
 const form = reactive({
     type: null,
+    is_inland: true, // matches the column's own DB default
     name: '',
     first_name: '',
     last_name: '',
@@ -46,7 +48,10 @@ onMounted(async () => {
     const { data } = await api.get(`/customers/customers/${customerId}`);
     const customer = castResource(data);
     Object.assign(form, {
-        type: customer.type ?? null,
+        // The show endpoint nests type as { id, name }; the form (and the
+        // update endpoint) only want the id, same as Create.vue.
+        type: customer.type?.id ?? null,
+        is_inland: customer.is_inland ?? true,
         name: customer.name ?? '',
         first_name: customer.first_name ?? '',
         last_name: customer.last_name ?? '',
@@ -105,6 +110,10 @@ async function submit() {
                     <InputText v-model="form.email" type="email" label="Email *" :error="errors.email" />
                     <InputText v-model="form.phone" label="Phone *" :error="errors.phone" />
                     <InputText v-model="form.working_info" label="Working info" :error="errors.working_info" />
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-3 sm:max-w-md">
+                    <NiceCheckbox v-model="form.is_inland" label="Inland" :error="errors.is_inland" />
                 </div>
 
                 <div class="mt-4">
