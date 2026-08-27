@@ -19,7 +19,9 @@ import Loader from '../../../components/Loader.vue';
 const router = useRouter();
 
 const formOptions = useFormOptionsStore();
-const paymentMethods = computed(() => toOptions(formOptions.paymentMethods));
+// Only payment methods with deposits enabled belong here (PaymentMethod::allow_deposit,
+// exposed by PaymentMethodResource — confirmed against the backend source).
+const paymentMethods = computed(() => toOptions(formOptions.paymentMethods.filter((method) => method.allow_deposit)));
 const rows = ref([]);
 const ready = ref(false);
 const errors = ref({});
