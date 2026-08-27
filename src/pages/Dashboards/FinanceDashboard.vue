@@ -13,6 +13,8 @@ import { routeUrl } from '../../helpers/route.js';
 // whether that fetch succeeds.
 const reports = [
     { label: 'Customer Invoices Report', to: routeUrl('financeReports.customerInvoices') },
+    { label: 'Accounts Receivable', to: routeUrl('financeReports.accountsReceivable') },
+    { label: 'Accounts Payable', to: routeUrl('financeReports.accountsPayable') },
     { label: '4000 vs 5000', to: routeUrl('financeReports.accountComparison') },
     { label: 'Sales Book (Libri i Shitjes)', to: routeUrl('financeReports.salesBook') },
     { label: 'Purchases Book (Libri i Blerjeve)', to: routeUrl('financeReports.purchasesBook') },

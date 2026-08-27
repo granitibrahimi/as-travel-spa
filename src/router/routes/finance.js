@@ -27,6 +27,8 @@ const AccountsIndex = () => import('../../pages/Finance/Accounts/Index.vue');
 const AccountsTypes = () => import('../../pages/Finance/Accounts/Types.vue');
 const AccountsMapping = () => import('../../pages/Finance/Accounts/Mapping.vue');
 const ReportsCustomerInvoices = () => import('../../pages/Finance/Reports/CustomerInvoices.vue');
+const ReportsAccountsReceivable = () => import('../../pages/Finance/Reports/AccountsReceivable.vue');
+const ReportsAccountsPayable = () => import('../../pages/Finance/Reports/AccountsPayable.vue');
 const ReportsAccountComparison = () => import('../../pages/Finance/Reports/AccountComparison.vue');
 const ReportsSalesBook = () => import('../../pages/Finance/Reports/SalesBook.vue');
 const ReportsPurchasesBook = () => import('../../pages/Finance/Reports/PurchasesBook.vue');
@@ -64,6 +66,8 @@ export default [
     { path: '/finance/accounts/types', name: 'accounts.types', component: AccountsTypes },
     { path: '/finance/accounts/mapping', name: 'accounts.mapping', component: AccountsMapping },
     { path: '/finance/reports/customer-invoices', name: 'financeReports.customerInvoices', component: ReportsCustomerInvoices },
+    { path: '/finance/reports/accounts-receivable', name: 'financeReports.accountsReceivable', component: ReportsAccountsReceivable },
+    { path: '/finance/reports/accounts-payable', name: 'financeReports.accountsPayable', component: ReportsAccountsPayable },
     { path: '/finance/reports/4000-vs-5000', name: 'financeReports.accountComparison', component: ReportsAccountComparison },
     { path: '/finance/reports/sales-book', name: 'financeReports.salesBook', component: ReportsSalesBook },
     { path: '/finance/reports/purchases-book', name: 'financeReports.purchasesBook', component: ReportsPurchasesBook },
