@@ -34,8 +34,10 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 // Split heavy third-party libs into their own long-term-cacheable
-                // chunks. chart.js is only imported by the (lazy) report pages, so
-                // its chunk is fetched only when a report is opened.
+                // chunks. chart.js is only imported by the (lazy) report pages and
+                // the Administrator dashboard (also lazy — see Home.vue's
+                // defineAsyncComponent), so its chunk is fetched only when one of
+                // those is actually opened.
                 manualChunks(id) {
                     if (! id.includes('node_modules')) {
                         return undefined;

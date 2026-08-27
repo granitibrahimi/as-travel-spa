@@ -146,8 +146,9 @@ function releaseLock() {
 }
 
 onMounted(async () => {
-    await load();
-    await acquireLock();
+    // Independent requests (acquireLock only needs route.params.id) — run
+    // concurrently instead of waiting on load() first.
+    await Promise.all([load(), acquireLock()]);
 });
 
 onBeforeUnmount(releaseLock);

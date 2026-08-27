@@ -56,6 +56,13 @@ auth.bootstrap().finally(() => {
             presence.join();
             notifications.subscribe();
 
+            // Fetch the unread badge once per session here — not from AppLayout's
+            // own mount (it remounts on every navigation, which would refetch this
+            // on every page change; the Echo subscription above keeps it live after).
+            if (auth.can('userNotifications.list')) {
+                notifications.fetchUnread();
+            }
+
             // Load shared form options from the cached snapshot (no network), so
             // individual pages never have to and a refresh reuses the cache. The
             // network sync runs only on an actual login (see auth.login()).

@@ -10,6 +10,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import { todayApiDate } from '../../../helpers/date';
 import SearchSelect from '../../../components/Form/SearchSelect.vue';
@@ -142,7 +143,7 @@ async function submit() {
                             <SearchSelect v-model="entry.tax_type" :options="taxTypes" placeholder="Tax" :error="errors[`entries.${i}.tax_type_id`]" />
                         </div>
                         <div class="flex items-start gap-1 lg:col-span-2">
-                            <InputText v-model="entry.amount" type="number" step="0.01" placeholder="Amount" :error="errors[`entries.${i}.amount`]" />
+                            <InputNumber v-model="entry.amount" placeholder="Amount" :error="errors[`entries.${i}.amount`]" />
                             <button
                                 type="button"
                                 class="mt-1 shrink-0 rounded px-1.5 text-gray-400 hover:text-red-600"

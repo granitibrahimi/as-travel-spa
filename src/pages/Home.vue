@@ -1,10 +1,15 @@
 <script setup>
+import { defineAsyncComponent } from 'vue';
 import AppLayout from '../layouts/AppLayout.vue';
 import { useAuthStore } from '../stores/auth';
 import { useLayoutStore } from '../stores/layout';
-import CrmDashboard from './Dashboards/CrmDashboard.vue';
-import AdministratorDashboard from './Dashboards/AdministratorDashboard.vue';
-import FinanceDashboard from './Dashboards/FinanceDashboard.vue';
+
+// Lazy — only the active workspace's dashboard is ever rendered (see the
+// v-if chain below), but a static import would still bundle all three (and
+// AdministratorDashboard's chart.js dependency) into this page's chunk.
+const CrmDashboard = defineAsyncComponent(() => import('./Dashboards/CrmDashboard.vue'));
+const AdministratorDashboard = defineAsyncComponent(() => import('./Dashboards/AdministratorDashboard.vue'));
+const FinanceDashboard = defineAsyncComponent(() => import('./Dashboards/FinanceDashboard.vue'));
 
 const auth = useAuthStore();
 const layout = useLayoutStore();

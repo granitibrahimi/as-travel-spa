@@ -10,6 +10,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
 import Button from '../../../components/Button.vue';
 import Loader from '../../../components/Loader.vue';
 import { useNotificationsStore } from '../../../stores/notifications.js';
@@ -220,12 +221,11 @@ onMounted(() => {
                                         </button>
                                     </td>
                                     <td class="py-2 pl-2 text-right">
-                                        <input
-                                            type="number" min="0" step="0.01"
-                                            class="w-32 rounded border border-gray-300 px-2 py-1 text-right focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                                            :value="debitAmounts[row.key] ?? ''"
-                                            @input="setAmount(debitAmounts, row.key, $event.target.value)"
-                                        >
+                                        <InputNumber
+                                            class="!w-32 text-right"
+                                            :model-value="debitAmounts[row.key] ?? null"
+                                            @update:model-value="(value) => setAmount(debitAmounts, row.key, value)"
+                                        />
                                     </td>
                                 </tr>
                                 <tr v-if="! debitRows.data.length">
@@ -275,12 +275,11 @@ onMounted(() => {
                                         </button>
                                     </td>
                                     <td class="py-2 pl-2 text-right">
-                                        <input
-                                            type="number" min="0" step="0.01"
-                                            class="w-32 rounded border border-gray-300 px-2 py-1 text-right focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                                            :value="creditAmounts[row.key] ?? ''"
-                                            @input="setAmount(creditAmounts, row.key, $event.target.value)"
-                                        >
+                                        <InputNumber
+                                            class="!w-32 text-right"
+                                            :model-value="creditAmounts[row.key] ?? null"
+                                            @update:model-value="(value) => setAmount(creditAmounts, row.key, value)"
+                                        />
                                     </td>
                                 </tr>
                                 <tr v-if="! creditRows.data.length">

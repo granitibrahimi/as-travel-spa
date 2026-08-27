@@ -10,6 +10,7 @@ import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import Select from '../../../components/Form/Select.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
@@ -227,8 +228,8 @@ async function save() {
                                 <tr v-for="(person, pi) in order.persons" :key="pi" class="align-top">
                                     <td class="px-2 py-2"><InputText v-model="person.name_surname" /></td>
                                     <td class="px-2 py-2"><InputText v-model="person.tkt_number" /></td>
-                                    <td class="px-2 py-2"><InputText v-model="person.sold_value" type="number" :disabled="soldLocked" /></td>
-                                    <td class="px-2 py-2"><InputText v-model="person.buying_value" type="number" /></td>
+                                    <td class="px-2 py-2"><InputNumber v-model="person.sold_value" :disabled="soldLocked" /></td>
+                                    <td class="px-2 py-2"><InputNumber v-model="person.buying_value" /></td>
                                     <td class="px-2 py-2 text-center">
                                         <button
                                             v-if="order.persons.length > 1"

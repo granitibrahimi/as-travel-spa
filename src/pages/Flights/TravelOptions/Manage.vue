@@ -48,14 +48,20 @@ function toggleProvider(value) {
 
 onMounted(async () => {
     try {
-        const { data } = await flightsApi.get('/destinations');
-        destinationOptions.value = data.map((destination) => ({
+        // Both requests are independent (the edit fetch only needs optionId,
+        // a route param known synchronously) — run them concurrently.
+        const [{ data: destinations }, optionResult] = await Promise.all([
+            flightsApi.get('/destinations'),
+            isEdit ? flightsApi.get(`/travel-options/${optionId}`) : Promise.resolve(null),
+        ]);
+
+        destinationOptions.value = destinations.map((destination) => ({
             value: destination.id,
             label: destination.shortcut ? `${destination.name} (${destination.shortcut})` : destination.name,
         }));
 
         if (isEdit) {
-            const { data: option } = await flightsApi.get(`/travel-options/${optionId}`);
+            const option = optionResult.data;
             Object.assign(form, {
                 from_destination_id: option.from_destination_id,
                 to_destination_id: option.to_destination_id,

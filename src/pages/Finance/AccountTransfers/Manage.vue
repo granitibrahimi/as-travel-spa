@@ -8,7 +8,7 @@ import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
-import InputText from '../../../components/Form/InputText.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import { todayApiDate } from '../../../helpers/date';
 import Textarea from '../../../components/Form/Textarea.vue';
@@ -93,7 +93,7 @@ async function submit() {
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <SearchSelect v-model="form.from_account_id" :options="accounts" placeholder="From account…" label="From account *" :error="errors.from_account_id" />
                     <SearchSelect v-model="form.to_account_id" :options="accounts" placeholder="To account…" label="To account *" :error="errors.to_account_id" />
-                    <InputText v-model="form.amount" type="number" step="0.01" label="Amount *" :error="errors.amount" />
+                    <InputNumber v-model="form.amount" label="Amount *" :error="errors.amount" />
                     <DateInput v-model="form.date" label="Date *" :error="errors.date" />
                     <div class="md:col-span-2">
                         <Textarea v-model="form.notes" label="Notes" :error="errors.notes" />

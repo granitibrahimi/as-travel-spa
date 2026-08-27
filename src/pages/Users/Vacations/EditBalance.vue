@@ -6,7 +6,7 @@ import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
-import InputText from '../../../components/Form/InputText.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import Loader from '../../../components/Loader.vue';
 
@@ -60,7 +60,7 @@ async function submit() {
         <form v-else class="space-y-6" @submit.prevent="submit">
             <FullWidthBox :title="`${balance.user} · ${balance.year}`" :collapsible="false">
                 <div class="space-y-4">
-                    <InputText v-model="form.days" type="number" label="This year's days *" :error="errors.days" />
+                    <InputNumber v-model="form.days" label="This year's days *" :error="errors.days" />
                     <Textarea v-model="form.reason" label="Reason *" :error="errors.reason" />
                 </div>
             </FullWidthBox>

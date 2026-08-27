@@ -7,6 +7,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 
@@ -79,7 +80,7 @@ async function submit() {
                         <DateInput v-model="form.start_date" label="Start date" :error="fieldError('start_date')" />
                         <DateInput v-model="form.end_date" label="End date" :error="fieldError('end_date')" />
                     </div>
-                    <InputText v-model="form.total_amount" label="Total Amount" type="number" :error="fieldError('total_amount')" />
+                    <InputNumber v-model="form.total_amount" label="Total Amount" :error="fieldError('total_amount')" />
                 </div>
 
                 <template #footer>

@@ -8,6 +8,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
 import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
 
 const route = useRoute();
@@ -70,8 +71,8 @@ async function submit() {
             <FullWidthBox title="Tax type details" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <InputText v-model="form.name" label="Name *" :error="errors.name" />
-                    <InputText v-model="form.excel_column_id" type="number" label="Excel column *" :error="errors.excel_column_id" />
-                    <InputText v-model="form.qb_id" type="number" label="QuickBooks ID" :error="errors.qb_id" />
+                    <InputNumber v-model="form.excel_column_id" label="Excel column *" :error="errors.excel_column_id" />
+                    <InputNumber v-model="form.qb_id" label="QuickBooks ID" :error="errors.qb_id" />
                 </div>
 
                 <div class="mt-4 grid grid-cols-2 gap-3 sm:max-w-md">

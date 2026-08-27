@@ -38,16 +38,18 @@ const canSeeNotifications = computed(() => auth.can('userNotifications.list'));
 // `layout.init()` here is idempotent (it re-derives the same choice from
 // localStorage/`auth.user.workspace`), so it's safe to fire on every mount
 // once the session is ready, not just the first one.
+//
+// The unread-notifications count is deliberately NOT fetched here: AppLayout
+// is not a persistent shell (every page wraps itself in it), so it remounts
+// on every navigation — fetching here would refire that request on every page
+// change. It's fetched once per session in main.js instead, and kept live
+// afterwards via the notifications store's Echo subscription.
 watch(() => auth.sessionActive, (sessionActive) => {
     if (!sessionActive) {
         return;
     }
 
     layout.init();
-
-    if (canSeeNotifications.value) {
-        notifications.fetchUnread();
-    }
 }, { immediate: true });
 
 const containerClass = computed(() => (props.fluid ? 'w-full px-6' : 'max-w-6xl mx-auto px-6'));

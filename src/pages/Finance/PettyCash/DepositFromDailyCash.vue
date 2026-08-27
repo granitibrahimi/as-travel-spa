@@ -9,6 +9,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import { todayApiDate } from '../../../helpers/date';
 import Loader from '../../../components/Loader.vue';
@@ -94,7 +95,7 @@ async function submit() {
             <FullWidthBox title="Daily Cash → Petty Cash" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <DateInput v-model="form.date" label="Date *" :error="errors.date" />
-                    <InputText v-model="form.expected_amount" type="number" step="0.01" label="Deposited amount *" :error="errors.expected_amount" />
+                    <InputNumber v-model="form.expected_amount" label="Deposited amount *" :error="errors.expected_amount" />
                     <InputText v-model="form.notes" label="Notes" :error="errors.notes" />
                 </div>
 
@@ -139,15 +140,12 @@ async function submit() {
                                 <td class="border border-gray-300 px-2 py-2">{{ row.on_date }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.open_amount) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right">
-                                    <input
+                                    <InputNumber
                                         v-model="row.amount"
-                                        type="number"
-                                        step="0.01"
-                                        :max="row.open_amount"
                                         :disabled="! row.included"
-                                        class="w-28 rounded border border-gray-300 px-2 py-1 text-right text-sm tabular-nums focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:bg-gray-100"
+                                        class="!w-28 text-right text-sm"
                                         @input="clampAmount(row)"
-                                    >
+                                    />
                                 </td>
                             </tr>
                         </tbody>
