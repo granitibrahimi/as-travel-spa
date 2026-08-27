@@ -102,7 +102,7 @@ const rowActions = (deposit) => [
                             <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No bank deposits found.</td>
                         </tr>
                         <tr v-for="deposit in (loading ? [] : apiResponse?.data ?? [])" :key="deposit.id" class="hover:bg-gray-50">
-                            <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ deposit.gen_id }}</td>
+                            <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ deposit.id}} | {{ deposit.gen_id }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ deposit.on_date }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ deposit.payment_method }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(deposit.amount) }}</td>
