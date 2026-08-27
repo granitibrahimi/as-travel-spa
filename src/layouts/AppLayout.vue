@@ -20,9 +20,12 @@ const formOptions = useFormOptionsStore();
 const router = useRouter();
 const route = useRoute();
 
-// Manual refresh of the shared form options (shows the sync screen).
+// Manual refresh of the shared form options (shows the sync screen) plus the
+// current user snapshot — so a permission/role change takes effect without a
+// full re-login.
 function updateData() {
     userMenuOpen.value = false;
+    auth.bootstrap();
     formOptions.sync({ force: true });
 }
 

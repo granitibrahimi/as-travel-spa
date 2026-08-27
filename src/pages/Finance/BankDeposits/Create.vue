@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
-import { castMutation } from '../../../types/responses.js';
+import { castMutation, castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -32,7 +32,8 @@ const form = reactive({
 });
 
 onMounted(async () => {
-    const { data: undeposited } = await api.get('/finance/bank-deposits/undeposited-payments');
+    const { data } = await api.get('/finance/bank-deposits/undeposited-payments');
+    const undeposited = castResource(data) ?? {};
 
     rows.value = (undeposited.payments ?? []).map((payment) => ({
         ...payment,

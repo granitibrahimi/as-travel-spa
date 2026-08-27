@@ -92,7 +92,7 @@ function onCustomerDeleted() {
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ customer.email ?? '-' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ customer.phone ?? '-' }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ customer.type }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ customer.type.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <button
                                     type="button"

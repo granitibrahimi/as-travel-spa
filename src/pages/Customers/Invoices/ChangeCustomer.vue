@@ -15,7 +15,7 @@ const route = useRoute();
 const invoice = ref(null);
 
 const endpoints = computed(() => ({
-    customersSearch: 'customers/autosuggest',
+    customersSearch: 'customers/customers/autosuggest',
     submit: `/customers/invoices/${invoice.value.id}/customer`,
     redirect: `/customers/invoices/${invoice.value.id}`,
 }));

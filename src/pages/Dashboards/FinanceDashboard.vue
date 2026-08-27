@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import StatCard from '../../components/StatCard.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
@@ -7,23 +7,21 @@ import Loader from '../../components/Loader.vue';
 import api from '../../helpers/api';
 import { money } from '../../helpers/money';
 import { routeUrl } from '../../helpers/route.js';
+import { useAuthStore } from '../../stores/auth.js';
 
-// Reports are plain navigation links (no data of their own), so they're
-// listed independent of the `metrics` fetch above and shown regardless of
-// whether that fetch succeeds.
+const auth = useAuthStore();
+
 const reports = [
-    { label: 'Customer Invoices Report', to: routeUrl('financeReports.customerInvoices') },
-    { label: 'Accounts Receivable', to: routeUrl('financeReports.accountsReceivable') },
-    { label: 'Accounts Payable', to: routeUrl('financeReports.accountsPayable') },
-    { label: '4000 vs 5000', to: routeUrl('financeReports.accountComparison') },
-    { label: 'Sales Book (Libri i Shitjes)', to: routeUrl('financeReports.salesBook') },
-    { label: 'Purchases Book (Libri i Blerjeve)', to: routeUrl('financeReports.purchasesBook') },
+    { label: 'Customer Invoices Report', to: routeUrl('financeReports.customerInvoices'), can: 'customerInvoices.reports' },
+    { label: 'Accounts Receivable', to: routeUrl('financeReports.accountsReceivable'), can: 'financeReports.accountsReceivable' },
+    { label: 'Accounts Payable', to: routeUrl('financeReports.accountsPayable'), can: 'financeReports.accountsPayable' },
+    { label: '4000 vs 5000', to: routeUrl('financeReports.accountComparison'), can: 'financeReports.accountComparison' },
+    { label: 'Sales Book (Libri i Shitjes)', to: routeUrl('financeReports.salesBook'), can: 'financeReports.salesBook' },
+    { label: 'Purchases Book (Libri i Blerjeve)', to: routeUrl('financeReports.purchasesBook'), can: 'financeReports.purchasesBook' },
 ];
 
-// GET /dashboards/finance — shape:
-// { not_approved_cash: { count, amount }, not_approved_cash_b: { count, amount },
-//   unused_customer_payments: number, unused_supplier_payments: number,
-//   due_invoices: number }
+const visibleReports = computed(() => reports.filter((report) => auth.can(report.can)));
+
 const loading = ref(true);
 const error = ref(null);
 const metrics = ref(null);
@@ -99,9 +97,9 @@ onMounted(async () => {
             </RouterLink>
         </div>
 
-        <FullWidthBox title="Reports" :collapsible="false">
+        <FullWidthBox v-if="visibleReports.length" title="Reports" :collapsible="false">
             <ul class="divide-y divide-gray-200">
-                <li v-for="report in reports" :key="report.to">
+                <li v-for="report in visibleReports" :key="report.to">
                     <RouterLink :to="report.to" class="flex items-center justify-between px-1 py-2.5 text-sm text-gray-700 hover:text-red-600">
                         {{ report.label }}
                         <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
