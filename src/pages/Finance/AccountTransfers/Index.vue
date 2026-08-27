@@ -65,10 +65,14 @@ async function confirmDelete() {
     }
 }
 
+// QB is data-driven off `qb_url` (empty until QuickBooks-synced), not
+// permission-gated — same convention as Customers/Payments/Actions.vue and
+// AccountTransfers/Show.vue.
 const rowActions = (transfer) => [
     ...(auth.can('accountTransfers.show') ? [{ label: 'View', href: routeUrl('accountTransfers.show', transfer.id) }] : []),
     ...(auth.can('accountTransfers.edit') && transfer.editable ? [{ label: 'Edit', href: routeUrl('accountTransfers.edit', transfer.id) }] : []),
     ...(auth.can('accountTransfers.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = transfer) }] : []),
+    ...(transfer.qb_url ? [{ label: 'QB', href: transfer.qb_url }] : []),
 ];
 </script>
 
@@ -91,6 +95,7 @@ const rowActions = (transfer) => [
                             <th class="border border-gray-300 px-2 py-2">To</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 140px;">Amount</th>
                             <th class="border border-gray-300 px-2 py-2">Created by</th>
+                            <th class="border border-gray-300 px-2 py-2">Note</th>
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 100px;">Actions</th>
                         </tr>
                     </thead>
@@ -113,6 +118,7 @@ const rowActions = (transfer) => [
                             <td class="border border-gray-300 px-2 py-2">{{ transfer.to_account }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(transfer.amount) }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ transfer.user }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ transfer.notes }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <DropdownMenu :items="rowActions(transfer)" />
                             </td>

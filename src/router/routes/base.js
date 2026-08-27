@@ -11,6 +11,7 @@ const SentEmailsIndex = () => import('../../pages/Base/SentEmails/Index.vue');
 const SentEmailsShow = () => import('../../pages/Base/SentEmails/Show.vue');
 const QuickBooksSyncIndex = () => import('../../pages/QuickBooksSync/Index.vue');
 const QuickBooksSyncShow = () => import('../../pages/QuickBooksSync/Show.vue');
+const QuickBooksCounts = () => import('../../pages/QuickBooksSync/Counts.vue');
 const ProductsIndex = () => import('../../pages/Base/Products/Index.vue');
 const ProductsManage = () => import('../../pages/Base/Products/Manage.vue');
 const HotelsIndex = () => import('../../pages/Base/Hotels/Index.vue');
@@ -81,6 +82,7 @@ export default [
     { path: '/sent-emails', name: 'sentEmails.list', component: SentEmailsIndex },
     { path: '/sent-emails/:id', name: 'sentEmails.show', component: SentEmailsShow },
     { path: '/quickbooks/sync', name: 'quickBooksSync.list', component: QuickBooksSyncIndex },
+    { path: '/quickbooks/counts', name: 'quickBooksSync.counts', component: QuickBooksCounts },
     { path: '/quickbooks/sync/:id', name: 'quickBooksSync.show', component: QuickBooksSyncShow },
 
     { path: '/online-credentials', name: 'onlineCredentials.list', component: OnlineCredentialsIndex },

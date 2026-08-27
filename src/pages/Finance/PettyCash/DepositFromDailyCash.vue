@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
-import { castMutation } from '../../../types/responses.js';
+import { castMutation, castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -29,7 +29,12 @@ const form = reactive({
 
 onMounted(async () => {
     const { data } = await api.get('/finance/petty-cash/undeposited-payments');
-    rows.value = (data.payments ?? []).map((payment) => ({
+    // The endpoint wraps its payload in the standard resource envelope
+    // (`{ data: { payments: [...] } }`) — same as BankDeposits/Create.vue's
+    // equivalent endpoint. Reading `data.payments` directly (as before) always
+    // read undefined, so this table silently stayed empty.
+    const undeposited = castResource(data) ?? {};
+    rows.value = (undeposited.payments ?? []).map((payment) => ({
         ...payment,
         included: false,
         amount: payment.open_amount,

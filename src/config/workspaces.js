@@ -386,6 +386,7 @@ export const workspaces = [
                 label: 'QuickBooks',
                 items: [
                     { label: 'Sync Data', to: '/quickbooks/sync', can: 'quickBooksSync.list' },
+                    { label: 'Counts', to: '/quickbooks/counts', can: 'quickBooksSync.counts' },
                 ],
             },
         ]

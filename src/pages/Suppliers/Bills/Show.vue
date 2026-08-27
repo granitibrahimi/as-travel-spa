@@ -1,28 +1,71 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { castResource } from '../../../types/responses.js';
+import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
+import DropdownMenu from '../../../components/DropdownMenu.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 import Alert from '../../../components/Alert.vue';
 
+const auth = useAuthStore();
 const route = useRoute();
+const router = useRouter();
 const bill = ref(null);
+const showDelete = ref(false);
+const deleting = ref(false);
 
 const connectedTotal = computed(() =>
     (bill.value?.connected ?? []).reduce((sum, link) => sum + Number(link.amount ?? 0), 0),
 );
+
+// Reconcile/Delete/QB/Journal — the ⋯ dropdown. Edit is left out for now: its
+// SPA page doesn't exist yet (see conversation). Reconcile reuses the
+// supplier-level Reconcile page (no bill-specific one exists) — same link/
+// permission as SupplierDetails' own "Reconcile" and Suppliers/Show.vue.
+// Bills created from a customer invoice can't be deleted here (same rule as
+// the Alert below). QB uses `qb_link` (confirmed on the backend, same field
+// name convention as Customers/Payments/Actions.vue). Journal slug confirmed
+// against the backend (AccountTransactionType::SUPPLIER_BILL->slug() === 'supplier-bill').
+const actions = computed(() => (bill.value ? [
+    ...(auth.can('suppliers.reconcile') && bill.value.supplier?.id
+        ? [{ label: 'Reconcile', to: routeUrl('suppliers.reconcile', bill.value.supplier.id) }]
+        : []),
+    ...(auth.can('supplierBills.delete') && !bill.value.customer_invoice
+        ? [{ label: 'Delete', danger: true, action: () => (showDelete.value = true) }]
+        : []),
+    ...(bill.value.qb_link ? [{ label: 'QB', href: bill.value.qb_link }] : []),
+    ...(auth.can('accountTransactions.journal')
+        ? [{ label: 'Journal', to: `/finance/account-transactions/journal/supplier-bill/${bill.value.id}` }]
+        : []),
+] : []));
 
 async function load() {
     const { data } = await api.get(`/suppliers/bills/${route.params.id}`);
     bill.value = castResource(data);
 }
 onMounted(load);
+
+async function confirmDelete() {
+    if (deleting.value) {
+        return;
+    }
+
+    deleting.value = true;
+
+    try {
+        await api.delete(`/suppliers/bills/${route.params.id}`);
+        router.push(routeUrl('supplierBills.list'));
+    } finally {
+        deleting.value = false;
+    }
+}
 </script>
 
 <template>
@@ -38,11 +81,15 @@ onMounted(load);
                 <SupplierDetails :supplier="bill.supplier" />
 
                 <FullWidthBox :title="`Bill ${bill.gen_id}`" :collapsible="false">
+                    <template v-if="actions.length" #actions>
+                        <DropdownMenu :items="actions" />
+                    </template>
+
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <tbody>
                             <tr>
                                 <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Reference</th>
-                                <td class="border border-gray-300 px-2 py-2">{{ bill.reference ?? '-' }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ bill.id }} | {{ bill.gen_id }}</td>
                             </tr>
                             <tr>
                                 <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Status</th>
@@ -135,5 +182,16 @@ onMounted(load);
                 </div>
             </FullWidthBox>
         </template>
+
+        <ConfirmDialog
+            :show="showDelete"
+            title="Delete bill?"
+            :message="bill ? `Bill ${bill.gen_id} will be permanently deleted.` : ''"
+            confirm-label="Yes, delete"
+            confirm-variant="danger"
+            :processing="deleting"
+            @confirm="confirmDelete"
+            @cancel="showDelete = false"
+        />
     </AppLayout>
 </template>
