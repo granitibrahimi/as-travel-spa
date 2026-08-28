@@ -2,12 +2,12 @@
 // `type` is the enum display name, `id` the record id) to its in-SPA detail
 // route. Returns null for types without a detail page (e.g. Expense).
 const PATHS = {
-    Bill: 'supplier-bills',
-    'Credit Note': 'supplier-credit-notes',
-    Payment: 'supplier-payments',
-    Refund: 'supplier-refunds',
-    'Gift Card': 'supplier-gift-cards',
-    Deposit: 'supplier-deposits',
+    Bill: 'suppliers/bills',
+    'Credit Note': 'suppliers/credit-notes',
+    Payment: 'suppliers/payments',
+    Refund: 'suppliers/refunds',
+    'Gift Card': 'suppliers/gift-cards',
+    Deposit: 'suppliers/deposits',
     Journal: 'journals',
 };
 

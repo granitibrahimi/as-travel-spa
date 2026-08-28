@@ -84,7 +84,7 @@ const filtered = computed(() => {
                         <tr v-for="type in (loading ? [] : filtered)" :key="type.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ type.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ type.name }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ type.classification }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ type.classification.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ type.parent || '—' }}</td>
                         </tr>
                     </tbody>
