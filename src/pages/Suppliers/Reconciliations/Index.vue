@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api';
 import { castPaginated } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
@@ -13,6 +13,7 @@ import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
+const route = useRoute();
 
 const apiResponse = ref(null);
 const loading = ref(false);
@@ -22,7 +23,14 @@ async function fetchReconciliations(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/customers/reconciliations', { params: { q: search.value || undefined, page } });
+        const { data } = await api.get('/suppliers/reconciliations', {
+            params: {
+                q: search.value || undefined,
+                // Deep-links from a supplier page (?supplier_id=…) narrow the list.
+                supplier_id: route.query.supplier_id || undefined,
+                page,
+            },
+        });
         apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
@@ -42,7 +50,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/customers/reconciliations/${toDelete.value.id}`);
+        await api.delete(`/suppliers/reconciliations/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchReconciliations(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
@@ -52,22 +60,22 @@ async function confirmDelete() {
 
 // Reconciliations have no Edit — only View, QuickBooks and Delete. QB is
 // data-driven (`qb_link` present); deleting hits DELETE
-// /customers/reconciliations/{id} (perm customerReconciliations.delete) and
+// /suppliers/reconciliations/{id} (perm supplierReconciliations.delete) and
 // reverses the linked transactions' balances before removing the record.
 const rowActions = (reconciliation) => [
-    ...(auth.can('customerReconciliations.show')
-        ? [{ label: 'View', to: routeUrl('customerReconciliations.show', reconciliation.id) }]
+    ...(auth.can('supplierReconciliations.show')
+        ? [{ label: 'View', to: routeUrl('supplierReconciliations.show', reconciliation.id) }]
         : []),
     ...(reconciliation.qb_link ? [{ label: 'QuickBooks', href: reconciliation.qb_link }] : []),
-    ...(auth.can('customerReconciliations.delete')
+    ...(auth.can('supplierReconciliations.delete')
         ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = reconciliation) }]
         : []),
 ];
 </script>
 
 <template>
-    <AppLayout title="Customer Reconciliations" fluid>
-        <FullWidthBox title="Customer Reconciliations" :collapsible="false">
+    <AppLayout title="Supplier Reconciliations" fluid>
+        <FullWidthBox title="Supplier Reconciliations" :collapsible="false">
             <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchReconciliations()">
                 <input v-model="search" type="text" placeholder="Reference…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
                 <button type="submit" class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">Search</button>
@@ -79,7 +87,7 @@ const rowActions = (reconciliation) => [
                     <thead>
                         <tr class="text-left text-xs uppercase text-gray-500">
                             <th class="border border-gray-300 px-2 py-2" style="width: 90px;">ID</th>
-                            <th class="border border-gray-300 px-2 py-2">Customer</th>
+                            <th class="border border-gray-300 px-2 py-2">Supplier</th>
                             <th class="border border-gray-300 px-2 py-2">Reference</th>
                             <th class="border border-gray-300 px-2 py-2 whitespace-nowrap" style="width: 110px;">Date</th>
                             <th class="border border-gray-300 px-2 py-2">Created by</th>
@@ -96,10 +104,10 @@ const rowActions = (reconciliation) => [
                         </tr>
                         <tr v-for="reconciliation in (loading ? [] : apiResponse?.data ?? [])" :key="reconciliation.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="routeUrl('customerReconciliations.show', reconciliation.id)" class="text-red-600 hover:underline">{{ reconciliation.id }}</RouterLink>
+                                <RouterLink :to="routeUrl('supplierReconciliations.show', reconciliation.id)" class="text-red-600 hover:underline">{{ reconciliation.id }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">
-                                <RouterLink v-if="reconciliation.customer" :to="routeUrl('customers.show', reconciliation.customer.id)" class="text-red-600 hover:underline">{{ reconciliation.customer.id }} # {{ reconciliation.customer.name }}</RouterLink>
+                                <RouterLink v-if="reconciliation.supplier" :to="routeUrl('suppliers.show', reconciliation.supplier.id)" class="text-red-600 hover:underline">{{ reconciliation.supplier.id }} # {{ reconciliation.supplier.name }}</RouterLink>
                                 <span v-else>—</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">{{ reconciliation.reference ?? '—' }}</td>

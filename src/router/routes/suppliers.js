@@ -27,6 +27,8 @@ const SupplierRefundsIndex = () => import('../../pages/Suppliers/Refunds/Index.v
 const SupplierRefundsCreate = () => import('../../pages/Suppliers/Refunds/Create.vue');
 const SupplierRefundsEdit = () => import('../../pages/Suppliers/Refunds/Edit.vue');
 const SupplierRefundsShow = () => import('../../pages/Suppliers/Refunds/Show.vue');
+const SupplierReconciliationsIndex = () => import('../../pages/Suppliers/Reconciliations/Index.vue');
+const SupplierReconciliationShow = () => import('../../pages/Suppliers/Reconciliations/Show.vue');
 
 export default [
     { path: '/suppliers', name: 'suppliers.list', component: SuppliersIndex },
@@ -74,4 +76,8 @@ export default [
     { path: '/suppliers/refunds/:supplierId/create', name: 'supplierRefunds.create', component: SupplierRefundsCreate },
     { path: '/suppliers/refunds/:id/edit', name: 'supplierRefunds.edit', component: SupplierRefundsEdit },
     { path: '/suppliers/refunds/:id', name: 'supplierRefunds.show', component: SupplierRefundsShow },
+
+    // Reconciliations
+    { path: '/suppliers/reconciliations', name: 'supplierReconciliations.list', component: SupplierReconciliationsIndex },
+    { path: '/suppliers/reconciliations/:id', name: 'supplierReconciliations.show', component: SupplierReconciliationShow },
 ];

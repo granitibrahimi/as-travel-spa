@@ -18,6 +18,7 @@ const reports = [
     { label: '4000 vs 5000', to: routeUrl('financeReports.accountComparison'), can: 'financeReports.accountComparison' },
     { label: 'Sales Book (Libri i Shitjes)', to: routeUrl('financeReports.salesBook'), can: 'financeReports.salesBook' },
     { label: 'Purchases Book (Libri i Blerjeve)', to: routeUrl('financeReports.purchasesBook'), can: 'financeReports.purchasesBook' },
+    { label: 'Balance Sheet', to: routeUrl('financeReports.balanceSheet'), can: 'financeReports.balanceSheet' },
 ];
 
 const visibleReports = computed(() => reports.filter((report) => auth.can(report.can)));

@@ -247,6 +247,7 @@ export const workspaces = [
                     { label: 'Payments', to: '/suppliers/payments', can: 'supplierPayments.list' },
                     { label: 'Gift Cards', to: '/suppliers/gift-cards', can: 'supplierGiftCards.list' },
                     { label: 'Refunds', to: '/suppliers/refunds', can: 'supplierRefunds.list' },
+                    { label: 'Reconciliations', to: '/suppliers/reconciliations', can: 'supplierReconciliations.list' },
                 ],
             },
             {

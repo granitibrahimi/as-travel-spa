@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
-import { customerTransactionPath } from '../../../helpers/customerTransactions.js';
+import { supplierTransactionPathById } from '../../../helpers/supplierTransactions.js';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
@@ -12,7 +12,7 @@ import FullWidthBox from '../../../components/FullWidthBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
-import CustomerDetails from "../../../components/CustomerDetails.vue";
+import SupplierDetails from '../../../components/SupplierDetails.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -21,14 +21,14 @@ const auth = useAuthStore();
 const reconciliation = ref(null);
 
 onMounted(async () => {
-    const { data } = await api.get(`/customers/reconciliations/${route.params.id}`);
+    const { data } = await api.get(`/suppliers/reconciliations/${route.params.id}`);
     reconciliation.value = castResource(data);
 });
 
 // Reconciliations have no Edit — only QuickBooks and Delete on the show page.
 const actions = computed(() => (reconciliation.value ? [
     ...(reconciliation.value.qb_link ? [{ label: 'QuickBooks', href: reconciliation.value.qb_link }] : []),
-    ...(auth.can('customerReconciliations.delete')
+    ...(auth.can('supplierReconciliations.delete')
         ? [{ label: 'Delete', danger: true, action: () => (showDelete.value = true) }]
         : []),
 ] : []));
@@ -44,8 +44,8 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/customers/reconciliations/${route.params.id}`);
-        router.push(routeUrl('customerReconciliations.list'));
+        await api.delete(`/suppliers/reconciliations/${route.params.id}`);
+        router.push(routeUrl('supplierReconciliations.list'));
     } finally {
         deleting.value = false;
     }
@@ -58,7 +58,7 @@ async function confirmDelete() {
 
         <template v-else>
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr] mb-6">
-                <CustomerDetails :customer="reconciliation.customer" />
+                <SupplierDetails :supplier="reconciliation.supplier" />
 
                 <FullWidthBox title="Reconciliation" :collapsible="false">
                     <template v-if="actions.length" #actions>
@@ -87,12 +87,6 @@ async function confirmDelete() {
                                 {{ reconciliation.created_at }}
                             </td>
                         </tr>
-                        <tr>
-                            <td colspan="2" class="border border-gray-300 px-2 py-2">
-                                <p class="font-bold text-gray-600 pb-2">Notes: </p>
-                                {{ reconciliation.notes }}
-                            </td>
-                        </tr>
                         </tbody>
                     </table>
                 </FullWidthBox>
@@ -113,8 +107,8 @@ async function confirmDelete() {
                                 <td class="border border-gray-300 px-2 py-2">{{ link.type.name }}</td>
                                 <td class="border border-gray-300 px-2 py-2">
                                     <RouterLink
-                                        v-if="customerTransactionPath(link.type.id, link.transaction_id)"
-                                        :to="customerTransactionPath(link.type.id, link.transaction_id)"
+                                        v-if="supplierTransactionPathById(link.type.id, link.transaction_id)"
+                                        :to="supplierTransactionPathById(link.type.id, link.transaction_id)"
                                         class="text-red-600 hover:underline"
                                     >{{ link.reference ?? link.transaction_id }}</RouterLink>
                                     <span v-else>{{ link.reference ?? link.transaction_id }}</span>
