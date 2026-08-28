@@ -1,21 +1,16 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
-import { castPaginated, castMutation } from '../../../types/responses.js';
-import { useAuthStore } from '../../../stores/auth';
+import { castPaginated } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
-import DropdownMenu from '../../../components/DropdownMenu.vue';
-import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
 import Loader from '../../../components/Loader.vue';
-
-const auth = useAuthStore();
-const router = useRouter();
+import PaymentActions from './Actions.vue';
 
 const apiResponse = ref(null);
 const loading = ref(false);
@@ -41,50 +36,15 @@ async function fetchPayments(page = 1) {
 
 onMounted(() => fetchPayments());
 
-const toDelete = ref(null);
-const deleting = ref(false);
+// Row picked via the ⋯ button — opens the actions side overlay (Actions.vue,
+// the same component used on Payments/Show.vue).
+const selected = ref(null);
 
-async function confirmDelete() {
-    if (deleting.value) {
-        return;
-    }
-
-    deleting.value = true;
-
-    try {
-        await api.delete(`/suppliers/payments/${toDelete.value.id}`);
-        toDelete.value = null;
-        await fetchPayments(apiResponse.value?.pagination?.current_page ?? 1);
-    } finally {
-        deleting.value = false;
-    }
+// After a delete from the actions overlay, refresh the current page.
+function onPaymentDeleted() {
+    selected.value = null;
+    fetchPayments(apiResponse.value?.pagination?.current_page ?? 1);
 }
-
-// Convert with a confirm dialog — it creates a deposit and routes to it.
-const toConvert = ref(null);
-const converting = ref(false);
-
-async function confirmConvert() {
-    if (converting.value) {
-        return;
-    }
-
-    converting.value = true;
-
-    try {
-        const { data } = await api.post(`/suppliers/payments/${toConvert.value.id}/convert-to-deposit`);
-        router.push(routeUrl('supplierDeposits.show', castMutation(data).id));
-    } finally {
-        converting.value = false;
-    }
-}
-
-const rowActions = (payment) => [
-    ...(auth.can('supplierPayments.show') ? [{ label: 'View', href: routeUrl('supplierPayments.show', payment.id) }] : []),
-    ...(auth.can('supplierPayments.edit') ? [{ label: 'Edit', href: routeUrl('supplierPayments.edit', payment.id) }] : []),
-    ...(auth.can('supplierPayments.convertToDeposit') ? [{ label: 'Convert to deposit', action: () => (toConvert.value = payment) }] : []),
-    ...(auth.can('supplierPayments.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = payment) }] : []),
-];
 </script>
 
 <template>
@@ -112,10 +72,10 @@ const rowActions = (payment) => [
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="6" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No payments found.</td>
+                            <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No payments found.</td>
                         </tr>
                         <tr v-for="payment in (loading ? [] : apiResponse?.data ?? [])" :key="payment.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">
@@ -127,7 +87,18 @@ const rowActions = (payment) => [
                             <td class="border border-gray-300 px-2 py-2">{{ payment.payment_method ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ payment.on_date }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
-                                <DropdownMenu :items="rowActions(payment)" />
+                                <button
+                                    type="button"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                                    aria-label="Payment actions"
+                                    @click="selected = payment"
+                                >
+                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="5" r="1.8" />
+                                        <circle cx="12" cy="12" r="1.8" />
+                                        <circle cx="12" cy="19" r="1.8" />
+                                    </svg>
+                                </button>
                             </td>
                         </tr>
                     </tbody>
@@ -137,25 +108,12 @@ const rowActions = (payment) => [
             <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchPayments" />
         </FullWidthBox>
 
-        <ConfirmDialog
-            :show="Boolean(toDelete)"
-            title="Delete payment?"
-            :message="toDelete ? `Payment ${toDelete.gen_id} will be permanently deleted.` : ''"
-            confirm-label="Yes, delete"
-            confirm-variant="danger"
-            :processing="deleting"
-            @confirm="confirmDelete"
-            @cancel="toDelete = null"
-        />
-
-        <ConfirmDialog
-            :show="Boolean(toConvert)"
-            title="Convert payment to deposit?"
-            :message="toConvert ? `Payment ${toConvert.gen_id} will be converted into a supplier deposit.` : ''"
-            confirm-label="Yes, convert"
-            :processing="converting"
-            @confirm="confirmConvert"
-            @cancel="toConvert = null"
+        <!-- Per-payment actions — defined locally and permission-gated (Actions.vue). -->
+        <PaymentActions
+            :payment="selected"
+            :show="Boolean(selected)"
+            @close="selected = null"
+            @deleted="onPaymentDeleted"
         />
     </AppLayout>
 </template>

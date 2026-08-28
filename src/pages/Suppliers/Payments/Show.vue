@@ -4,20 +4,18 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
-import { castResource, castMutation } from '../../../types/responses.js';
-import { useAuthStore } from '../../../stores/auth';
+import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
-import Button from '../../../components/Button.vue';
-import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
+import PaymentActions from './Actions.vue';
 
 const route = useRoute();
 const router = useRouter();
-const auth = useAuthStore();
 
 const payment = ref(null);
+const actionsOpen = ref(false);
 
 async function load() {
     const { data } = await api.get(`/suppliers/payments/${route.params.id}`);
@@ -37,41 +35,8 @@ const rows = computed(() => payment.value ? [
     ['Notes', payment.value.notes],
 ] : []);
 
-const confirmingDelete = ref(false);
-const deleting = ref(false);
-
-async function confirmDelete() {
-    if (deleting.value) {
-        return;
-    }
-
-    deleting.value = true;
-
-    try {
-        await api.delete(`/suppliers/payments/${payment.value.id}`);
-        router.push(payment.value.supplier ? routeUrl('suppliers.show', payment.value.supplier.id) : routeUrl('supplierPayments.list'));
-    } finally {
-        deleting.value = false;
-    }
-}
-
-const confirmingConvert = ref(false);
-const converting = ref(false);
-
-async function confirmConvert() {
-    if (converting.value) {
-        return;
-    }
-
-    converting.value = true;
-
-    try {
-        const { data } = await api.post(`/suppliers/payments/${payment.value.id}/convert-to-deposit`);
-        router.push(routeUrl('supplierDeposits.show', castMutation(data).id));
-    } catch (error) {
-        converting.value = false;
-        throw error;
-    }
+function onDeleted() {
+    router.push(payment.value.supplier ? routeUrl('suppliers.show', payment.value.supplier.id) : routeUrl('supplierPayments.list'));
 }
 </script>
 
@@ -82,47 +47,42 @@ async function confirmConvert() {
             <SupplierDetails :supplier="payment.supplier" />
 
             <FullWidthBox :title="`Payment ${payment.gen_id}`" :collapsible="false">
-            <table class="w-full border-collapse border border-gray-300 text-sm">
-                <tbody>
-                    <tr v-for="[label, value] in rows" :key="label">
-                        <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">{{ label }}</th>
-                        <td class="border border-gray-300 px-2 py-2 whitespace-pre-line">{{ value ?? '-' }}</td>
-                    </tr>
-                </tbody>
-            </table>
+                <template #actions>
+                    <button
+                        type="button"
+                        class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                        aria-label="Payment actions"
+                        @click="actionsOpen = true"
+                    >
+                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="5" r="1.8" />
+                            <circle cx="12" cy="12" r="1.8" />
+                            <circle cx="12" cy="19" r="1.8" />
+                        </svg>
+                    </button>
+                </template>
 
-            <template #footer>
-                <div class="flex flex-wrap items-center gap-3">
+                <table class="w-full border-collapse border border-gray-300 text-sm">
+                    <tbody>
+                        <tr v-for="[label, value] in rows" :key="label">
+                            <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">{{ label }}</th>
+                            <td class="border border-gray-300 px-2 py-2 whitespace-pre-line">{{ value ?? '-' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <template #footer>
                     <RouterLink :to="routeUrl('supplierPayments.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
-                    <RouterLink v-if="auth.can('supplierPayments.edit')" :to="routeUrl('supplierPayments.edit', payment.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
-                    <Button v-if="auth.can('supplierPayments.convertToDeposit')" size="sm" :disabled="converting" @click="confirmingConvert = true">
-                        {{ converting ? 'Converting…' : 'Convert to deposit' }}
-                    </Button>
-                    <Button v-if="auth.can('supplierPayments.delete')" variant="danger" size="sm" @click="confirmingDelete = true">Delete</Button>
-                </div>
-            </template>
+                </template>
             </FullWidthBox>
         </div>
 
-        <ConfirmDialog
-            :show="confirmingConvert"
-            title="Convert payment to deposit?"
-            :message="payment ? `Payment ${payment.gen_id} will be converted into a supplier deposit.` : ''"
-            confirm-label="Yes, convert"
-            :processing="converting"
-            @confirm="confirmConvert"
-            @cancel="confirmingConvert = false"
-        />
-
-        <ConfirmDialog
-            :show="confirmingDelete"
-            title="Delete payment?"
-            :message="payment ? `Payment ${payment.gen_id} will be permanently deleted.` : ''"
-            confirm-label="Yes, delete"
-            confirm-variant="danger"
-            :processing="deleting"
-            @confirm="confirmDelete"
-            @cancel="confirmingDelete = false"
+        <PaymentActions
+            :payment="payment"
+            :show="actionsOpen"
+            :show-view-action="false"
+            @close="actionsOpen = false"
+            @deleted="onDeleted"
         />
     </AppLayout>
 </template>
