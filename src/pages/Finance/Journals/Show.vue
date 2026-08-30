@@ -66,7 +66,7 @@ onMounted(async () => {
                                 <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ line.tax_type || '—' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ line.debit ? money(line.debit) : '' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ line.credit ? money(line.credit) : '' }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ line.open_amount ? money(line.open_amount) : '' }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(line.open_amount) }}</td>
                             </tr>
                         </tbody>
                         <tfoot>
