@@ -10,7 +10,9 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
+import UserDetails from '../../../components/UserDetails.vue';
 import Loader from '../../../components/Loader.vue';
+import AddVacationModal from './AddVacationModal.vue';
 
 const auth = useAuthStore();
 const notifications = useNotificationsStore();
@@ -20,27 +22,10 @@ const id = route.params.id;
 const user = ref(null);
 const recalculating = ref(false);
 const toggling = ref(false);
+const showAddVacation = ref(false);
 
 const thisYear = new Date().getFullYear();
 const lastYear = thisYear - 1;
-
-const userRows = computed(() => {
-    const u = user.value;
-    if (! u) {
-        return [];
-    }
-
-    return [
-        ['ID', u.id],
-        ['First name', u.first_name],
-        ['Last name', u.last_name],
-        ['Phone number', u.phone_number],
-        ['Email', u.email],
-        ['Role', u.role],
-        ['CashOnHand Account', u.cash_account ?? u.cash_account_id],
-        ['Enabled', u.disabled ? 'Disabled' : 'Enabled'],
-    ];
-});
 
 const vacationRows = computed(() => {
     const b = user.value?.balance;
@@ -97,8 +82,16 @@ const userActions = computed(() => {
         ...(auth.can('users.toggleDisabled')
             ? [{ label: u.disabled ? 'Enable' : 'Disable', action: toggleDisabled, danger: ! u.disabled }]
             : []),
+        ...(auth.can('vacations.createOnBehalf')
+            ? [{ label: 'Add vacation', action: () => (showAddVacation.value = true) }]
+            : []),
     ];
 });
+
+function onVacationSaved() {
+    notifications.push({ type: 'success', message: 'Vacation recorded.' });
+    fetchUser();
+}
 
 async function recalculate() {
     if (recalculating.value) {
@@ -132,17 +125,7 @@ async function recalculate() {
                     <DropdownMenu v-if="userActions.length" :items="userActions" />
                 </template>
 
-                <table class="w-full border-collapse border border-gray-300 text-sm">
-                    <tbody>
-                        <tr v-for="[label, value] in userRows" :key="label">
-                            <th class="w-48 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">{{ label }}</th>
-                            <td
-                                class="border border-gray-300 px-2 py-2 break-all"
-                                :class="label === 'Enabled' ? (user.disabled ? 'font-medium text-red-600' : 'font-medium text-green-600') : ''"
-                            >{{ value ?? '-' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <UserDetails :user="user" :boxed="false" :show-view-link="false" />
             </FullWidthBox>
 
             <FullWidthBox title="Vacation details" :collapsible="false">
@@ -176,5 +159,13 @@ async function recalculate() {
                 </div>
             </FullWidthBox>
         </div>
+
+        <AddVacationModal
+            :show="showAddVacation"
+            :user-id="user?.id"
+            :user-name="user?.name ?? ''"
+            @close="showAddVacation = false"
+            @saved="onVacationSaved"
+        />
     </AppLayout>
 </template>

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
@@ -11,6 +11,7 @@ import Button from '../../../components/Button.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import Select from '../../../components/Form/Select.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import UserDetails from '../../../components/UserDetails.vue';
 import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
@@ -20,6 +21,10 @@ const id = route.params.id;
 
 const request = ref(null);
 const statuses = ref([]);
+// Full user record for the left-hand "User details" panel — fetched
+// best-effort so the layout mirrors the user show page; falls back to just
+// the name from the request when the viewer can't read users.
+const userDetails = ref(null);
 
 const respondForm = reactive({ type: null, response: '' });
 const respondErrors = ref({});
@@ -29,14 +34,49 @@ const showDelete = ref(false);
 const deleting = ref(false);
 
 async function load() {
+    // ShowVacationRequestAction wraps its payload as { data: { data: <fields>,
+    // statuses: [...] } }, so castResource() unwraps one level to { data, statuses }
+    // and the request fields sit one deeper.
     const { data } = await api.get(`/users/vacations/${id}`);
-    request.value = data.data;
-    statuses.value = castResource(data).statuses;
-    respondForm.type = data.data.status;
-    respondForm.response = data.data.response ?? '';
+    const body = castResource(data);
+    const fields = body.data;
+
+    request.value = fields;
+    statuses.value = body.statuses;
+    respondForm.type = fields.status;
+    respondForm.response = fields.response ?? '';
+
+    userDetails.value = null;
+    if (auth.can('users.show')) {
+        try {
+            const res = await api.get(`/users/users/${fields.user_id}`);
+            userDetails.value = castResource(res.data);
+        } catch {
+            userDetails.value = null;
+        }
+    }
 }
 
 onMounted(() => load());
+
+const requestRows = computed(() => {
+    const r = request.value;
+
+    if (! r) {
+        return [];
+    }
+
+    return [
+        ['Type', r.type_label],
+        ['Status', r.status_label],
+        ['From', r.from],
+        ['To', r.to],
+        ['Working days', r.working_days],
+        ['Working weekend', r.working_weekend ? 'Yes' : 'No'],
+        ['Description', r.description || '—'],
+        ...(r.responder ? [[`Response (${r.responder})`, r.response || '—']] : []),
+    ];
+});
 
 async function respond() {
     if (responding.value) {
@@ -83,28 +123,30 @@ async function confirmDelete() {
 <template>
     <AppLayout title="Vacation request" fluid>
         <Loader v-if="! request" />
-        <div v-else class="space-y-6">
-            <FullWidthBox title="Request details" :collapsible="false">
-                <template #actions>
-                    <RouterLink v-if="auth.can('vacations.edit')" :to="routeUrl('vacations.edit', id)" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
-                    <Button v-if="auth.can('vacations.delete')" variant="danger" size="sm" @click="showDelete = true">Delete</Button>
-                </template>
 
-                <dl class="grid grid-cols-1 gap-x-8 gap-y-2 text-sm md:grid-cols-2">
-                    <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">User</dt><dd class="font-medium">{{ request.user }}</dd></div>
-                    <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">Type</dt><dd class="font-medium">{{ request.type_label }}</dd></div>
-                    <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">Status</dt><dd class="font-medium">{{ request.status_label }}</dd></div>
-                    <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">Working days</dt><dd>{{ request.working_days }}</dd></div>
-                    <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">From</dt><dd>{{ request.from }}</dd></div>
-                    <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">To</dt><dd>{{ request.to }}</dd></div>
-                    <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">Working weekend</dt><dd>{{ request.working_weekend ? 'Yes' : 'No' }}</dd></div>
-                    <div class="col-span-full py-1"><dt class="text-gray-500">Description</dt><dd class="mt-1">{{ request.description || '—' }}</dd></div>
-                    <div v-if="request.responder" class="col-span-full py-1">
-                        <dt class="text-gray-500">Response ({{ request.responder }})</dt>
-                        <dd class="mt-1">{{ request.response || '—' }}</dd>
-                    </div>
-                </dl>
-            </FullWidthBox>
+        <div v-else class="space-y-6">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <UserDetails v-if="userDetails" :user="userDetails" title="User details" />
+                <FullWidthBox v-else title="User details" :collapsible="false">
+                    <p class="text-sm text-gray-700">{{ request.user || '—' }}</p>
+                </FullWidthBox>
+
+                <FullWidthBox title="Vacation details" :collapsible="false">
+                    <template #actions>
+                        <RouterLink v-if="auth.can('vacations.edit')" :to="routeUrl('vacations.edit', id)" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
+                        <Button v-if="auth.can('vacations.delete')" variant="danger" size="sm" @click="showDelete = true">Delete</Button>
+                    </template>
+
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <tbody>
+                            <tr v-for="[label, value] in requestRows" :key="label">
+                                <th class="w-48 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">{{ label }}</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ value ?? '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </FullWidthBox>
+            </div>
 
             <form v-if="auth.can('vacations.respond')" @submit.prevent="respond">
                 <FullWidthBox title="Respond" :collapsible="false">
