@@ -55,16 +55,18 @@ onMounted(async () => {
                                 <th class="border border-gray-300 px-2 py-2">Tax</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Debit</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Credit</th>
+                                <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Open amount</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(line, i) in journal.lines" :key="i" class="hover:bg-gray-50">
+                            <tr v-for="line in journal.lines" :key="line.id" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2">{{ line.account }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ line.description }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ line.relation || '—' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ line.tax_type || '—' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ line.debit ? money(line.debit) : '' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ line.credit ? money(line.credit) : '' }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ line.open_amount ? money(line.open_amount) : '' }}</td>
                             </tr>
                         </tbody>
                         <tfoot>
@@ -72,6 +74,7 @@ onMounted(async () => {
                                 <td class="border border-gray-300 px-2 py-2 text-right" colspan="4">Totals</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(journal.total_debit) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(journal.total_credit) }}</td>
+                                <td class="border border-gray-300 px-2 py-2"></td>
                             </tr>
                         </tfoot>
                     </table>

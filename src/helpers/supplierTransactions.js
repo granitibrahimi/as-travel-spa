@@ -35,3 +35,10 @@ export function supplierTransactionPathById(typeId, id) {
 
     return segment ? `/${segment}/${id}` : null;
 }
+
+// The supplier transaction-links list returns `type` as the enum's display
+// label (`SupplierTransactionTypeEnum::name()`) — same set of labels as PATHS
+// above, so just delegate.
+export function supplierTransactionPathForLabel(label, id) {
+    return supplierTransactionPath({ type: label, id });
+}
