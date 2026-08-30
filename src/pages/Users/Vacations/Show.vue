@@ -29,7 +29,7 @@ const showDelete = ref(false);
 const deleting = ref(false);
 
 async function load() {
-    const { data } = await api.get(`/vacations/${id}`);
+    const { data } = await api.get(`/users/vacations/${id}`);
     request.value = data.data;
     statuses.value = castResource(data).statuses;
     respondForm.type = data.data.status;

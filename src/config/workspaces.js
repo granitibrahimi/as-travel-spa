@@ -187,6 +187,7 @@ export const workspaces = [
                 items: [
                     { label: 'All Requests', to: '/users/vacations', can: 'vacation.viewAllUsers' },
                     { label: 'Apply for Vacation', to: '/users/vacations/apply', can: 'vacations.applyForm' },
+                    { label: 'Report', to: '/users/vacations/report', can: 'vacations.report' },
                     { label: 'Official Holidays', to: '/users/official-holidays', can: 'officialHolidays.list' },
                 ],
             },

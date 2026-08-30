@@ -104,6 +104,15 @@ export function startOfMonthApiDate() {
     return `01.${pad(now.getMonth() + 1)}.${now.getFullYear()}`;
 }
 
+/** The last day of the current local month as an API `d.m.Y` string (for a report's default "to"). */
+export function endOfMonthApiDate() {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    return `${pad(last.getDate())}.${pad(last.getMonth() + 1)}.${last.getFullYear()}`;
+}
+
 
 
 /**

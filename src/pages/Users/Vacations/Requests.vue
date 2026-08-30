@@ -30,7 +30,7 @@ async function fetchRequests(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get(`/vacations/requests/${userId}`, { params: { page } });
+        const { data } = await api.get(`/users/vacations/requests/${userId}`, { params: { page } });
         const pageResult = castPaginated(data);
         apiResponse.value = pageResult;
         user.value = pageResult.extra.user;
@@ -49,7 +49,7 @@ async function recalculate() {
     recalculating.value = true;
 
     try {
-        await api.post(`/vacations/${userId}/recalculate`);
+        await api.post(`/users/vacations/${userId}/recalculate`);
         await fetchRequests(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         recalculating.value = false;

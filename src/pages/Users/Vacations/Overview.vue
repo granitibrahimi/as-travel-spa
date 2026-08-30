@@ -42,6 +42,7 @@ onMounted(() => fetchUsers());
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase text-gray-500">
+                                <th class="border border-gray-300 px-2 py-2">ID</th>
                                 <th class="border border-gray-300 px-2 py-2">User</th>
                                 <th class="border border-gray-300 px-2 py-2 text-center" style="width: 120px;">Days left</th>
                                 <th class="border border-gray-300 px-2 py-2 text-center" style="width: 120px;">Total days</th>
@@ -57,6 +58,7 @@ onMounted(() => fetchUsers());
                                 <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No active users.</td>
                             </tr>
                             <tr v-for="user in (loading ? [] : users ?? [])" :key="user.id" class="hover:bg-gray-50">
+                                <td class="border border-gray-300 px-2 py-2 font-medium">{{ user.id }}</td>
                                 <td class="border border-gray-300 px-2 py-2 font-medium">{{ user.name }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">{{ user.days_left ?? '—' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">{{ user.days_total ?? '—' }}</td>

@@ -61,7 +61,7 @@ async function toggleDisabled(user) {
     if (toggling.value) return;
     toggling.value = user.id;
     try {
-        await api.post(`/users/${user.id}/toggle-disabled`);
+        await api.post(`/users/users/${user.id}/toggle-disabled`);
         await fetchUsers(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
         toggling.value = null;
