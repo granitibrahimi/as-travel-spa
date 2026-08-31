@@ -53,6 +53,12 @@ export const workspaces = [
                     { label: 'New Task', to: '/tasks/create', can: 'tasks.create' },
                 ],
             },
+            {
+                label: 'WhatsApp',
+                items: [
+                    { label: 'Conversations', to: '/whatsapp', can: 'whatsappConversations.manage' },
+                ],
+            },
             { separator: true },
             {
                 label: 'Invoices',

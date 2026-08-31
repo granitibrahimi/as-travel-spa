@@ -7,8 +7,10 @@ const TasksShow = () => import('../../pages/Tasks/Show.vue');
 const SupportIndex = () => import('../../pages/Support/Index.vue');
 const SupportCreate = () => import('../../pages/Support/Create.vue');
 const SupportShow = () => import('../../pages/Support/Show.vue');
+const WhatsappIndex = () => import('../../pages/Whatsapp/Index.vue');
 
 export default [
+    { path: '/whatsapp', name: 'whatsappConversations.list', component: WhatsappIndex },
     { path: '/tasks', name: 'tasks.list', component: TasksIndex },
     { path: '/tasks/dashboard', name: 'tasks.dashboard', component: TasksDashboard },
     { path: '/tasks/create', name: 'tasks.create', component: TasksCreate },
