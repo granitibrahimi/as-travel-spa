@@ -20,6 +20,10 @@ const CustomerInvoiceChangeDueDate = () => import('../../pages/Customers/Invoice
 const CustomerCreditNoteShow = () => import('../../pages/Customers/CreditNotes/Show.vue');
 const CustomerCreditNoteCreate = () => import('../../pages/Customers/CreditNotes/Create.vue');
 const CustomerCreditNoteEdit = () => import('../../pages/Customers/CreditNotes/Edit.vue');
+const CustomerCreditNoteChangeCustomer = () => import('../../pages/Customers/CreditNotes/ChangeCustomer.vue');
+const CustomerCreditNoteChangeAgent = () => import('../../pages/Customers/CreditNotes/ChangeAgent.vue');
+const CustomerCreditNoteChangeDate = () => import('../../pages/Customers/CreditNotes/ChangeDate.vue');
+const CustomerCreditNoteChangeDueDate = () => import('../../pages/Customers/CreditNotes/ChangeDueDate.vue');
 const CustomerPaymentShow = () => import('../../pages/Customers/Payments/Show.vue');
 const CustomerPaymentsIndex = () => import('../../pages/Customers/Payments/Index.vue');
 const CustomerPaymentsForApproval = () => import('../../pages/Customers/Payments/ForApproval.vue');
@@ -78,6 +82,10 @@ export default [
     { path: '/customers/invoices/:id/change-due-date', name: 'customerInvoices.changeDueDate', component: CustomerInvoiceChangeDueDate },
     { path: '/customers/invoices/:id', name: 'customerInvoices.show', component: CustomerInvoiceShow },
     { path: '/customers/credit-notes/:id/edit', name: 'customerCreditNotes.edit', component: CustomerCreditNoteEdit },
+    { path: '/customers/credit-notes/:id/change-customer', name: 'customerCreditNotes.changeCustomer', component: CustomerCreditNoteChangeCustomer },
+    { path: '/customers/credit-notes/:id/change-agent', name: 'customerCreditNotes.changeAgent', component: CustomerCreditNoteChangeAgent },
+    { path: '/customers/credit-notes/:id/change-date', name: 'customerCreditNotes.changeDate', component: CustomerCreditNoteChangeDate },
+    { path: '/customers/credit-notes/:id/change-due-date', name: 'customerCreditNotes.changeDueDate', component: CustomerCreditNoteChangeDueDate },
     { path: '/customers/credit-notes/:id', name: 'customerCreditNotes.show', component: CustomerCreditNoteShow },
     { path: '/customers/payments', name: 'customerPayments.list', component: CustomerPaymentsIndex },
     { path: '/customers/payments/for-approval', name: 'customerPayments.forApproval', component: CustomerPaymentsForApproval },
