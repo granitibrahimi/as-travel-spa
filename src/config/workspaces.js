@@ -296,6 +296,12 @@ export const workspaces = [
                 ],
             },
             {
+                label: 'BSP Sync',
+                items: [
+                    { label: 'BSP Sync', to: '/finance/bsp-sync', can: 'supplierPayments.create' },
+                ],
+            },
+            {
                 label: 'Expenses',
                 items: [
                     { label: 'All Expenses', to: '/finance/expenses', can: 'expenses.list' },
