@@ -103,6 +103,107 @@ onMounted(load);
                 </FullWidthBox>
             </div>
 
+            <!-- Every credit note created natively (not imported from QuickBooks) only
+                 has orders/persons — "Line items" below stays empty for those and only
+                 applies to QB-imported ones. Mirrors Invoices/Show.vue's "Items" box. -->
+            <FullWidthBox v-if="creditNote.orders.length" :title="`Items: (${creditNote.orders.length})`" :collapsible="false" class="mb-6">
+                <div class="space-y-4">
+                    <div v-for="order in creditNote.orders" :key="order.id" class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                            <table class="w-full self-start border-collapse bg-white text-sm lg:col-span-4">
+                                <tbody>
+                                    <tr class="border border-gray-200">
+                                        <td class="px-3 py-2"><span class="text-gray-500">Vendor:</span> <span class="font-semibold">{{ order.supplier?.name ?? '—' }}</span></td>
+                                    </tr>
+                                    <tr class="border border-gray-200">
+                                        <td class="px-3 py-2"><span class="text-gray-500">Product:</span> <span class="font-semibold">{{ order.product?.name ?? '—' }}</span></td>
+                                    </tr>
+                                    <tr class="border border-gray-200">
+                                        <td class="px-3 py-2"><span class="text-gray-500">Destination:</span> <span class="font-semibold">{{ order.destination?.name ?? '—' }}</span></td>
+                                    </tr>
+                                    <tr class="border border-gray-200">
+                                        <td class="px-3 py-2"><span class="text-gray-500">Date:</span> <span class="font-semibold">{{ order.from_date }}<template v-if="order.to_date"> - {{ order.to_date }}</template></span></td>
+                                    </tr>
+                                    <tr class="border border-gray-200">
+                                        <td class="px-3 py-2"><span class="text-gray-500">Extra comments:</span> <span class="font-semibold">{{ order.extra_info ?? '—' }}</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="overflow-x-auto lg:col-span-8">
+                                <table class="w-full border-collapse border border-gray-300 bg-white text-sm">
+                                    <thead>
+                                        <tr class="text-left text-gray-600">
+                                            <th class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">ID</th>
+                                            <th class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">Name and surname</th>
+                                            <th class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">TKT Number</th>
+                                            <th class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">Sold value</th>
+                                            <th class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">Buying value</th>
+                                            <th class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">Credit Note</th>
+                                            <th class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">QB</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-if="order.persons.length === 0">
+                                            <td colspan="7" class="border border-gray-300 px-3 py-4 text-center text-gray-400">No persons.</td>
+                                        </tr>
+                                        <tr v-for="person in order.persons" :key="person.id">
+                                            <td class="border border-gray-300 px-3 py-2">{{ person.id }}</td>
+                                            <td class="border border-gray-300 px-3 py-2">{{ person.name_surname }}</td>
+                                            <td class="border border-gray-300 px-3 py-2">{{ person.tkt_number ?? '—' }}</td>
+                                            <td class="border border-gray-300 px-3 py-2 tabular-nums">{{ money(person.sold_value) }}</td>
+                                            <td class="border border-gray-300 px-3 py-2 tabular-nums">{{ money(person.buying_value) }}</td>
+                                            <td class="border border-gray-300 px-3 py-2">
+                                                <a
+                                                    v-if="person.credit_note_id"
+                                                    :href="routeUrl('supplierCreditNotes.show', person.credit_note_id)"
+                                                    target="_blank"
+                                                    rel="noopener"
+                                                    class="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+                                                >
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <rect x="2.5" y="6" width="19" height="12" rx="2" />
+                                                        <circle cx="12" cy="12" r="2.5" />
+                                                    </svg>
+                                                    Credit Note
+                                                </a>
+                                                <span v-else class="inline-flex items-center gap-1 rounded bg-gray-200 px-3 py-1 text-gray-400">
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <rect x="2.5" y="6" width="19" height="12" rx="2" />
+                                                        <circle cx="12" cy="12" r="2.5" />
+                                                    </svg>
+                                                    Credit Note
+                                                </span>
+                                            </td>
+                                            <td class="border border-gray-300 px-3 py-2">
+                                                <a
+                                                    v-if="person.qb_link"
+                                                    :href="person.qb_link"
+                                                    target="_blank"
+                                                    rel="noopener"
+                                                    class="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+                                                >
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.5l1.5 12h13.5l1.5-9H5.25M9 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm9 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                                                    </svg>
+                                                    QB
+                                                </a>
+                                                <span v-else class="inline-flex items-center gap-1 rounded bg-gray-200 px-3 py-1 text-gray-400">
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.5l1.5 12h13.5l1.5-9H5.25M9 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm9 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                                                    </svg>
+                                                    QB
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </FullWidthBox>
+
             <FullWidthBox v-if="creditNote.lines.length" title="Line items" :collapsible="false" class="mb-6">
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
