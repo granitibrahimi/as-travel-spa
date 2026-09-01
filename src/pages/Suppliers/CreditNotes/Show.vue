@@ -6,6 +6,7 @@ import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth';
+import { useNotificationsStore } from '../../../stores/notifications.js';
 import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -16,6 +17,7 @@ import Loader from '../../../components/Loader.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
+const notifications = useNotificationsStore();
 const creditNote = ref(null);
 
 async function load() {
@@ -42,6 +44,11 @@ async function confirmUnlink() {
         await api.delete(`/suppliers/transaction-links/${toUnlink.value.id}`);
         toUnlink.value = null;
         await load();
+    } catch (error) {
+        notifications.push({
+            type: 'error',
+            message: error.response?.data?.errors?.link?.[0] ?? 'Could not unlink this transaction.',
+        });
     } finally {
         unlinking.value = false;
     }

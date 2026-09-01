@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
+import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
@@ -12,6 +13,7 @@ import Loader from '../../../components/Loader.vue';
 import CustomerDetails from "../../../components/CustomerDetails.vue";
 
 const route = useRoute();
+const notifications = useNotificationsStore();
 const giftCard = ref(null);
 
 async function load() {
@@ -39,6 +41,11 @@ async function confirmUnlink() {
         await api.delete(`/customers/transaction-links/${toUnlink.value.id}`);
         toUnlink.value = null;
         await load();
+    } catch (error) {
+        notifications.push({
+            type: 'error',
+            message: error.response?.data?.errors?.link?.[0] ?? 'Could not unlink this transaction.',
+        });
     } finally {
         unlinking.value = false;
     }
