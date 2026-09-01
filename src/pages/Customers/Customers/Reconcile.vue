@@ -119,6 +119,18 @@ function fill(amounts, row) {
     amounts[row.key] = Math.abs(row.open_amount);
 }
 
+// Re-fetches a panel at its current page, so an invoice/credit-note amount
+// changed elsewhere (e.g. edited in another tab) shows up here without
+// losing the search filter or already-entered reconcile amounts — those are
+// preserved via `selected_keys` same as a normal pagination fetch.
+function refreshDebit() {
+    fetchDebit(debitRows.value?.pagination?.current_page ?? 1);
+}
+
+function refreshCredit() {
+    fetchCredit(creditRows.value?.pagination?.current_page ?? 1);
+}
+
 async function submit() {
     if (processing.value || ! balanced.value) {
         return;
@@ -191,6 +203,7 @@ onMounted(() => {
                     </div>
                     <Button type="submit" variant="primary" :loading="debitLoading">Search</Button>
                     <Button type="button" @click="debitSearch = ''; fetchDebit();">Clear</Button>
+                    <Button type="button" :loading="debitLoading" @click="refreshDebit">Refresh</Button>
                 </form>
 
                 <Loader v-if="! debitRows" />
@@ -245,6 +258,7 @@ onMounted(() => {
                     </div>
                     <Button type="submit" variant="primary" :loading="creditLoading">Search</Button>
                     <Button type="button" @click="creditSearch = ''; fetchCredit();">Clear</Button>
+                    <Button type="button" :loading="creditLoading" @click="refreshCredit">Refresh</Button>
                 </form>
 
                 <Loader v-if="! creditRows" />
