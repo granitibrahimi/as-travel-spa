@@ -6,10 +6,12 @@ import api from '../../../helpers/api.js';
 import { castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import ShowActions from '../../../components/ShowActions.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import DocumentsBox from '../../../components/DocumentsBox.vue';
 import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
@@ -21,6 +23,7 @@ const deposit = ref(null);
 const approving = ref(false);
 const showDelete = ref(false);
 const deleting = ref(false);
+const documentsBox = ref(null);
 
 const title = computed(() => (deposit.value ? `Bank Deposit ${deposit.value.gen_id}` : `Bank Deposit #${id}`));
 
@@ -38,6 +41,10 @@ const actions = computed(() => {
 
     if (deposit.value.qb_id) {
         items.push({ label: 'Open in QuickBooks', href: `https://qbo.intuit.com/app/transfer?txnId=${deposit.value.qb_id}` });
+    }
+
+    if (auth.can('bankDeposits.create')) {
+        items.push({ label: 'Add document', action: () => documentsBox.value?.openUpload() });
     }
 
     if (auth.can('bankDeposits.delete')) {
@@ -155,6 +162,16 @@ async function confirmDelete() {
             </template>
 
         </FullWidthBox>
+
+        <DocumentsBox
+            v-if="deposit"
+            ref="documentsBox"
+            :entity="DOCUMENT_ENTITY.BANK_DEPOSIT"
+            :id="id"
+            :can-manage="auth.can('bankDeposits.create')"
+            :can-view="auth.can('bankDeposits.show')"
+            :show-add-button="false"
+        />
 
         <ConfirmDialog
             :show="showDelete"

@@ -9,7 +9,6 @@ import { useAuthStore } from '../../../stores/auth';
 import ActionsOverlay from '../../../components/ActionsOverlay.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import SendEmailModal from './SendEmailModal.vue';
-import AddDocumentModal from './AddDocumentModal.vue';
 import PaymentLinkModal from './PaymentLinkModal.vue';
 
 // Reusable customer-invoice actions side overlay. Actions are defined here (not
@@ -28,9 +27,12 @@ const props = defineProps({
     show: { type: Boolean, default: false },
     // Hide the "View" link (e.g. when already on the show page).
     showViewAction: { type: Boolean, default: true },
+    // Offer "Add document" — only the show page hosts the upload modal, so the
+    // list view (Index.vue) leaves this off.
+    showAddDocument: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['close', 'deleted', 'documentAdded']);
+const emit = defineEmits(['close', 'deleted', 'addDocument']);
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -64,7 +66,9 @@ const groups = computed(() => {
         { label: 'Print', action: () => openFileInNewTab(`/customers/invoices/${invoice.id}/print`), can: 'customerInvoices.print' },
         { label: 'Print with products', action: () => openFileInNewTab(`/customers/invoices/${invoice.id}/print-products`), can: 'customerInvoices.printProducts' },
         { label: 'Send E-Mail', action: () => (emailOpen.value = true), can: 'customerInvoices.sendEmail' },
-        { label: 'Add document', action: () => (documentOpen.value = true), can: 'invoiceDocuments.manageDocuments' },
+        ...(props.showAddDocument
+            ? [{ label: 'Add document', action: () => emit('addDocument'), can: 'invoiceDocuments.manageDocuments' }]
+            : []),
         // Payment link only makes sense while there's an outstanding debt.
         ...(invoice.has_debt
             ? [{ label: 'Generate Payment Link', action: () => (paymentLinkOpen.value = true), can: 'onlinePayments.generate' }]
@@ -121,7 +125,6 @@ const groups = computed(() => {
 
 // Modal open states.
 const emailOpen = ref(false);
-const documentOpen = ref(false);
 const paymentLinkOpen = ref(false);
 
 // Create a credit note from this invoice, then navigate to the new credit note.
@@ -199,13 +202,6 @@ const dangerClass = 'block w-full rounded border border-red-200 px-3 py-2 text-l
     />
 
     <SendEmailModal :invoice="invoice" :show="emailOpen" @close="emailOpen = false" @sent="emit('close')" />
-
-    <AddDocumentModal
-        :invoice="invoice"
-        :show="documentOpen"
-        @close="documentOpen = false"
-        @uploaded="emit('documentAdded'); emit('close')"
-    />
 
     <PaymentLinkModal :invoice="invoice" :show="paymentLinkOpen" @close="paymentLinkOpen = false" />
 </template>

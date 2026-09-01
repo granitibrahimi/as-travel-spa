@@ -2,28 +2,29 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../helpers/money.js';
-import { supplierTransactionPathById } from '../helpers/supplierTransactions.js';
+import { customerTransactionPath } from '../helpers/customerTransactions.js';
 
 /**
- * Renders a supplier record's "linked transactions" table — shared by Bills,
- * Credit Notes, Payments and Reconciliations, wherever a `supplier_transaction
- * _links_new` row is shown. Every row already has the shape the backend's
- * SupplierTransactionLinkResource produces: `{ id, type: {id, name},
- * transaction_id, reference, amount, date }`, always describing the *other*
- * side of the link relative to whichever record's show page this is — a
- * bill/credit-note page gets the payment/reconciliation it was settled by, a
- * payment/reconciliation page gets the bill/credit-note/etc it settled — so
- * this component itself never needs to know which side it's looking at.
+ * Renders a customer record's "linked transactions" table — the customer-side
+ * twin of `SupplierTransactionLinks.vue`, shared by Invoices, Credit Notes and
+ * Payments wherever a `customer_transaction_links_new` row is shown. Every row
+ * is expected to carry the shape the backend's CustomerTransactionLinkResource
+ * produces: `{ id, type: {id, name}, transaction_id, reference, amount, date }`,
+ * always describing the *other* side of the link relative to whichever record's
+ * show page this is — an invoice/credit-note page gets the payment/
+ * reconciliation it was settled by, a payment page gets the invoice/credit-note/
+ * etc it settled — so this component itself never needs to know which side it
+ * is looking at.
  *
  * Stays presentational: when a row carries `can_unlink` an unlink button is
  * shown and a click emits `unlink` with that row — the parent owns the
- * confirm/delete/reload. Payloads without `can_unlink` (Bills, Credit Notes,
- * Reconciliations) render exactly as before, with no extra column.
+ * confirm/delete/reload. Payloads without `can_unlink` render with no extra
+ * column.
  */
 const props = defineProps({
     links: { type: Array, default: () => [] },
     // Footer total — callers compute it themselves since its meaning differs
-    // (a payment's remaining unlinked balance vs. a bill's linked-so-far sum).
+    // per page (a payment's linked-so-far sum vs. an invoice's paid-via-links).
     total: { type: Number, default: null },
     totalLabel: { type: String, default: 'Total' },
     emptyText: { type: String, default: 'No linked transactions.' },
@@ -48,16 +49,16 @@ const hasUnlink = computed(() => props.links.some((l) => l.can_unlink));
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="link in links" :key="link.id" class="border-b last:border-0 hover:bg-gray-50">
-                    <td class="border border-gray-300 px-2 py-2">{{ link.id }}</td>
-                    <td class="border border-gray-300 px-2 py-2">{{ link.type?.name }}</td>
+                <tr v-for="(link, i) in links" :key="link.id ?? i" class="border-b last:border-0 hover:bg-gray-50">
+                    <td class="border border-gray-300 px-2 py-2">{{ link.id ?? '—' }}</td>
+                    <td class="border border-gray-300 px-2 py-2">{{ link.type?.name ?? '—' }}</td>
                     <td class="border border-gray-300 px-2 py-2">
                         <RouterLink
-                            v-if="supplierTransactionPathById(link.type?.id, link.transaction_id)"
-                            :to="supplierTransactionPathById(link.type?.id, link.transaction_id)"
+                            v-if="customerTransactionPath(link.type?.id, link.transaction_id)"
+                            :to="customerTransactionPath(link.type?.id, link.transaction_id)"
                             class="text-red-600 hover:underline"
                         >{{ link.reference ?? link.transaction_id }}</RouterLink>
-                        <span v-else>{{ link.reference ?? link.transaction_id }}</span>
+                        <span v-else>{{ link.reference ?? link.transaction_id ?? '—' }}</span>
                     </td>
                     <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ link.date ?? '—' }}</td>
                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(link.amount) }}</td>

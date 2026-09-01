@@ -5,23 +5,30 @@ import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
+import { useAuthStore } from '../../../stores/auth';
+import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
+import DocumentsBox from '../../../components/DocumentsBox.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
 import PaymentActions from './Actions.vue';
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 const payment = ref(null);
 const cashMovements = ref([]);
 const actionsOpen = ref(false);
+const documentsBox = ref(null);
 
 const connectedTotal = computed(() =>
     (payment.value?.connected ?? []).reduce((sum, link) => sum + Number(link.amount ?? 0), 0),
 );
 
-onMounted(async () => {
+async function load() {
     const { data } = await api.get(`/customers/payments/${route.params.id}`);
     payment.value = castResource(data);
 
@@ -30,7 +37,32 @@ onMounted(async () => {
         .then(({ data }) => castResource(data))
         .catch(() => []);
     cashMovements.value = Array.isArray(movements) ? movements : [];
-});
+}
+
+onMounted(load);
+
+const toUnlink = ref(null);
+const unlinking = ref(false);
+
+const unlinkMessage = computed(() => toUnlink.value
+    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this payment and restores its open amount.`
+    : '');
+
+async function confirmUnlink() {
+    if (unlinking.value) {
+        return;
+    }
+
+    unlinking.value = true;
+
+    try {
+        await api.delete(`/customers/transaction-links/${toUnlink.value.id}`);
+        toUnlink.value = null;
+        await load();
+    } finally {
+        unlinking.value = false;
+    }
+}
 </script>
 
 <template>
@@ -107,28 +139,11 @@ onMounted(async () => {
             </div>
 
             <FullWidthBox v-if="payment.connected.length" title="Connected transactions" :collapsible="false" class="mt-6">
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse border border-gray-300 text-sm">
-                        <thead>
-                            <tr class="text-left text-gray-500">
-                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Type</th>
-                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Reference</th>
-                                <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="link in payment.connected" :key="link.id" class="hover:bg-gray-50">
-                                <td class="border border-gray-300 px-2 py-2">{{ link.type.name }}</td>
-                                <td class="border border-gray-300 px-2 py-2">{{ link.reference }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(link.amount) }}</td>
-                            </tr>
-                            <tr>
-                                <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right" colspan="2">Total</th>
-                                <td class="border border-gray-300 px-2 py-2 text-right font-medium tabular-nums">{{ money(connectedTotal) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <CustomerTransactionLinks
+                    :links="payment.connected"
+                    :total="connectedTotal"
+                    @unlink="toUnlink = $event"
+                />
             </FullWidthBox>
 
             <FullWidthBox v-if="cashMovements.length" title="Cash movement" :collapsible="false" class="mt-6">
@@ -152,12 +167,34 @@ onMounted(async () => {
                 </div>
             </FullWidthBox>
 
+            <DocumentsBox
+                ref="documentsBox"
+                :entity="DOCUMENT_ENTITY.CUSTOMER_PAYMENT"
+                :id="payment.id"
+                :can-manage="auth.can('customerPayments.edit')"
+                :can-view="auth.can('customerPayments.show')"
+                :show-add-button="false"
+            />
+
             <PaymentActions
                 :payment="payment"
                 :show="actionsOpen"
                 :show-view-action="false"
+                :show-add-document="true"
                 @close="actionsOpen = false"
+                @add-document="documentsBox?.openUpload()"
                 @deleted="router.push(routeUrl('customers.show', payment.customer.id))"
+            />
+
+            <ConfirmDialog
+                :show="Boolean(toUnlink)"
+                title="Unlink transaction?"
+                :message="unlinkMessage"
+                confirm-label="Yes, unlink"
+                confirm-variant="danger"
+                :processing="unlinking"
+                @confirm="confirmUnlink"
+                @cancel="toUnlink = null"
             />
         </template>
     </AppLayout>

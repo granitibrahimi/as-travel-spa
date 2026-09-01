@@ -22,9 +22,12 @@ const props = defineProps({
     show: { type: Boolean, default: false },
     // Hide the "View" link (e.g. when already on the show page).
     showViewAction: { type: Boolean, default: true },
+    // Offer "Add document" — only the show page hosts the upload modal, so the
+    // list view (Index.vue) leaves this off.
+    showAddDocument: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['close', 'deleted']);
+const emit = defineEmits(['close', 'deleted', 'addDocument']);
 
 const auth = useAuthStore();
 
@@ -62,6 +65,9 @@ const groups = computed(() => {
             ? [{ label: 'Reconcile', to: routeUrl('customers.reconcile', customerId), can: 'customers.reconcile' }]
             : []),
         { label: 'Edit', to: routeUrl('customerPayments.edit', payment.id), can: 'customerPayments.edit' },
+        ...(props.showAddDocument
+            ? [{ label: 'Add document', action: () => emit('addDocument'), can: 'customerPayments.edit' }]
+            : []),
         { label: 'Delete', danger: true, action: () => (toDelete.value = payment), can: 'customerPayments.delete' },
     ].filter(allowed);
 

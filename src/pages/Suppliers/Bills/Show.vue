@@ -6,10 +6,12 @@ import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
 import SupplierTransactionLinks from '../../../components/SupplierTransactionLinks.vue';
+import DocumentsBox from '../../../components/DocumentsBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
@@ -21,6 +23,7 @@ const router = useRouter();
 const bill = ref(null);
 const showDelete = ref(false);
 const deleting = ref(false);
+const documentsBox = ref(null);
 
 // Reconcile/Delete/QB/Journal — the ⋯ dropdown. Edit is left out for now: its
 // SPA page doesn't exist yet (see conversation). Reconcile reuses the
@@ -40,6 +43,9 @@ const actions = computed(() => (bill.value ? [
     ...(bill.value.qb_link ? [{ label: 'QB', href: bill.value.qb_link }] : []),
     ...(auth.can('accountTransactions.journal')
         ? [{ label: 'Journal', to: `/finance/account-transactions/journal/supplier-bill/${bill.value.id}` }]
+        : []),
+    ...(auth.can('supplierBills.edit')
+        ? [{ label: 'Add document', action: () => documentsBox.value?.openUpload() }]
         : []),
 ] : []));
 
@@ -157,6 +163,15 @@ async function confirmDelete() {
             <FullWidthBox v-if="bill.links.length" title="Connected transactions" :collapsible="false" class="mt-6">
                 <SupplierTransactionLinks :links="bill.links" :total="bill.links_amount" />
             </FullWidthBox>
+
+            <DocumentsBox
+                ref="documentsBox"
+                :entity="DOCUMENT_ENTITY.SUPPLIER_BILL"
+                :id="bill.id"
+                :can-manage="auth.can('supplierBills.edit')"
+                :can-view="auth.can('supplierBills.show')"
+                :show-add-button="false"
+            />
         </template>
 
         <ConfirmDialog

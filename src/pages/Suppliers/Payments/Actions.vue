@@ -26,9 +26,12 @@ const props = defineProps({
     show: { type: Boolean, default: false },
     // Hide the "View" link (e.g. when already on the show page).
     showViewAction: { type: Boolean, default: true },
+    // Offer "Add document" — only the show page hosts the upload modal, so the
+    // list view (Index.vue) leaves this off.
+    showAddDocument: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['close', 'deleted']);
+const emit = defineEmits(['close', 'deleted', 'addDocument']);
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -51,6 +54,9 @@ const groups = computed(() => {
             ? [{ label: 'Reconcile', to: routeUrl('suppliers.reconcile', supplierId), can: 'suppliers.reconcile' }]
             : []),
         { label: 'Edit', to: routeUrl('supplierPayments.edit', payment.id), can: 'supplierPayments.edit' },
+        ...(props.showAddDocument
+            ? [{ label: 'Add document', action: () => emit('addDocument'), can: 'supplierPayments.edit' }]
+            : []),
         // Convert is only possible while the payment is fully unused (legacy rule).
         ...(payment.open_amount === payment.amount
             ? [{ label: 'Convert to deposit', action: () => (toConvert.value = payment), can: 'supplierPayments.convertToDeposit' }]

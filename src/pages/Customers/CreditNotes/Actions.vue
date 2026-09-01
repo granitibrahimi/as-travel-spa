@@ -34,9 +34,12 @@ const props = defineProps({
     show: { type: Boolean, default: false },
     // Hide the "View" link (e.g. when already on the show page).
     showViewAction: { type: Boolean, default: true },
+    // Offer "Add document" — only the show page hosts the upload modal, so the
+    // list view (Index.vue) leaves this off.
+    showAddDocument: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['close', 'deleted']);
+const emit = defineEmits(['close', 'deleted', 'addDocument']);
 
 const auth = useAuthStore();
 
@@ -67,6 +70,9 @@ const groups = computed(() => {
     const documents = [
         { label: 'Print', can: 'customerCreditNotes.print', action: () => openFileInNewTab(`/customers/credit-notes/${cn.id}/print`) },
         { label: 'Print with products', can: 'customerCreditNotes.printProducts', action: () => openFileInNewTab(`/customers/credit-notes/${cn.id}/print-products`) },
+        ...(props.showAddDocument
+            ? [{ label: 'Add document', can: 'customerCreditNotes.edit', action: () => emit('addDocument') }]
+            : []),
     ].filter(allowed);
 
     if (documents.length) {

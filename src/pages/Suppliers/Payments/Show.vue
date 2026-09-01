@@ -5,18 +5,24 @@ import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { castResource } from '../../../types/responses.js';
+import { useAuthStore } from '../../../stores/auth';
+import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
 import SupplierTransactionLinks from '../../../components/SupplierTransactionLinks.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import DocumentsBox from '../../../components/DocumentsBox.vue';
 import PaymentActions from './Actions.vue';
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 
 const payment = ref(null);
 const actionsOpen = ref(false);
+const documentsBox = ref(null);
 
 async function load() {
     const { data } = await api.get(`/suppliers/payments/${route.params.id}`);
@@ -24,6 +30,29 @@ async function load() {
 }
 
 onMounted(load);
+
+const toUnlink = ref(null);
+const unlinking = ref(false);
+
+const unlinkMessage = computed(() => toUnlink.value
+    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this payment and restores its open amount.`
+    : '');
+
+async function confirmUnlink() {
+    if (unlinking.value) {
+        return;
+    }
+
+    unlinking.value = true;
+
+    try {
+        await api.delete(`/suppliers/transaction-links/${toUnlink.value.id}`);
+        toUnlink.value = null;
+        await load();
+    } finally {
+        unlinking.value = false;
+    }
+}
 
 const rows = computed(() => payment.value ? [
     ['Amount', money(payment.value.amount)],
@@ -84,16 +113,39 @@ function onDeleted() {
                 :links="payment.links ?? []"
                 :total="payment.links_amount ?? 0"
                 total-label="Unlinked balance"
+                @unlink="toUnlink = $event"
             />
         </FullWidthBox>
+
+        <DocumentsBox
+            ref="documentsBox"
+            :entity="DOCUMENT_ENTITY.SUPPLIER_PAYMENT"
+            :id="payment.id"
+            :can-manage="auth.can('supplierPayments.edit')"
+            :can-view="auth.can('supplierPayments.show')"
+            :show-add-button="false"
+        />
         </template>
 
         <PaymentActions
             :payment="payment"
             :show="actionsOpen"
             :show-view-action="false"
+            :show-add-document="true"
             @close="actionsOpen = false"
+            @add-document="documentsBox?.openUpload()"
             @deleted="onDeleted"
+        />
+
+        <ConfirmDialog
+            :show="Boolean(toUnlink)"
+            title="Unlink transaction?"
+            :message="unlinkMessage"
+            confirm-label="Yes, unlink"
+            confirm-variant="danger"
+            :processing="unlinking"
+            @confirm="confirmUnlink"
+            @cancel="toUnlink = null"
         />
     </AppLayout>
 </template>

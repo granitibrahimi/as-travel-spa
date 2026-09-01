@@ -5,12 +5,16 @@ import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { castResource } from '../../../types/responses.js';
+import { useAuthStore } from '../../../stores/auth';
+import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import SupplierTransactionLinks from '../../../components/SupplierTransactionLinks.vue';
+import DocumentsBox from '../../../components/DocumentsBox.vue';
 import Loader from '../../../components/Loader.vue';
 
 const route = useRoute();
+const auth = useAuthStore();
 const creditNote = ref(null);
 
 async function load() {
@@ -98,6 +102,13 @@ onMounted(load);
             <FullWidthBox v-if="creditNote.links.length" title="Connected transactions" :collapsible="false">
                 <SupplierTransactionLinks :links="creditNote.links" :total="creditNote.links_amount" />
             </FullWidthBox>
+
+            <DocumentsBox
+                :entity="DOCUMENT_ENTITY.SUPPLIER_CREDIT_NOTE"
+                :id="creditNote.id"
+                :can-manage="auth.can('supplierCreditNotes.edit')"
+                :can-view="auth.can('supplierCreditNotes.show')"
+            />
         </template>
     </AppLayout>
 </template>

@@ -6,11 +6,13 @@ import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth';
+import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
+import DocumentsBox from '../../../components/DocumentsBox.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
 
 const route = useRoute();
@@ -18,6 +20,7 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const refund = ref(null);
+const documentsBox = ref(null);
 
 async function load() {
     const { data } = await api.get(`/suppliers/refunds/${route.params.id}`);
@@ -75,11 +78,22 @@ async function confirmDelete() {
                 <div class="flex flex-wrap items-center gap-3">
                     <RouterLink :to="routeUrl('supplierRefunds.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
                     <RouterLink v-if="auth.can('supplierRefunds.edit')" :to="routeUrl('supplierRefunds.edit', refund.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
+                    <button v-if="auth.can('supplierRefunds.edit')" type="button" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50" @click="documentsBox?.openUpload()">Add document</button>
                     <Button v-if="auth.can('supplierRefunds.delete')" variant="danger" size="sm" @click="confirmingDelete = true">Delete</Button>
                 </div>
             </template>
             </FullWidthBox>
         </div>
+
+        <DocumentsBox
+            v-if="refund"
+            ref="documentsBox"
+            :entity="DOCUMENT_ENTITY.SUPPLIER_REFUND"
+            :id="refund.id"
+            :can-manage="auth.can('supplierRefunds.edit')"
+            :can-view="auth.can('supplierRefunds.show')"
+            :show-add-button="false"
+        />
 
         <ConfirmDialog
             :show="confirmingDelete"

@@ -5,22 +5,28 @@ import {money} from '../../../helpers/money';
 import api from '../../../helpers/api';
 import {castResource} from '../../../types/responses.js';
 import {routeUrl} from '../../../helpers/route.js';
-import {downloadFile} from '../../../helpers/download';
 import {useAuthStore} from '../../../stores/auth';
+import {useFormOptionsStore, toOptions} from '../../../stores/formOptions.js';
+import {DOCUMENT_ENTITY, CUSTOMER_INVOICE_DOCUMENT_CATEGORIES} from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
+import DocumentsBox from '../../../components/DocumentsBox.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import InvoiceActions from './Actions.vue';
 import CustomerDetails from "../../../components/CustomerDetails.vue";
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const formOptions = useFormOptionsStore();
 const invoice = ref(null);
 const actionsOpen = ref(false);
-const documents = ref([]);
+const documentsBox = ref(null);
 
 const canManageDocuments = auth.can('invoiceDocuments.manageDocuments');
+const documentTypeOptions = computed(() => toOptions(formOptions.customerInvoiceDocumentTypes));
 
 // Agent / Date / Due Date, each editable via its change route (pencil button).
 const changeLinks = computed(() => {
@@ -63,26 +69,30 @@ async function load() {
     invoice.value = castResource(data);
 }
 
-async function fetchDocuments() {
-    if (!canManageDocuments) {
+onMounted(load);
+
+const toUnlink = ref(null);
+const unlinking = ref(false);
+
+const unlinkMessage = computed(() => toUnlink.value
+    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this invoice and restores its open amount.`
+    : '');
+
+async function confirmUnlink() {
+    if (unlinking.value) {
         return;
     }
 
-    const {data} = await api.get(`/customers/invoices/${route.params.id}/documents`);
-    documents.value = data.data ?? [];
-}
+    unlinking.value = true;
 
-async function downloadDocument(document) {
-    await downloadFile(
-        `/customers/invoices/${route.params.id}/documents/${document.id}`,
-        {fallbackName: document.path ?? `document-${document.id}.pdf`},
-    );
+    try {
+        await api.delete(`/customers/transaction-links/${toUnlink.value.id}`);
+        toUnlink.value = null;
+        await load();
+    } finally {
+        unlinking.value = false;
+    }
 }
-
-onMounted(() => {
-    load();
-    fetchDocuments();
-});
 </script>
 
 <template>
@@ -387,77 +397,44 @@ onMounted(() => {
             </FullWidthBox>
 
             <FullWidthBox v-if="invoice.connected.length" title="Connected payments" :collapsible="false">
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse border border-gray-300 text-sm">
-                        <thead>
-                        <tr class="border-b text-left text-gray-500">
-                            <th class="border border-gray-300 px-2 py-2">Reference</th>
-                            <th class="border border-gray-300 px-2 py-2">Date</th>
-                            <th class="border border-gray-300 px-2 py-2">Amount</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr v-for="(link, i) in invoice.connected" :key="i" class="border-b last:border-0">
-                            <td class="border border-gray-300 px-2 py-2">{{ link.reference }}</td>
-                            <td class="border border-gray-300 px-2 py-2">{{ link.date }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
-                                {{ money(link.amount) }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" class="border border-gray-300 px-2 py-2 text-right font-bold ">Total</td>
-                            <td class="border border-gray-300 px-2 py-2 text-right font-bold tabular-nums">
-                                {{ money(connectedTotal) }}
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <CustomerTransactionLinks
+                    :links="invoice.connected"
+                    :total="connectedTotal"
+                    @unlink="toUnlink = $event"
+                />
             </FullWidthBox>
 
-            <FullWidthBox v-if="canManageDocuments" title="Documents" :collapsible="false" class="mb-6">
-                <p v-if="documents.length === 0" class="py-2 text-sm text-gray-400">No documents uploaded.</p>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full border-collapse border border-gray-300 text-sm">
-                        <thead>
-                        <tr class="border-b text-left text-gray-500">
-                            <th class="border border-gray-300 px-2 py-2">ID</th>
-                            <th class="border border-gray-300 px-2 py-2">Type</th>
-                            <th class="border border-gray-300 px-2 py-2">Uploaded</th>
-                            <th class="border border-gray-300 px-2 py-2 text-right">Download</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr v-for="document in documents" :key="document.id" class="border-b last:border-0">
-                            <td class="border border-gray-300 px-2 py-2">{{ document.id }}</td>
-                            <td class="border border-gray-300 px-2 py-2">{{ document.type.name }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ document.created_at }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-right">
-                                <button
-                                    type="button"
-                                    class="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
-                                    @click="downloadDocument(document)"
-                                >
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
-                                    </svg>
-                                    PDF
-                                </button>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </FullWidthBox>
+            <DocumentsBox
+                ref="documentsBox"
+                :entity="DOCUMENT_ENTITY.CUSTOMER_INVOICE"
+                :id="invoice.id"
+                :can-manage="canManageDocuments"
+                :can-view="canManageDocuments"
+                :category-options="documentTypeOptions"
+                :category-labels="CUSTOMER_INVOICE_DOCUMENT_CATEGORIES"
+                :show-add-button="false"
+            />
 
             <!-- Per-invoice actions — defined locally and permission-gated (Actions.vue). -->
             <InvoiceActions
                 :invoice="invoice"
                 :show="actionsOpen"
                 :show-view-action="false"
+                :show-add-document="true"
                 @close="actionsOpen = false"
+                @add-document="documentsBox?.openUpload()"
                 @deleted="router.push(routeUrl('customers.show', invoice.customer.id))"
-                @document-added="fetchDocuments"
+            />
+
+            <ConfirmDialog
+                :show="Boolean(toUnlink)"
+                title="Unlink transaction?"
+                :message="unlinkMessage"
+                confirm-label="Yes, unlink"
+                confirm-variant="danger"
+                :processing="unlinking"
+                @confirm="confirmUnlink"
+                @cancel="toUnlink = null"
             />
         </template>
     </AppLayout>

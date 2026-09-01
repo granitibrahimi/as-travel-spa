@@ -5,11 +5,13 @@ import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth';
+import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
+import DocumentsBox from '../../../components/DocumentsBox.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
 import SupplierTransactionLinks from '../../../components/SupplierTransactionLinks.vue';
 
@@ -18,6 +20,7 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const reconciliation = ref(null);
+const documentsBox = ref(null);
 
 onMounted(async () => {
     const { data } = await api.get(`/suppliers/reconciliations/${route.params.id}`);
@@ -27,6 +30,9 @@ onMounted(async () => {
 // Reconciliations have no Edit — only QuickBooks and Delete on the show page.
 const actions = computed(() => (reconciliation.value ? [
     ...(reconciliation.value.qb_link ? [{ label: 'QuickBooks', href: reconciliation.value.qb_link }] : []),
+    ...(auth.can('suppliers.reconcile')
+        ? [{ label: 'Add document', action: () => documentsBox.value?.openUpload() }]
+        : []),
     ...(auth.can('supplierReconciliations.delete')
         ? [{ label: 'Delete', danger: true, action: () => (showDelete.value = true) }]
         : []),
@@ -94,6 +100,15 @@ async function confirmDelete() {
             <FullWidthBox title="Linked transactions" :collapsible="false">
                 <SupplierTransactionLinks :links="reconciliation.links" :total="reconciliation.links_amount" />
             </FullWidthBox>
+
+            <DocumentsBox
+                ref="documentsBox"
+                :entity="DOCUMENT_ENTITY.SUPPLIER_RECONCILIATION"
+                :id="reconciliation.id"
+                :can-manage="auth.can('suppliers.reconcile')"
+                :can-view="auth.can('supplierReconciliations.show')"
+                :show-add-button="false"
+            />
         </template>
 
         <ConfirmDialog

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money';
 import { routeUrl } from '../../../helpers/route.js';
@@ -7,6 +7,8 @@ import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import Loader from '../../../components/Loader.vue';
 
 const route = useRoute();
@@ -17,6 +19,29 @@ async function load() {
     refund.value = castResource(data);
 }
 onMounted(load);
+
+const toUnlink = ref(null);
+const unlinking = ref(false);
+
+const unlinkMessage = computed(() => toUnlink.value
+    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this reimbursement and restores its open amount.`
+    : '');
+
+async function confirmUnlink() {
+    if (unlinking.value) {
+        return;
+    }
+
+    unlinking.value = true;
+
+    try {
+        await api.delete(`/customers/transaction-links/${toUnlink.value.id}`);
+        toUnlink.value = null;
+        await load();
+    } finally {
+        unlinking.value = false;
+    }
+}
 </script>
 
 <template>
@@ -42,25 +67,19 @@ onMounted(load);
             </FullWidthBox>
 
             <FullWidthBox v-if="refund.connected.length" title="Connected transactions" :collapsible="false">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-gray-500">
-                                <th class="py-2 pr-2">Reference</th>
-                                <th class="py-2 pr-2">Date</th>
-                                <th class="py-2 pl-2 text-right">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(link, i) in refund.connected" :key="i" class="border-b last:border-0">
-                                <td class="py-2 pr-2">{{ link.reference }}</td>
-                                <td class="py-2 pr-2">{{ link.date }}</td>
-                                <td class="py-2 pl-2 text-right tabular-nums">{{ money(link.amount) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <CustomerTransactionLinks :links="refund.connected" @unlink="toUnlink = $event" />
             </FullWidthBox>
+
+            <ConfirmDialog
+                :show="Boolean(toUnlink)"
+                title="Unlink transaction?"
+                :message="unlinkMessage"
+                confirm-label="Yes, unlink"
+                confirm-variant="danger"
+                :processing="unlinking"
+                @confirm="confirmUnlink"
+                @cancel="toUnlink = null"
+            />
         </template>
     </AppLayout>
 </template>

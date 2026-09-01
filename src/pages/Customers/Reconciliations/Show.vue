@@ -1,8 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
-import { customerTransactionPath } from '../../../helpers/customerTransactions.js';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
@@ -11,6 +10,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import Loader from '../../../components/Loader.vue';
 import CustomerDetails from "../../../components/CustomerDetails.vue";
 
@@ -20,10 +20,45 @@ const auth = useAuthStore();
 
 const reconciliation = ref(null);
 
-onMounted(async () => {
+async function load() {
     const { data } = await api.get(`/customers/reconciliations/${route.params.id}`);
     reconciliation.value = castResource(data);
-});
+}
+
+onMounted(load);
+
+const toUnlink = ref(null);
+const unlinking = ref(false);
+
+const unlinkMessage = computed(() => toUnlink.value
+    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this reconciliation and restores the balance it adjusted.`
+    : '');
+
+async function confirmUnlink() {
+    if (unlinking.value) {
+        return;
+    }
+
+    unlinking.value = true;
+
+    // Unlinking the reconciliation's last link deletes the reconciliation
+    // itself (backend UnlinkCustomerTransactionNewLinkAction), so reloading
+    // this page would 404 — bounce to the list instead.
+    const wasLastLink = (reconciliation.value?.links?.length ?? 0) <= 1;
+
+    try {
+        await api.delete(`/customers/transaction-links/${toUnlink.value.id}`);
+        toUnlink.value = null;
+
+        if (wasLastLink) {
+            router.push(routeUrl('customerReconciliations.list'));
+        } else {
+            await load();
+        }
+    } finally {
+        unlinking.value = false;
+    }
+}
 
 // Reconciliations have no Edit — only QuickBooks and Delete on the show page.
 const actions = computed(() => (reconciliation.value ? [
@@ -99,40 +134,11 @@ async function confirmDelete() {
             </div>
 
             <FullWidthBox title="Linked transactions" :collapsible="false">
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse border border-gray-300 text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-gray-500">
-                                <th class="border border-gray-300 px-2 py-2">Type</th>
-                                <th class="border border-gray-300 px-2 py-2">Reference</th>
-                                <th class="border border-gray-300 text-right px-2 py-2">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(link, i) in reconciliation.links" :key="i" class="border-b last:border-0">
-                                <td class="border border-gray-300 px-2 py-2">{{ link.type.name }}</td>
-                                <td class="border border-gray-300 px-2 py-2">
-                                    <RouterLink
-                                        v-if="customerTransactionPath(link.type.id, link.transaction_id)"
-                                        :to="customerTransactionPath(link.type.id, link.transaction_id)"
-                                        class="text-red-600 hover:underline"
-                                    >{{ link.reference ?? link.transaction_id }}</RouterLink>
-                                    <span v-else>{{ link.reference ?? link.transaction_id }}</span>
-                                </td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(link.amount) }}</td>
-                            </tr>
-
-                            <tr class="border-b last:border-0">
-                                <th class="border border-gray-300 text-right px-2 py-2" colspan="2">Total</th>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(reconciliation.links_amount) }}</td>
-                            </tr>
-
-                            <tr v-if="! reconciliation.links.length">
-                                <td colspan="3" class="py-6 text-center text-gray-500">No linked transactions.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <CustomerTransactionLinks
+                    :links="reconciliation.links ?? []"
+                    :total="reconciliation.links_amount ?? 0"
+                    @unlink="toUnlink = $event"
+                />
             </FullWidthBox>
         </template>
 
@@ -145,6 +151,17 @@ async function confirmDelete() {
             :processing="deleting"
             @confirm="confirmDelete"
             @cancel="showDelete = false"
+        />
+
+        <ConfirmDialog
+            :show="Boolean(toUnlink)"
+            title="Unlink transaction?"
+            :message="unlinkMessage"
+            confirm-label="Yes, unlink"
+            confirm-variant="danger"
+            :processing="unlinking"
+            @confirm="confirmUnlink"
+            @cancel="toUnlink = null"
         />
     </AppLayout>
 </template>

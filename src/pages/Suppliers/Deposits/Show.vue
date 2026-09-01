@@ -6,18 +6,21 @@ import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { castResource, castMutation } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth';
+import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
+import DocumentsBox from '../../../components/DocumentsBox.vue';
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 
 const deposit = ref(null);
+const documentsBox = ref(null);
 
 async function load() {
     const { data } = await api.get(`/suppliers/deposits/${route.params.id}`);
@@ -93,6 +96,7 @@ async function convertToPayment() {
                 <div class="flex flex-wrap items-center gap-3">
                     <RouterLink :to="routeUrl('supplierDeposits.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
                     <RouterLink v-if="auth.can('supplierDeposits.edit')" :to="routeUrl('supplierDeposits.edit', deposit.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
+                    <button v-if="auth.can('supplierDeposits.edit')" type="button" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50" @click="documentsBox?.openUpload()">Add document</button>
                     <Button v-if="auth.can('supplierDeposits.convertToPayment')" size="sm" :disabled="converting" @click="convertToPayment">
                         {{ converting ? 'Converting…' : 'Convert to payment' }}
                     </Button>
@@ -101,6 +105,16 @@ async function convertToPayment() {
             </template>
             </FullWidthBox>
         </div>
+
+        <DocumentsBox
+            v-if="deposit"
+            ref="documentsBox"
+            :entity="DOCUMENT_ENTITY.SUPPLIER_DEPOSIT"
+            :id="deposit.id"
+            :can-manage="auth.can('supplierDeposits.edit')"
+            :can-view="auth.can('supplierDeposits.show')"
+            :show-add-button="false"
+        />
 
         <ConfirmDialog
             :show="confirmingDelete"

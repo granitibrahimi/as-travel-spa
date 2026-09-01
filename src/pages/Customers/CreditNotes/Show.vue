@@ -5,16 +5,23 @@ import { money } from '../../../helpers/money';
 import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
+import { useAuthStore } from '../../../stores/auth';
+import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
+import DocumentsBox from '../../../components/DocumentsBox.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
 import CreditNoteActions from './Actions.vue';
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 const creditNote = ref(null);
 const actionsOpen = ref(false);
+const documentsBox = ref(null);
 
 // Sum of the connected payments' amounts, shown in the table's total row.
 const connectedTotal = computed(() =>
@@ -27,6 +34,29 @@ async function load() {
 }
 
 onMounted(load);
+
+const toUnlink = ref(null);
+const unlinking = ref(false);
+
+const unlinkMessage = computed(() => toUnlink.value
+    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this credit note and restores its open amount.`
+    : '');
+
+async function confirmUnlink() {
+    if (unlinking.value) {
+        return;
+    }
+
+    unlinking.value = true;
+
+    try {
+        await api.delete(`/customers/transaction-links/${toUnlink.value.id}`);
+        toUnlink.value = null;
+        await load();
+    } finally {
+        unlinking.value = false;
+    }
+}
 </script>
 
 <template>
@@ -226,37 +256,42 @@ onMounted(load);
             </FullWidthBox>
 
             <FullWidthBox v-if="creditNote.connected.length" title="Connected payments" :collapsible="false">
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse border border-gray-300 text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-gray-500">
-                                <th class="border border-gray-300 px-2 py-2">Reference</th>
-                                <th class="border border-gray-300 px-2 py-2">Date</th>
-                                <th class="border border-gray-300 px-2 py-2">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(link, i) in creditNote.connected" :key="i" class="border-b last:border-0">
-                                <td class="border border-gray-300 px-2 py-2">{{ link.reference }}</td>
-                                <td class="border border-gray-300 px-2 py-2">{{ link.date }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(link.amount) }}</td>
-                            </tr>
-                            <tr>
-                                <td colspan="2" class="border border-gray-300 px-2 py-2 text-right font-bold">Total</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right font-bold tabular-nums">{{ money(connectedTotal) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <CustomerTransactionLinks
+                    :links="creditNote.connected"
+                    :total="connectedTotal"
+                    @unlink="toUnlink = $event"
+                />
             </FullWidthBox>
+
+            <DocumentsBox
+                ref="documentsBox"
+                :entity="DOCUMENT_ENTITY.CUSTOMER_CREDIT_NOTE"
+                :id="creditNote.id"
+                :can-manage="auth.can('customerCreditNotes.edit')"
+                :can-view="auth.can('customerCreditNotes.show')"
+                :show-add-button="false"
+            />
 
             <!-- Per-credit-note actions — defined locally and permission-gated (Actions.vue). -->
             <CreditNoteActions
                 :credit-note="creditNote"
                 :show="actionsOpen"
                 :show-view-action="false"
+                :show-add-document="true"
                 @close="actionsOpen = false"
+                @add-document="documentsBox?.openUpload()"
                 @deleted="router.push(routeUrl('customers.show', creditNote.customer.id))"
+            />
+
+            <ConfirmDialog
+                :show="Boolean(toUnlink)"
+                title="Unlink transaction?"
+                :message="unlinkMessage"
+                confirm-label="Yes, unlink"
+                confirm-variant="danger"
+                :processing="unlinking"
+                @confirm="confirmUnlink"
+                @cancel="toUnlink = null"
             />
         </template>
     </AppLayout>
