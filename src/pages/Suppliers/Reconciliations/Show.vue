@@ -22,10 +22,11 @@ const auth = useAuthStore();
 const reconciliation = ref(null);
 const documentsBox = ref(null);
 
-onMounted(async () => {
+async function load() {
     const { data } = await api.get(`/suppliers/reconciliations/${route.params.id}`);
     reconciliation.value = castResource(data);
-});
+}
+onMounted(load);
 
 // Reconciliations have no Edit — only QuickBooks and Delete on the show page.
 const actions = computed(() => (reconciliation.value ? [
@@ -53,6 +54,41 @@ async function confirmDelete() {
         router.push(routeUrl('supplierReconciliations.list'));
     } finally {
         deleting.value = false;
+    }
+}
+
+const toUnlink = ref(null);
+const unlinking = ref(false);
+
+const unlinkMessage = computed(() => toUnlink.value
+    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this reconciliation and restores its open amount. If this was the last linked transaction, the reconciliation itself is removed.`
+    : '');
+
+async function confirmUnlink() {
+    if (unlinking.value) {
+        return;
+    }
+
+    unlinking.value = true;
+
+    try {
+        await api.delete(`/suppliers/transaction-links/${toUnlink.value.id}`);
+        toUnlink.value = null;
+
+        // Unlinking the last link on a reconciliation deletes the
+        // reconciliation itself (see UnlinkSupplierTransactionNewLinkAction) —
+        // reloading would then 404, so bounce back to the list instead.
+        try {
+            await load();
+        } catch (error) {
+            if (error.response?.status === 404) {
+                router.push(routeUrl('supplierReconciliations.list'));
+            } else {
+                throw error;
+            }
+        }
+    } finally {
+        unlinking.value = false;
     }
 }
 </script>
@@ -98,7 +134,7 @@ async function confirmDelete() {
             </div>
 
             <FullWidthBox title="Linked transactions" :collapsible="false">
-                <SupplierTransactionLinks :links="reconciliation.links" :total="reconciliation.links_amount" />
+                <SupplierTransactionLinks :links="reconciliation.links" :total="reconciliation.links_amount" @unlink="toUnlink = $event" />
             </FullWidthBox>
 
             <DocumentsBox
@@ -120,6 +156,17 @@ async function confirmDelete() {
             :processing="deleting"
             @confirm="confirmDelete"
             @cancel="showDelete = false"
+        />
+
+        <ConfirmDialog
+            :show="Boolean(toUnlink)"
+            title="Unlink transaction?"
+            :message="unlinkMessage"
+            confirm-label="Yes, unlink"
+            confirm-variant="danger"
+            :processing="unlinking"
+            @confirm="confirmUnlink"
+            @cancel="toUnlink = null"
         />
     </AppLayout>
 </template>

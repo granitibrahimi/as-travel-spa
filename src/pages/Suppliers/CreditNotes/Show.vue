@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
@@ -11,6 +11,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import SupplierTransactionLinks from '../../../components/SupplierTransactionLinks.vue';
 import DocumentsBox from '../../../components/DocumentsBox.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 
 const route = useRoute();
@@ -22,6 +23,29 @@ async function load() {
     creditNote.value = castResource(data);
 }
 onMounted(load);
+
+const toUnlink = ref(null);
+const unlinking = ref(false);
+
+const unlinkMessage = computed(() => toUnlink.value
+    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this credit note and restores its open amount.`
+    : '');
+
+async function confirmUnlink() {
+    if (unlinking.value) {
+        return;
+    }
+
+    unlinking.value = true;
+
+    try {
+        await api.delete(`/suppliers/transaction-links/${toUnlink.value.id}`);
+        toUnlink.value = null;
+        await load();
+    } finally {
+        unlinking.value = false;
+    }
+}
 </script>
 
 <template>
@@ -100,7 +124,7 @@ onMounted(load);
             </FullWidthBox>
 
             <FullWidthBox v-if="creditNote.links.length" title="Connected transactions" :collapsible="false">
-                <SupplierTransactionLinks :links="creditNote.links" :total="creditNote.links_amount" />
+                <SupplierTransactionLinks :links="creditNote.links" :total="creditNote.links_amount" @unlink="toUnlink = $event" />
             </FullWidthBox>
 
             <DocumentsBox
@@ -110,5 +134,16 @@ onMounted(load);
                 :can-view="auth.can('supplierCreditNotes.show')"
             />
         </template>
+
+        <ConfirmDialog
+            :show="Boolean(toUnlink)"
+            title="Unlink transaction?"
+            :message="unlinkMessage"
+            confirm-label="Yes, unlink"
+            confirm-variant="danger"
+            :processing="unlinking"
+            @confirm="confirmUnlink"
+            @cancel="toUnlink = null"
+        />
     </AppLayout>
 </template>

@@ -69,6 +69,29 @@ async function confirmDelete() {
         deleting.value = false;
     }
 }
+
+const toUnlink = ref(null);
+const unlinking = ref(false);
+
+const unlinkMessage = computed(() => toUnlink.value
+    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this bill and restores its open amount.`
+    : '');
+
+async function confirmUnlink() {
+    if (unlinking.value) {
+        return;
+    }
+
+    unlinking.value = true;
+
+    try {
+        await api.delete(`/suppliers/transaction-links/${toUnlink.value.id}`);
+        toUnlink.value = null;
+        await load();
+    } finally {
+        unlinking.value = false;
+    }
+}
 </script>
 
 <template>
@@ -161,7 +184,7 @@ async function confirmDelete() {
             </FullWidthBox>
 
             <FullWidthBox v-if="bill.links.length" title="Connected transactions" :collapsible="false" class="mt-6">
-                <SupplierTransactionLinks :links="bill.links" :total="bill.links_amount" />
+                <SupplierTransactionLinks :links="bill.links" :total="bill.links_amount" @unlink="toUnlink = $event" />
             </FullWidthBox>
 
             <DocumentsBox
@@ -183,6 +206,17 @@ async function confirmDelete() {
             :processing="deleting"
             @confirm="confirmDelete"
             @cancel="showDelete = false"
+        />
+
+        <ConfirmDialog
+            :show="Boolean(toUnlink)"
+            title="Unlink transaction?"
+            :message="unlinkMessage"
+            confirm-label="Yes, unlink"
+            confirm-variant="danger"
+            :processing="unlinking"
+            @confirm="confirmUnlink"
+            @cancel="toUnlink = null"
         />
     </AppLayout>
 </template>
