@@ -9,6 +9,7 @@ const PATHS = {
     'Gift Card': 'suppliers/gift-cards',
     Deposit: 'suppliers/deposits',
     Journal: 'finance/journals',
+    Reconciliation: 'suppliers/reconciliations',
 };
 
 export function supplierTransactionPath({ type, id }) {
@@ -28,6 +29,10 @@ const PATHS_BY_TYPE_ID = {
     5: 'finance/journals',
     7: 'suppliers/gift-cards',
     8: 'suppliers/deposits',
+    // Not a SupplierTransactionTypeEnum case — a sentinel the backend uses
+    // for the "matched against" side of a link when it's a reconciliation
+    // rather than a payment (see SupplierTransactionLinkResource).
+    9: 'suppliers/reconciliations',
 };
 
 export function supplierTransactionPathById(typeId, id) {

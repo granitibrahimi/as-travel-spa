@@ -1,8 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { RouterLink, useRoute, useRouter } from 'vue-router';
-import { money } from '../../../helpers/money';
-import { supplierTransactionPathById } from '../../../helpers/supplierTransactions.js';
+import { useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
@@ -13,6 +11,7 @@ import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
+import SupplierTransactionLinks from '../../../components/SupplierTransactionLinks.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -93,42 +92,7 @@ async function confirmDelete() {
             </div>
 
             <FullWidthBox title="Linked transactions" :collapsible="false">
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse border border-gray-300 text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-gray-500">
-                                <th class="border border-gray-300 px-2 py-2">ID</th>
-                                <th class="border border-gray-300 px-2 py-2">Type</th>
-                                <th class="border border-gray-300 px-2 py-2">Reference</th>
-                                <th class="border border-gray-300 text-right px-2 py-2">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(link, i) in reconciliation.links" :key="i" class="border-b last:border-0">
-                                <td class="border border-gray-300 px-2 py-2">{{ link.id }}</td>
-                                <td class="border border-gray-300 px-2 py-2">{{ link.type.name }}</td>
-                                <td class="border border-gray-300 px-2 py-2">
-                                    <RouterLink
-                                        v-if="supplierTransactionPathById(link.type.id, link.transaction_id)"
-                                        :to="supplierTransactionPathById(link.type.id, link.transaction_id)"
-                                        class="text-red-600 hover:underline"
-                                    >{{ link.reference ?? link.transaction_id }}</RouterLink>
-                                    <span v-else>{{ link.reference ?? link.transaction_id }}</span>
-                                </td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(link.amount) }}</td>
-                            </tr>
-
-                            <tr class="border-b last:border-0">
-                                <th class="border border-gray-300 text-right px-2 py-2" colspan="2">Total</th>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(reconciliation.links_amount) }}</td>
-                            </tr>
-
-                            <tr v-if="! reconciliation.links.length">
-                                <td colspan="3" class="py-6 text-center text-gray-500">No linked transactions.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <SupplierTransactionLinks :links="reconciliation.links" :total="reconciliation.links_amount" />
             </FullWidthBox>
         </template>
 

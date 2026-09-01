@@ -7,6 +7,7 @@ import { routeUrl } from '../../../helpers/route.js';
 import { castResource } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
+import SupplierTransactionLinks from '../../../components/SupplierTransactionLinks.vue';
 import Loader from '../../../components/Loader.vue';
 
 const route = useRoute();
@@ -94,25 +95,8 @@ onMounted(load);
                 </div>
             </FullWidthBox>
 
-            <FullWidthBox v-if="creditNote.connected.length" title="Connected transactions" :collapsible="false">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-gray-500">
-                                <th class="py-2 pr-2">Reference</th>
-                                <th class="py-2 pr-2">Date</th>
-                                <th class="py-2 pl-2 text-right">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(link, i) in creditNote.connected" :key="i" class="border-b last:border-0">
-                                <td class="py-2 pr-2">{{ link.reference }}</td>
-                                <td class="py-2 pr-2">{{ link.date }}</td>
-                                <td class="py-2 pl-2 text-right tabular-nums">{{ money(link.amount) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <FullWidthBox v-if="creditNote.links.length" title="Connected transactions" :collapsible="false">
+                <SupplierTransactionLinks :links="creditNote.links" :total="creditNote.links_amount" />
             </FullWidthBox>
         </template>
     </AppLayout>
