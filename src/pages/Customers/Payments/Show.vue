@@ -14,6 +14,7 @@ import PaymentActions from './Actions.vue';
 const route = useRoute();
 const router = useRouter();
 const payment = ref(null);
+const cashMovements = ref([]);
 const actionsOpen = ref(false);
 
 const connectedTotal = computed(() =>
@@ -23,6 +24,12 @@ const connectedTotal = computed(() =>
 onMounted(async () => {
     const { data } = await api.get(`/customers/payments/${route.params.id}`);
     payment.value = castResource(data);
+
+    const movements = await api
+        .get(`/customers/payments/${route.params.id}/cash-movements`)
+        .then(({ data }) => castResource(data))
+        .catch(() => []);
+    cashMovements.value = Array.isArray(movements) ? movements : [];
 });
 </script>
 
@@ -118,6 +125,27 @@ onMounted(async () => {
                             <tr>
                                 <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right" colspan="2">Total</th>
                                 <td class="border border-gray-300 px-2 py-2 text-right font-medium tabular-nums">{{ money(connectedTotal) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </FullWidthBox>
+
+            <FullWidthBox v-if="cashMovements.length" title="Cash movement" :collapsible="false" class="mt-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="text-left text-gray-500">
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right">Amount</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Action</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(movement, i) in cashMovements" :key="i" class="hover:bg-gray-50">
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(movement.amount) }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ movement.action }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ movement.date ?? '—' }}</td>
                             </tr>
                         </tbody>
                     </table>
