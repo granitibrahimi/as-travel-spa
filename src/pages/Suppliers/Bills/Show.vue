@@ -162,19 +162,21 @@ async function confirmDelete() {
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="text-left text-gray-500">
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">ID</th>
                                 <th class="border border-gray-300 bg-gray-50 px-2 py-2">Reference</th>
                                 <th class="border border-gray-300 bg-gray-50 px-2 py-2">Date</th>
                                 <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(link, i) in bill.connected" :key="i" class="hover:bg-gray-50">
+                            <tr v-for="link in bill.connected" :key="link.id" class="hover:bg-gray-50">
+                                <td class="border border-gray-300 px-2 py-2">{{ link.id }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ link.reference }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ link.date }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(link.amount) }}</td>
                             </tr>
                             <tr>
-                                <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right" colspan="2">Total</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right" colspan="3">Total</th>
                                 <td class="border border-gray-300 px-2 py-2 text-right font-medium tabular-nums">{{ money(connectedTotal) }}</td>
                             </tr>
                         </tbody>
