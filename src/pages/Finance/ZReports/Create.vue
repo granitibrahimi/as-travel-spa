@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
@@ -53,12 +53,22 @@ async function loadSales(date) {
 onMounted(() => loadSales());
 
 // Changing the date refetches that day's sales without leaving the page.
+// Debounced so a native <input type="date"> firing per keystroke (e.g. while
+// the year is being typed) only triggers one request, once typing settles.
+let salesDebounce = null;
+
 watch(dateFilter, (value) => {
-    if (value && value !== form.date) {
-        form.date = value;
-        loadSales(value);
+    if (! value || value === form.date) {
+        return;
     }
+
+    form.date = value;
+
+    clearTimeout(salesDebounce);
+    salesDebounce = setTimeout(() => loadSales(value), 800);
 });
+
+onUnmounted(() => clearTimeout(salesDebounce));
 
 const includedSet = computed(() => new Set(form.included));
 const amount = computed(() => sales.value.filter((s) => includedSet.value.has(s.id)).reduce((sum, s) => sum + s.amount, 0));
