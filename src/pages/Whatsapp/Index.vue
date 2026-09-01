@@ -28,11 +28,18 @@ watch(() => store.totalUnread, (count) => {
     document.title = count > 0 ? `(${count}) ${baseTitle}` : baseTitle;
 });
 
+// nextTick alone isn't always enough here: it guarantees Vue has patched the
+// DOM, but the Loader→messages swap (a structural v-if/v-else, not just a
+// content patch) can still leave the browser a layout pass behind, so
+// scrollHeight is occasionally read before it reflects the full thread. The
+// extra requestAnimationFrame waits for that paint before reading it.
 function scrollThreadToBottom() {
     nextTick(() => {
-        if (thread.value) {
-            thread.value.scrollTop = thread.value.scrollHeight;
-        }
+        requestAnimationFrame(() => {
+            if (thread.value) {
+                thread.value.scrollTop = thread.value.scrollHeight;
+            }
+        });
     });
 }
 

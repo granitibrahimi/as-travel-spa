@@ -97,6 +97,7 @@ async function confirmDelete() {
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="border-b text-left text-gray-500">
+                                <th class="border border-gray-300 px-2 py-2">ID</th>
                                 <th class="border border-gray-300 px-2 py-2">Type</th>
                                 <th class="border border-gray-300 px-2 py-2">Reference</th>
                                 <th class="border border-gray-300 text-right px-2 py-2">Amount</th>
@@ -104,6 +105,7 @@ async function confirmDelete() {
                         </thead>
                         <tbody>
                             <tr v-for="(link, i) in reconciliation.links" :key="i" class="border-b last:border-0">
+                                <td class="border border-gray-300 px-2 py-2">{{ link.id }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ link.type.name }}</td>
                                 <td class="border border-gray-300 px-2 py-2">
                                     <RouterLink

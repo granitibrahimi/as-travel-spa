@@ -8,7 +8,7 @@ const PATHS = {
     Refund: 'suppliers/refunds',
     'Gift Card': 'suppliers/gift-cards',
     Deposit: 'suppliers/deposits',
-    Journal: 'journals',
+    Journal: 'finance/journals',
 };
 
 export function supplierTransactionPath({ type, id }) {
@@ -25,7 +25,7 @@ const PATHS_BY_TYPE_ID = {
     2: 'suppliers/credit-notes',
     3: 'suppliers/refunds',
     4: 'suppliers/bills',
-    5: 'journals',
+    5: 'finance/journals',
     7: 'suppliers/gift-cards',
     8: 'suppliers/deposits',
 };
