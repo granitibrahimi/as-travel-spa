@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
-import { castMutation } from '../../../types/responses.js';
+import { castMutation, castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -33,16 +33,17 @@ async function loadSales(date) {
 
     try {
         const { data } = await api.get('/finance/z-reports/sales-for-date', { params: { date: date || undefined } });
-        sales.value = data.sales ?? [];
+        const payload = castResource(data) ?? {};
+        sales.value = payload.sales ?? [];
         form.included = sales.value.map((sale) => sale.id);
 
-        if (data.date) {
-            dateFilter.value = data.date;
-            form.date = data.date;
+        if (payload.date) {
+            dateFilter.value = payload.date;
+            form.date = payload.date;
         }
 
-        if (! form.report_id && data.report_id) {
-            form.report_id = data.report_id;
+        if (! form.report_id && payload.report_id) {
+            form.report_id = payload.report_id;
         }
     } finally {
         loadingSales.value = false;
