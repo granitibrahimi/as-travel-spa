@@ -35,12 +35,14 @@ const form = reactive({
 const paymentMethodsRepo = usePaymentMethodsRepository();
 // Incoming methods, as [{ value, label }] for SearchSelect — reactive off the cache.
 const paymentMethods = computed(() => paymentMethodsRepo.incoming());
-// The endpoint reports the supplier's unlinked credit as a signed balance
-// (payments and credit notes are stored negative in supplier_transactions_view),
-// so a supplier with credit to give back comes through as a negative number.
-// What's available to reimburse is that balance's magnitude.
+// The endpoint reports the supplier's balance with a debt-positive /
+// credit-negative sign. Money can only be reimbursed while it is negative;
+// what's available to reimburse is then its magnitude.
 const availableAmount = ref(null);
-const availableToReimburse = computed(() => Math.abs(Number(availableAmount.value) || 0));
+const availableToReimburse = computed(() => {
+    const balance = Number(availableAmount.value) || 0;
+    return balance < 0 ? Math.abs(balance) : 0;
+});
 const supplier = ref(null);
 
 // The amount may not exceed what's available to reimburse — flagged on the

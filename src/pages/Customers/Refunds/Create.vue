@@ -35,12 +35,14 @@ const form = reactive({
 const paymentMethodsRepo = usePaymentMethodsRepository();
 // A reimbursement is money paid back out to the customer — outgoing methods only.
 const paymentMethods = computed(() => paymentMethodsRepo.outgoing());
-// The endpoint reports the customer's unlinked credit as a signed balance
-// (payments and credit notes are stored negative in customer_transactions_view),
-// so a customer with credit to give back comes through as a negative number.
-// What's available to reimburse is that balance's magnitude.
+// The endpoint reports the customer's net outstanding balance (debt-positive,
+// credit-negative). Money can only be reimbursed while the balance is negative;
+// what's available to reimburse is then its magnitude.
 const availableAmount = ref(null);
-const availableToReimburse = computed(() => Math.abs(Number(availableAmount.value) || 0));
+const availableToReimburse = computed(() => {
+    const balance = Number(availableAmount.value) || 0;
+    return balance < 0 ? Math.abs(balance) : 0;
+});
 const customer = ref(null);
 
 // The amount may not exceed what's available to reimburse — flagged on the
