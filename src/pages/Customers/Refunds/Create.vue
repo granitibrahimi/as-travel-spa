@@ -35,8 +35,23 @@ const form = reactive({
 const paymentMethodsRepo = usePaymentMethodsRepository();
 // A reimbursement is money paid back out to the customer — outgoing methods only.
 const paymentMethods = computed(() => paymentMethodsRepo.outgoing());
+// The endpoint reports the customer's unlinked credit as a signed balance
+// (payments and credit notes are stored negative in customer_transactions_view),
+// so a customer with credit to give back comes through as a negative number.
+// What's available to reimburse is that balance's magnitude.
 const availableAmount = ref(null);
+const availableToReimburse = computed(() => Math.abs(Number(availableAmount.value) || 0));
 const customer = ref(null);
+
+// The amount may not exceed what's available to reimburse — flagged on the
+// field and blocks submitting rather than being silently clamped.
+const amountExceedsAvailable = computed(() =>
+    form.amount !== null
+    && form.amount !== ''
+    && availableToReimburse.value > 0
+    && Number(form.amount) > availableToReimburse.value,
+);
+
 const errors = ref({});
 const processing = ref(false);
 const loaded = ref(false);
@@ -55,7 +70,7 @@ onMounted(async () => {
 
     // Nothing to reimburse: bounce back to the customer with a toast rather than
     // showing an empty form the user can't submit.
-    if (Number(availableAmount.value) <= 0) {
+    if (availableToReimburse.value <= 0) {
         notifications.push({
             type: 'warning',
             message: 'This customer has nothing to reimburse.',
@@ -68,7 +83,7 @@ onMounted(async () => {
 });
 
 async function submit() {
-    if (processing.value) {
+    if (processing.value || amountExceedsAvailable.value) {
         return;
     }
 
@@ -105,12 +120,20 @@ const cancelTo = routeUrl('customers.show', customerId);
 
                 <FullWidthBox title="Reimbursement details" :collapsible="false">
                     <p v-if="availableAmount !== null" class="mb-4 rounded bg-gray-50 px-3 py-2 text-sm text-gray-600">
-                        Available for reimbursement: <span class="font-medium tabular-nums">{{ money(availableAmount) }}</span>
+                        Available for reimbursement: <span class="font-medium tabular-nums">{{ money(availableToReimburse) }}</span>
                     </p>
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <SearchSelect v-model="form.payment_method_id" :options="paymentMethods" label="Payment method *" :error="errors.payment_method_id" />
-                        <InputNumber v-model="form.amount" label="Amount *" :error="errors.amount" min="0" :max="availableAmount ?? undefined" />
+                        <div>
+                            <label class="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm font-medium text-gray-700">
+                                Amount *
+                                <span v-if="amountExceedsAvailable" class="text-xs font-normal text-red-600">
+                                    exceeds {{ money(availableToReimburse) }} available
+                                </span>
+                            </label>
+                            <InputNumber v-model="form.amount" :error="errors.amount" :invalid="amountExceedsAvailable" min="0" />
+                        </div>
                         <InputText v-model="form.transaction_nr" label="Transaction #" :error="errors.transaction_nr" />
                         <DateInput v-model="form.on_date" label="Date *" :error="errors.on_date" />
                     </div>
@@ -122,7 +145,7 @@ const cancelTo = routeUrl('customers.show', customerId);
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
                 <RouterLink :to="cancelTo" class="rounded border border-gray-300 px-4 py-1.5 text-sm hover:bg-gray-50">Cancel</RouterLink>
-                <Button type="submit" variant="primary" :disabled="processing || ! loaded">
+                <Button type="submit" variant="primary" :disabled="processing || ! loaded || amountExceedsAvailable">
                     {{ processing ? 'Saving…' : 'Create reimbursement' }}
                 </Button>
             </footer>

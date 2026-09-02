@@ -17,6 +17,9 @@ const props = defineProps({
     modelValue: { type: [Number, String, null], default: null },
     label: { type: String, default: '' },
     error: { type: String, default: '' },
+    // Turn the border red without rendering a message below the field — for
+    // when the invalid state is explained elsewhere (e.g. next to the label).
+    invalid: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -65,7 +68,7 @@ function onInput(event) {
             type="text"
             inputmode="decimal"
             class="w-full rounded border px-2 py-1.5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:bg-gray-100"
-            :class="error ? 'border-red-500' : 'border-gray-300'"
+            :class="(error || invalid) ? 'border-red-500' : 'border-gray-300'"
             @beforeinput="onBeforeInput"
             @input="onInput"
         >
