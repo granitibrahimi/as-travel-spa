@@ -12,6 +12,7 @@ import { useAuthStore } from '../../stores/auth.js';
 const auth = useAuthStore();
 
 const reports = [
+    { label: 'Chart of Accounts', to: routeUrl('financeReports.chartOfAccounts'), can: 'financeReports.chartOfAccounts' },
     { label: 'Customer Invoices Report', to: routeUrl('financeReports.customerInvoices'), can: 'customerInvoices.reports' },
     { label: 'Accounts Receivable', to: routeUrl('financeReports.accountsReceivable'), can: 'financeReports.accountsReceivable' },
     { label: 'Accounts Payable', to: routeUrl('financeReports.accountsPayable'), can: 'financeReports.accountsPayable' },
