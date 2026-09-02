@@ -59,12 +59,12 @@ async function confirmDelete() {
 </script>
 
 <template>
-    <AppLayout :title="refund ? `Refund ${refund.gen_id}` : 'Refund'" fluid>
+    <AppLayout :title="refund ? `Reimbursement ${refund.gen_id}` : 'Reimbursement'" fluid>
         <Loader v-if="! refund" />
         <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
             <SupplierDetails :supplier="refund.supplier" />
 
-            <FullWidthBox :title="`Refund ${refund.gen_id}`" :collapsible="false">
+            <FullWidthBox :title="`Reimbursement ${refund.gen_id}`" :collapsible="false">
             <table class="w-full border-collapse border border-gray-300 text-sm">
                 <tbody>
                     <tr v-for="[label, value] in rows" :key="label">
@@ -97,8 +97,8 @@ async function confirmDelete() {
 
         <ConfirmDialog
             :show="confirmingDelete"
-            title="Delete refund?"
-            :message="refund ? `Refund ${refund.gen_id} will be permanently deleted.` : ''"
+            title="Delete reimbursement?"
+            :message="refund ? `Reimbursement ${refund.gen_id} will be permanently deleted.` : ''"
             confirm-label="Yes, delete"
             confirm-variant="danger"
             :processing="deleting"

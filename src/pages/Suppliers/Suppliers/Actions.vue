@@ -44,7 +44,7 @@ const groups = computed(() => {
             { label: 'Deposit', to: routeUrl('supplierDeposits.create', supplier.id), can: 'supplierDeposits.create' },
             { label: 'Credit Note', to: routeUrl('supplierCreditNotes.create', supplier.id), can: 'supplierCreditNotes.create' },
             { label: 'Gift Card', to: routeUrl('supplierGiftCards.create', supplier.id), can: 'supplierGiftCards.create' },
-            { label: 'Refund', to: routeUrl('supplierRefunds.create', supplier.id), can: 'supplierRefunds.create' },
+            { label: 'Reimbursement', to: routeUrl('supplierRefunds.create', supplier.id), can: 'supplierRefunds.create' },
         ].filter((action) => auth.can(action.can));
 
         if (creates.length) {

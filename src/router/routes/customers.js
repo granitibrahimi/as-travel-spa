@@ -37,6 +37,8 @@ const CustomerGiftCardsEdit = () => import('../../pages/Customers/GiftCards/Edit
 const CustomerReconciliationsIndex = () => import('../../pages/Customers/Reconciliations/Index.vue');
 const CustomerReconciliationShow = () => import('../../pages/Customers/Reconciliations/Show.vue');
 const CustomerTransactionLinksIndex = () => import('../../pages/Customers/TransactionLinks/Index.vue');
+const CustomerRefundsIndex = () => import('../../pages/Customers/Refunds/Index.vue');
+const CustomerRefundCreate = () => import('../../pages/Customers/Refunds/Create.vue');
 const CustomerRefundShow = () => import('../../pages/Customers/Refunds/Show.vue');
 const InvoicesIndex = () => import('../../pages/Customers/Invoices/Index.vue');
 const InvoicesDue = () => import('../../pages/Customers/Invoices/Due.vue');
@@ -66,6 +68,7 @@ export default [
     { path: '/customers/:customer/pro-invoices/create', name: 'customerProInvoices.create', component: ProInvoiceCreate },
     { path: '/customers/:customer/payments/create', name: 'customerPayments.create', component: CustomerPaymentCreate },
     { path: '/customers/:customer/gift-cards/create', name: 'customerGiftCards.create', component: CustomerGiftCardsCreate },
+    { path: '/customers/:customer/refunds/create', name: 'customerRefunds.create', component: CustomerRefundCreate },
     { path: '/customers/projects', name: 'customerProjects.list', component: ProjectsList, props: { mode: 'active' } },
     { path: '/customers/projects/finished', name: 'customerProjects.finished', component: ProjectsList, props: { mode: 'finished' } },
     { path: '/customers/projects/create', name: 'customerProjects.create', component: ProjectsCreate },
@@ -98,6 +101,7 @@ export default [
     { path: '/customers/transaction-links', name: 'customerTransactionLinks.list', component: CustomerTransactionLinksIndex },
     { path: '/customers/gift-cards/:id/edit', name: 'customerGiftCards.edit', component: CustomerGiftCardsEdit },
     { path: '/customers/gift-cards/:id', name: 'customerGiftCards.show', component: CustomerGiftCardShow },
+    { path: '/customers/refunds', name: 'customerRefunds.list', component: CustomerRefundsIndex },
     { path: '/customers/refunds/:id', name: 'customerRefunds.show', component: CustomerRefundShow },
     { path: '/customers/travelers', name: 'persons.list', component: PersonsIndex },
     { path: '/customers/travelers/create', name: 'persons.create', component: PersonsManage },

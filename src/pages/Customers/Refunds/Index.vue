@@ -12,25 +12,22 @@ import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
-import NiceCheckbox from "../../../components/Form/NiceCheckbox.vue";
 
 const auth = useAuthStore();
 
 const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
-const openOnly = ref(false);
 
 async function fetchRefunds(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/suppliers/refunds', {
+        const { data } = await api.get('/customers/refunds', {
             params: {
                 q: search.value || undefined,
-                open: openOnly.value ? 1 : undefined,
-                page
-            }
+                page,
+            },
         });
         apiResponse.value = castPaginated(data);
     } finally {
@@ -51,7 +48,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/suppliers/refunds/${toDelete.value.id}`);
+        await api.delete(`/customers/refunds/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchRefunds(apiResponse.value?.pagination?.current_page ?? 1);
     } finally {
@@ -60,18 +57,16 @@ async function confirmDelete() {
 }
 
 const rowActions = (refund) => [
-    ...(auth.can('supplierRefunds.show') ? [{ label: 'View', href: routeUrl('supplierRefunds.show', refund.id) }] : []),
-    ...(auth.can('supplierRefunds.edit') ? [{ label: 'Edit', href: routeUrl('supplierRefunds.edit', refund.id) }] : []),
-    ...(auth.can('supplierRefunds.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = refund) }] : []),
+    ...(auth.can('customerRefunds.show') ? [{ label: 'View', href: routeUrl('customerRefunds.show', refund.id) }] : []),
+    ...(auth.can('customerRefunds.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = refund) }] : []),
 ];
 </script>
 
 <template>
-    <AppLayout title="Supplier Reimbursements" fluid>
-        <FullWidthBox title="Supplier Reimbursements" :collapsible="false">
+    <AppLayout title="Customer Reimbursements" fluid>
+        <FullWidthBox title="Customer Reimbursements" :collapsible="false">
             <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchRefunds()">
-                <input v-model="search" type="text" placeholder="Gen ID, transaction #…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
-                <NiceCheckbox v-model="openOnly" label="Open only" @update:model-value="fetchRefunds()" />
+                <input v-model="search" type="text" placeholder="Gen ID, customer…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
                 <button type="submit" class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">Search</button>
                 <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="search = ''; fetchRefunds();">Clear</button>
             </form>
@@ -81,31 +76,29 @@ const rowActions = (refund) => [
                     <thead>
                         <tr class="text-left text-xs uppercase text-gray-500">
                             <th class="border border-gray-300 px-2 py-2" style="width: 120px;">Gen ID</th>
-                            <th class="border border-gray-300 px-2 py-2">Supplier</th>
+                            <th class="border border-gray-300 px-2 py-2">Customer</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Amount</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Open amount</th>
                             <th class="border border-gray-300 px-2 py-2">Transaction #</th>
-                            <th class="border border-gray-300 px-2 py-2">Method</th>
                             <th class="border border-gray-300 px-2 py-2 whitespace-nowrap" style="width: 110px;">Date</th>
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 80px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No reimbursements found.</td>
+                            <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No reimbursements found.</td>
                         </tr>
                         <tr v-for="refund in (loading ? [] : apiResponse?.data ?? [])" :key="refund.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">
-                                <RouterLink :to="routeUrl('supplierRefunds.show', refund.id)" class="text-red-600 hover:underline">{{ refund.gen_id }}</RouterLink>
+                                <RouterLink :to="routeUrl('customerRefunds.show', refund.id)" class="text-red-600 hover:underline">{{ refund.gen_id }}</RouterLink>
                             </td>
-                            <td class="border border-gray-300 px-2 py-2">{{ refund.supplier?.name ?? '—' }}</td>
+                            <td class="border border-gray-300 px-2 py-2">{{ refund.customer?.name ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(refund.amount) }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(refund.open_amount) }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ refund.transaction_nr ?? '—' }}</td>
-                            <td class="border border-gray-300 px-2 py-2">{{ refund.payment_method ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ refund.on_date }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <DropdownMenu :items="rowActions(refund)" />

@@ -27,6 +27,15 @@ const invoice = ref(null);
 const actionsOpen = ref(false);
 const documentsBox = ref(null);
 
+// History of invoice emails sent for this invoice (see legacy "Sent emails").
+const sentEmails = ref(null);
+const emailBadgeClass = {
+    sent: 'bg-gray-100 text-gray-600',
+    opened: 'bg-green-100 text-green-700',
+    bounced: 'bg-red-100 text-red-700',
+};
+const emailStatusLabel = { sent: 'Sent', opened: 'Opened', bounced: 'Bounced' };
+
 const canManageDocuments = auth.can('invoiceDocuments.manageDocuments');
 const documentTypeOptions = computed(() => toOptions(formOptions.customerInvoiceDocumentTypes));
 
@@ -71,7 +80,15 @@ async function load() {
     invoice.value = castResource(data);
 }
 
-onMounted(load);
+async function loadSentEmails() {
+    const {data} = await api.get(`/customers/invoices/${route.params.id}/sent-emails`);
+    sentEmails.value = (castResource(data)?.sent_emails ?? []);
+}
+
+onMounted(() => {
+    load();
+    loadSentEmails();
+});
 
 const toUnlink = ref(null);
 const unlinking = ref(false);
@@ -225,6 +242,44 @@ async function confirmUnlink() {
                                 </tr>
                                 </tbody>
                             </table>
+
+                            <!-- Invoice email history — mirrors the legacy "Sent emails" modal. -->
+                            <div v-if="sentEmails.length">
+                                <h3 class="mb-2 text-sm font-semibold text-gray-700">Sent emails</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                                        <thead>
+                                        <tr class="text-left text-xs uppercase text-gray-500">
+                                            <th class="border border-gray-300 bg-gray-50 px-2 py-2">Type</th>
+                                            <th class="border border-gray-300 bg-gray-50 px-2 py-2">To</th>
+                                            <th class="border border-gray-300 bg-gray-50 px-2 py-2">Sent by</th>
+                                            <th class="border border-gray-300 bg-gray-50 px-2 py-2">Status</th>
+                                            <th class="border border-gray-300 bg-gray-50 px-2 py-2 whitespace-nowrap">Sent at</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr v-if="! sentEmails">
+                                            <td colspan="6" class="border border-gray-300 px-2 py-3 text-center text-gray-400">Loading…</td>
+                                        </tr>
+                                        <tr v-else-if="sentEmails.length === 0">
+                                            <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No emails have been sent for this invoice.</td>
+                                        </tr>
+                                        <tr v-for="email in sentEmails" :key="email.id" class="hover:bg-gray-50">
+                                            <td class="border border-gray-300 px-2 py-2">{{ email.type }}</td>
+                                            <td class="border border-gray-300 px-2 py-2 break-all">{{ email.to }}</td>
+                                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ email.user ?? '—' }}</td>
+                                            <td class="border border-gray-300 px-2 py-2">
+                                                <span class="inline-block rounded px-2 py-0.5 text-xs font-medium" :class="emailBadgeClass[email.status]">
+                                                    {{ emailStatusLabel[email.status] }}
+                                                </span>
+                                                <div v-if="email.bounce_reason" class="mt-1 text-xs text-gray-400">{{ email.bounce_reason }}</div>
+                                            </td>
+                                            <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ email.sent_at }}</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </FullWidthBox>

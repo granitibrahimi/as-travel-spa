@@ -94,14 +94,15 @@ const filtered = computed(() => (apiResponse.value?.data ?? []).filter(matchesCl
                             <th class="border border-gray-300 px-2 py-2">Name</th>
                             <th class="border border-gray-300 px-2 py-2">Type</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 140px;">Balance</th>
+                            <th class="border border-gray-300 px-2 py-2 text-center" style="width: 90px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="5" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="6" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="filtered.length === 0">
-                            <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No accounts found.</td>
+                            <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No accounts found.</td>
                         </tr>
                         <tr v-for="account in (loading ? [] : filtered)" :key="account.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ account.id }}</td>
@@ -111,6 +112,9 @@ const filtered = computed(() => (apiResponse.value?.data ?? []).filter(matchesCl
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ account.type }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(account.balance) }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-center">
+                                <RouterLink :to="routeUrl('accounts.history', account.id)" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-xs hover:bg-gray-50">History</RouterLink>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

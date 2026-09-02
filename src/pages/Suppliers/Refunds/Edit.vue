@@ -91,13 +91,13 @@ const cancelTo = routeUrl('supplierRefunds.show', refundId);
 </script>
 
 <template>
-    <AppLayout title="Edit refund" fluid>
+    <AppLayout title="Edit reimbursement" fluid>
         <Loader v-if="! loaded" />
         <form v-else class="space-y-6" @submit.prevent="submit">
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
                 <SupplierDetails v-if="supplier" :supplier="supplier" />
 
-                <FullWidthBox title="Refund details" :collapsible="false">
+                <FullWidthBox title="Reimbursement details" :collapsible="false">
                     <p v-if="availableAmount !== null" class="mb-4 rounded bg-gray-50 px-3 py-2 text-sm text-gray-600">
                         Available for reimbursement: <span class="font-medium tabular-nums">{{ money(availableAmount) }}</span>
                     </p>
@@ -117,7 +117,7 @@ const cancelTo = routeUrl('supplierRefunds.show', refundId);
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
                 <RouterLink :to="cancelTo" class="rounded border border-gray-300 px-4 py-1.5 text-sm hover:bg-gray-50">Cancel</RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing || ! loaded">
-                    {{ processing ? 'Saving…' : 'Update refund' }}
+                    {{ processing ? 'Saving…' : 'Update reimbursement' }}
                 </Button>
             </footer>
         </form>
