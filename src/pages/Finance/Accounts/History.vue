@@ -125,13 +125,13 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                 </div>
             </div>
 
-            <form class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="fetchTransactions()">
-                <input v-model="q" type="text" placeholder="Notes or reference #…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500">
-                <Select v-model="filters.type" :options="typeSelectOptions" placeholder="All types" />
+            <form class="mb-4 grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="fetchTransactions()">
+                <InputText v-model="q" label="Search" placeholder="Notes or reference #…" />
+                <Select v-model="filters.type" :options="typeSelectOptions" label="Type" placeholder="All types" />
                 <InputText v-model="filters.date_from" type="date" label="From" />
                 <InputText v-model="filters.date_to" type="date" label="To" />
                 <div>
-                    <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                    <Button type="submit" variant="primary" :loading="loading" class="w-full sm:w-auto">Filter</Button>
                 </div>
             </form>
 
