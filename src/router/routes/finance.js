@@ -36,6 +36,7 @@ const ReportsAccountComparison = () => import('../../pages/Finance/Reports/Accou
 const ReportsSalesBook = () => import('../../pages/Finance/Reports/SalesBook.vue');
 const ReportsPurchasesBook = () => import('../../pages/Finance/Reports/PurchasesBook.vue');
 const ReportsBalanceSheet = () => import('../../pages/Finance/Reports/BalanceSheet.vue');
+const ReportsChartOfAccounts = () => import('../../pages/Finance/Reports/ChartOfAccounts.vue');
 
 export default [
     { path: '/finance/account-transactions/journal/:type/:reference', name: 'accountTransactions.journal', component: AccountTransactionsJournal },
@@ -79,4 +80,5 @@ export default [
     { path: '/finance/reports/sales-book', name: 'financeReports.salesBook', component: ReportsSalesBook },
     { path: '/finance/reports/purchases-book', name: 'financeReports.purchasesBook', component: ReportsPurchasesBook },
     { path: '/finance/reports/balance-sheet', name: 'financeReports.balanceSheet', component: ReportsBalanceSheet },
+    { path: '/finance/reports/chart-of-accounts', name: 'financeReports.chartOfAccounts', component: ReportsChartOfAccounts },
 ];
