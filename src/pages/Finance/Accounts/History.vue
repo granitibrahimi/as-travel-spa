@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { money } from '../../../helpers/money.js';
@@ -7,6 +7,7 @@ import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
+import Button from '../../../components/Button.vue';
 import Select from '../../../components/Form/Select.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
@@ -94,9 +95,8 @@ async function fetchTransactions(page = 1) {
 
 onMounted(() => fetchTransactions());
 
-// Type/date filters refetch immediately; `q` is submitted via the form (see
-// template) rather than live-debounced, matching the rest of the app.
-watch(() => [filters.type, filters.date_from, filters.date_to], () => fetchTransactions());
+// Nothing refetches on change: every filter (search, type, date range) is
+// applied together only when the Filter button submits the form.
 
 const account = computed(() => apiResponse.value?.extra?.account ?? null);
 const openingBalance = computed(() => apiResponse.value?.extra?.opening_balance ?? 0);
@@ -130,6 +130,9 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                 <Select v-model="filters.type" :options="typeSelectOptions" placeholder="All types" />
                 <InputText v-model="filters.date_from" type="date" label="From" />
                 <InputText v-model="filters.date_to" type="date" label="To" />
+                <div>
+                    <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                </div>
             </form>
 
             <div class="overflow-x-auto">
