@@ -12,7 +12,16 @@ import { useReport } from '../../../composables/useReport.js';
 // tree, mirroring QuickBooks' indented Chart of Accounts. Response
 // (data-unwrapped by useReport): { accounts: [node] }, where a node is
 // { id, parent_id, number, name, type, classification: { id, name },
-//   balance, children: [node] } and each level is ordered by account number.
+//   balance, balance_with_children, children: [node] } and each level is
+// ordered by account number.
+//
+// `balance` is the account's own postings only; postings can land directly on
+// a parent as well as on its leaves, so a parent's `balance` alone can
+// understate its real position. `balance_with_children` is `balance` plus
+// every descendant's, rolled up the tree — the single Balance column below
+// always shows that rollup (it equals `balance` for a leaf, which has no
+// descendants), matching how QuickBooks' own COA report totals a parent line
+// whether or not it's expanded.
 const { loading, error, data, load } = useReport('/finance/reports/chart-of-accounts');
 
 const q = ref('');
@@ -134,7 +143,7 @@ onMounted(() => load());
                                 </span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ row.type }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.balance) }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.balance_with_children ?? row.balance) }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <RouterLink :to="routeUrl('accounts.history', row.id)" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-xs hover:bg-gray-50">History</RouterLink>
                             </td>
