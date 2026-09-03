@@ -7,7 +7,7 @@ const PATHS = {
     3: 'customers/payments',
     4: 'customers/gift-cards',
     5: 'customers/refunds',
-    6: 'journals',
+    6: 'finance/journals',
     // Not a CustomerTransactionTypeEnum case — the sentinel the backend's
     // CustomerTransactionNewLinkResource uses when a link's "matched against"
     // side is a reconciliation rather than a payment (mirrors the supplier
