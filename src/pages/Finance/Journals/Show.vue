@@ -10,6 +10,8 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
+import SupplierTransactionLinks from '../../../components/SupplierTransactionLinks.vue';
 import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
@@ -112,6 +114,22 @@ async function confirmDelete() {
                     Back to journals
                 </RouterLink>
             </template>
+        </FullWidthBox>
+
+        <FullWidthBox
+            v-if="journal && (journal.customer_links?.length || journal.supplier_links?.length)"
+            title="Connected transactions"
+            :collapsible="false"
+            class="mt-6"
+        >
+            <div v-if="journal.customer_links?.length">
+                <h3 class="mb-2 text-xs font-semibold uppercase text-gray-500">Customer</h3>
+                <CustomerTransactionLinks :links="journal.customer_links" />
+            </div>
+            <div v-if="journal.supplier_links?.length" :class="{ 'mt-6': journal.customer_links?.length }">
+                <h3 class="mb-2 text-xs font-semibold uppercase text-gray-500">Supplier</h3>
+                <SupplierTransactionLinks :links="journal.supplier_links" />
+            </div>
         </FullWidthBox>
 
         <ConfirmDialog
