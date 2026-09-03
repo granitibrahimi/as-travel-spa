@@ -129,10 +129,10 @@ async function submit() {
 
             <form class="space-y-4" @submit.prevent="submit">
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Email</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Email or username</label>
                     <input
                         v-model="form.email"
-                        type="email"
+                        type="text"
                         autocomplete="username"
                         class="w-full rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500"
                     >

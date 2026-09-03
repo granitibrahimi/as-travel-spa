@@ -22,6 +22,7 @@ const form = reactive({
     last_name: '',
     phone_number: '',
     email: '',
+    username: '',
     role_id: null,
     cash_account_id: null,
     password: '',
@@ -45,6 +46,7 @@ onMounted(async () => {
             last_name: user.last_name ?? '',
             phone_number: user.phone_number ?? '',
             email: user.email ?? '',
+            username: user.username ?? '',
             role_id: user.role_id ?? null,
             cash_account_id: user.cash_account_id ?? null,
         });
@@ -60,7 +62,10 @@ async function submit() {
     errors.value = {};
 
     try {
-        await (isEdit ? api.put(`/users/users/${id}`, form) : api.post('/users/users', form));
+        // Username is optional; send an explicit null when left blank so the
+        // server treats it as "no username" rather than an empty string.
+        const payload = { ...form, username: form.username.trim() || null };
+        await (isEdit ? api.put(`/users/users/${id}`, payload) : api.post('/users/users', payload));
         router.push(routeUrl('users.list'));
     } catch (error) {
         if (error.response?.status === 422) {
@@ -86,6 +91,10 @@ async function submit() {
                     <InputText v-model="form.last_name" label="Last name *" :error="errors.last_name" />
                     <InputText v-model="form.phone_number" label="Phone number *" :error="errors.phone_number" />
                     <InputText v-model="form.email" type="email" label="Email *" :error="errors.email" />
+                    <div>
+                        <InputText v-model="form.username" label="Username" maxlength="30" :error="errors.username" />
+                        <p v-if="! errors.username" class="mt-1 text-xs text-gray-500">Optional. Up to 30 characters, must be unique.</p>
+                    </div>
                     <Select v-model="form.role_id" :options="roles" label="Role *" :error="errors.role_id" />
                     <SearchSelect v-model="form.cash_account_id" :options="cashAccounts" label="Cash account" placeholder="Search account…" :error="errors.cash_account_id" />
                 </div>
