@@ -101,6 +101,7 @@ const rowActions = (user) => [
                         <tr class="text-left text-xs uppercase text-gray-500">
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 60px;">ID</th>
                             <th class="border border-gray-300 px-2 py-2">Name</th>
+                            <th class="border border-gray-300 px-2 py-2">Username</th>
                             <th class="border border-gray-300 px-2 py-2">Email</th>
                             <th class="border border-gray-300 px-2 py-2">Phone</th>
                             <th class="border border-gray-300 px-2 py-2">Role</th>
@@ -110,14 +111,15 @@ const rowActions = (user) => [
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No users found.</td>
+                            <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No users found.</td>
                         </tr>
                         <tr v-for="user in (loading ? [] : apiResponse?.data ?? [])" :key="user.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ user.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">{{ user.name }}</td>
+                            <td class="border border-gray-300 px-2 py-2">{{ user.username ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ user.email }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ user.phone_number ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ user.role ?? '—' }}</td>

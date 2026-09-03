@@ -31,6 +31,7 @@ const rows = computed(() => [
     ['ID', props.user.id],
     ['First name', props.user.first_name],
     ['Last name', props.user.last_name],
+    ['Username', props.user.username],
     ['Phone number', props.user.phone_number],
     ['Email', props.user.email],
     ['Role', props.user.role],
