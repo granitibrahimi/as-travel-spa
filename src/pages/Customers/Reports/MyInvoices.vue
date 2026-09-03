@@ -10,12 +10,11 @@ import { useReport } from '../../../composables/useReport.js';
 import { downloadFile } from '../../../helpers/download.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 
-// GET /customers/invoices/report?from=d.m.Y&to=d.m.Y →
-// { data: { items: [...], totals: { sales, purchase, svc } } }; useReport's
-// castResource() unwraps the `data` envelope, so `data.value` here is
-// `{ items, totals }`. The results table + client-side search live in the
-// shared CustomerInvoicesReport component (reused by the CRM "My Invoices"
-// report).
+// CRM agent view of the customer-invoices report. Hits the same endpoints as
+// the Finance report (GET /customers/invoices/report[/excel]); the backend
+// scopes the rows to the current agent when they only hold
+// `customerInvoices.reportsOwn`. Table + client-side search are the shared
+// CustomerInvoicesReport component.
 const { loading, error, data, load } = useReport('/customers/invoices/report');
 const notifications = useNotificationsStore();
 
@@ -42,7 +41,7 @@ async function downloadExcel() {
 
     try {
         await downloadFile('/customers/invoices/report/excel', {
-            fallbackName: 'customer-invoices.xlsx',
+            fallbackName: 'my-customer-invoices.xlsx',
             config: { params: filters() },
         });
     } catch {
@@ -56,9 +55,9 @@ onMounted(apply);
 </script>
 
 <template>
-    <AppLayout title="Customer Invoices Report" fluid>
+    <AppLayout title="My Invoices Report" fluid>
         <div class="space-y-4">
-            <h1 class="text-2xl font-bold">Customer Invoices Report</h1>
+            <h1 class="text-2xl font-bold">My Invoices Report</h1>
 
             <FullWidthBox title="Filters" :collapsible="false">
                 <div class="flex flex-wrap items-end gap-3">
