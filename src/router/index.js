@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { recoverFromStaleChunk } from '../helpers/staleChunk';
 
 // Routes are split by domain under ./routes/*. Each module exports an array of
 // route records with its own lazy `import()`s. They're concatenated below; the
@@ -33,6 +34,22 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(),
     routes,
+});
+
+// A lazy route chunk failed to load — almost always because a new build was
+// deployed while this tab was open, so the hashed chunk name it asked for is
+// gone and the host served index.php (HTML) in its place. Reload once to pick
+// up the fresh entry + chunk names, landing on the route the user wanted.
+router.onError((error, to) => {
+    recoverFromStaleChunk(error, to && to.fullPath);
+});
+
+// Vite fires this on the window when a <link rel="modulepreload"> for a route
+// chunk 404s, before router.onError would see it. Same recovery.
+window.addEventListener('vite:preloadError', (event) => {
+    if (recoverFromStaleChunk(event.payload)) {
+        event.preventDefault();
+    }
 });
 
 // Guard: public routes are always allowed; everything else needs a token.
