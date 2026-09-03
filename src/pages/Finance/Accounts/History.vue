@@ -2,9 +2,11 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
+import { downloadFile } from '../../../helpers/download.js';
 import { money } from '../../../helpers/money.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -14,10 +16,12 @@ import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
 
 const route = useRoute();
+const notifications = useNotificationsStore();
 const accountId = route.params.id;
 
 const apiResponse = ref(null);
 const loading = ref(false);
+const downloading = ref(false);
 const q = ref('');
 const filters = reactive({
     type: '',
@@ -93,6 +97,35 @@ async function fetchTransactions(page = 1) {
     }
 }
 
+// Export the account history to Excel. The endpoint accepts the same optional
+// filters as the table; with no date range it exports every posting for the
+// account. Sends only the filters that are set (empty ones are omitted).
+async function downloadExcel() {
+    if (downloading.value) {
+        return;
+    }
+
+    downloading.value = true;
+
+    try {
+        await downloadFile(`/finance/accounts/${accountId}/transactions/excel`, {
+            fallbackName: 'account-history.xlsx',
+            config: {
+                params: {
+                    q: q.value || undefined,
+                    type: filters.type || undefined,
+                    date_from: filters.date_from || undefined,
+                    date_to: filters.date_to || undefined,
+                },
+            },
+        });
+    } catch {
+        notifications.push({ type: 'error', message: 'Could not export the account history.' });
+    } finally {
+        downloading.value = false;
+    }
+}
+
 onMounted(() => fetchTransactions());
 
 // Nothing refetches on change: every filter (search, type, date range) is
@@ -107,6 +140,9 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
     <AppLayout :title="account ? `Account History: ${account.full_name}` : 'Account History'" fluid>
         <FullWidthBox :title="account ? account.full_name : 'Account History'" :collapsible="false">
             <template #actions>
+                <Button type="button" :loading="downloading" @click="downloadExcel">
+                    {{ downloading ? 'Preparing…' : 'Download Excel' }}
+                </Button>
                 <RouterLink :to="routeUrl('accounts.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to Accounts</RouterLink>
             </template>
 
