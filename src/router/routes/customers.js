@@ -42,6 +42,7 @@ const CustomerRefundCreate = () => import('../../pages/Customers/Refunds/Create.
 const CustomerRefundShow = () => import('../../pages/Customers/Refunds/Show.vue');
 const InvoicesIndex = () => import('../../pages/Customers/Invoices/Index.vue');
 const InvoicesDue = () => import('../../pages/Customers/Invoices/Due.vue');
+const MyInvoicesReport = () => import('../../pages/Customers/Reports/MyInvoices.vue');
 const CreditNotesIndex = () => import('../../pages/Customers/CreditNotes/Index.vue');
 const ProInvoiceCreate = () => import('../../pages/Customers/ProInvoices/Create.vue');
 const ProInvoicesIndex = () => import('../../pages/Customers/ProInvoices/Index.vue');
@@ -59,6 +60,7 @@ export default [
     { path: '/customers/customers/create', name: 'customers.create', component: CustomersCreate },
     { path: '/customers/invoices', name: 'customerInvoices.list', component: InvoicesIndex },
     { path: '/customers/invoices/due', name: 'customerInvoices.due', component: InvoicesDue },
+    { path: '/customers/invoices/my-report', name: 'customerInvoices.myReport', component: MyInvoicesReport },
     { path: '/customers/credit-notes', name: 'customerCreditNotes.list', component: CreditNotesIndex },
     { path: '/customers/pro-invoices', name: 'customerProInvoices.list', component: ProInvoicesIndex },
     { path: '/customers/pro-invoices/:id/edit', name: 'customerProInvoices.edit', component: CustomerProInvoicesEdit },

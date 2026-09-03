@@ -79,6 +79,12 @@ export const workspaces = [
                 ],
             },
             {
+                label: 'My Invoices Report',
+                items: [
+                    { label: 'My Invoices Report', to: '/customers/invoices/my-report', canAny: ['customerInvoices.reports', 'customerInvoices.reportsOwn'] },
+                ],
+            },
+            {
                 label: 'Customers',
                 items: [
                     { label: 'Customers List', to: '/customers/customers', can: 'customers.list' },
