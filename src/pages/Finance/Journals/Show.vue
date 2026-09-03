@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castResource } from '../../../types/responses.js';
@@ -8,36 +8,60 @@ import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
+import DropdownMenu from '../../../components/DropdownMenu.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
+const router = useRouter();
 const id = route.params.id;
 
 const journal = ref(null);
 const title = computed(() => (journal.value ? `Journal ${journal.value.gen_id}` : `Journal #${id}`));
 
+const showDelete = ref(false);
+const deleting = ref(false);
+
+// Edit/QB/Delete — the ⋯ dropdown in the box header (top-right), mirroring
+// AccountTransfers/Show.vue. QB uses `qb_link` (built on the backend from
+// `qb_id`, same field-name convention as Suppliers/Bills/Show.vue).
+const actions = computed(() => (journal.value ? [
+    ...(auth.can('journals.edit') ? [{ label: 'Edit', to: routeUrl('journals.edit', journal.value.id) }] : []),
+    ...(journal.value.qb_link ? [{ label: 'QB', href: journal.value.qb_link }] : []),
+    ...(auth.can('journals.delete') ? [{ label: 'Delete', danger: true, action: () => (showDelete.value = true) }] : []),
+] : []));
+
 onMounted(async () => {
     const { data } = await api.get(`/finance/journals/${id}`);
     journal.value = castResource(data);
 });
+
+async function confirmDelete() {
+    if (deleting.value) {
+        return;
+    }
+
+    deleting.value = true;
+
+    try {
+        await api.delete(`/finance/journals/${id}`);
+        router.push(routeUrl('journals.list'));
+    } finally {
+        deleting.value = false;
+    }
+}
 </script>
 
 <template>
     <AppLayout :title="title" fluid>
         <FullWidthBox :title="title" :collapsible="false">
+            <template v-if="journal && actions.length" #actions>
+                <DropdownMenu :items="actions" />
+            </template>
+
             <Loader v-if="! journal" />
             <template v-else>
-                <div v-if="auth.canAny(['journals.edit', 'journals.create'])" class="mb-4 flex gap-2">
-                    <RouterLink
-                        v-if="auth.can('journals.edit')"
-                        :to="routeUrl('journals.edit', journal.id)"
-                        class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
-                    >
-                        Edit
-                    </RouterLink>
-                </div>
-
                 <dl class="mb-4 grid grid-cols-1 gap-x-8 gap-y-1 text-sm md:grid-cols-2">
                     <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">Date</dt><dd>{{ journal.on_date }}</dd></div>
                     <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">Reference</dt><dd>{{ journal.reference || '—' }}</dd></div>
@@ -87,5 +111,16 @@ onMounted(async () => {
                 </RouterLink>
             </template>
         </FullWidthBox>
+
+        <ConfirmDialog
+            :show="showDelete"
+            title="Delete journal?"
+            :message="journal ? `${journal.gen_id} will be permanently deleted.` : ''"
+            confirm-label="Yes, delete"
+            confirm-variant="danger"
+            :processing="deleting"
+            @confirm="confirmDelete"
+            @cancel="showDelete = false"
+        />
     </AppLayout>
 </template>

@@ -68,6 +68,7 @@ async function confirmDelete() {
 const rowActions = (journal) => [
     ...(auth.can('journals.show') ? [{ label: 'View', href: routeUrl('journals.show', journal.id) }] : []),
     ...(auth.can('journals.edit') ? [{ label: 'Edit', href: routeUrl('journals.edit', journal.id) }] : []),
+    ...(journal.qb_link ? [{ label: 'QB', href: journal.qb_link }] : []),
     ...(auth.can('journals.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = journal) }] : []),
 ];
 </script>
