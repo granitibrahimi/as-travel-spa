@@ -264,7 +264,7 @@ watch(filters, () => {
                 @deleted="router.push(routeUrl('customers.list'))"
             />
 
-            <FullWidthBox v-if="canViewProInvoices" title="Pro Invoices" :collapsible="false">
+            <FullWidthBox v-if="canViewProInvoices && (! proInvoices || proInvoices.data.length > 0)" title="Pro Invoices" :collapsible="false">
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
@@ -359,7 +359,7 @@ watch(filters, () => {
                             </td>
                         </tr>
                         <template v-if="! loadingTransactions && transactions">
-                            <tr v-for="transaction in transactions.data" :key="`${transaction.type}-${transaction.id}`"
+                            <tr v-for="transaction in transactions.data" :key="transaction.key"
                                 class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ transaction.date }}
                                 </td>
