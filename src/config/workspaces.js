@@ -414,6 +414,22 @@ export const workspaces = [
             },
         ]
     },
+    {
+        // Local, browser-only warehouse picking tool — no permissions or API,
+        // so this workspace has no `can` and is always visible.
+        key: 'warehouse',
+        label: 'Warehouse',
+        home: '/warehouse/map',
+        groups: [
+            {
+                label: 'Picking',
+                items: [
+                    { label: 'Shelf Map', to: '/warehouse/map' },
+                    { label: 'Build Pick Route', to: '/warehouse/pick' },
+                ],
+            },
+        ],
+    },
 ];
 
 /**
