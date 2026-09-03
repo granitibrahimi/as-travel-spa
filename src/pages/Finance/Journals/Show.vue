@@ -73,6 +73,7 @@ async function confirmDelete() {
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase text-gray-500">
+                                <th class="border border-gray-300 px-2 py-2" style="width: 90px;">ID</th>
                                 <th class="border border-gray-300 px-2 py-2">Account</th>
                                 <th class="border border-gray-300 px-2 py-2">Description</th>
                                 <th class="border border-gray-300 px-2 py-2">Relation</th>
@@ -84,6 +85,7 @@ async function confirmDelete() {
                         </thead>
                         <tbody>
                             <tr v-for="line in journal.lines" :key="line.id" class="hover:bg-gray-50">
+                                <td class="border border-gray-300 px-2 py-2 font-mono text-xs text-gray-500">{{ line.id }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ line.account }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ line.description }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ line.relation || '—' }}</td>
@@ -95,7 +97,7 @@ async function confirmDelete() {
                         </tbody>
                         <tfoot>
                             <tr class="font-semibold">
-                                <td class="border border-gray-300 px-2 py-2 text-right" colspan="4">Totals</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right" colspan="5">Totals</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(journal.total_debit) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(journal.total_credit) }}</td>
                                 <td class="border border-gray-300 px-2 py-2"></td>
