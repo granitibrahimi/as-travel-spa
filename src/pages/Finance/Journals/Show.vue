@@ -145,11 +145,11 @@ async function confirmDelete() {
         >
             <div v-if="journal.customer_links?.length">
                 <h3 class="mb-2 text-xs font-semibold uppercase text-gray-500">Customer</h3>
-                <CustomerTransactionLinks :links="journal.customer_links" />
+                <CustomerTransactionLinks :links="journal.customer_links" show-party />
             </div>
             <div v-if="journal.supplier_links?.length" :class="{ 'mt-6': journal.customer_links?.length }">
                 <h3 class="mb-2 text-xs font-semibold uppercase text-gray-500">Supplier</h3>
-                <SupplierTransactionLinks :links="journal.supplier_links" />
+                <SupplierTransactionLinks :links="journal.supplier_links" show-party />
             </div>
         </FullWidthBox>
 

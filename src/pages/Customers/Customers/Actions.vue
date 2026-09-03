@@ -72,10 +72,12 @@ const groups = computed(() => {
         other.push({ label: 'Delete', danger: true, action: () => (toDelete.value = customer) });
     }
 
-    if (customer.qb_id != null) {
+    // `qb_link` is built on the backend from `qb_id` (null when unsynced) —
+    // same convention as Journals/Suppliers.
+    if (customer.qb_link) {
         other.push({
             label: 'Open in QuickBooks',
-            href: `https://qbo.intuit.com/app/customerdetail?nameId=${customer.qb_id}`,
+            href: customer.qb_link,
             external: true,
         });
     }
