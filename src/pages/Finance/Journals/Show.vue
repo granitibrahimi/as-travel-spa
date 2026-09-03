@@ -22,6 +22,18 @@ const id = route.params.id;
 const journal = ref(null);
 const title = computed(() => (journal.value ? `Journal ${journal.value.gen_id}` : `Journal #${id}`));
 
+// A line's relation is either a customer or a supplier — `customer_supplier` is
+// `c_<id>` / `s_<id>` / null (from JournalLineResource). Resolve it to the
+// matching SPA detail route so the name can open in a new tab.
+function relationHref(line) {
+    const [kind, relationId] = (line.customer_supplier ?? '').split('_');
+
+    if (kind === 'c' && relationId) return routeUrl('customers.show', relationId);
+    if (kind === 's' && relationId) return routeUrl('suppliers.show', relationId);
+
+    return null;
+}
+
 const showDelete = ref(false);
 const deleting = ref(false);
 
@@ -90,7 +102,16 @@ async function confirmDelete() {
                                 <td class="border border-gray-300 px-2 py-2 font-mono text-xs text-gray-500">{{ line.id }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ line.account }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ line.description }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ line.relation || '—' }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-gray-600">
+                                    <a
+                                        v-if="relationHref(line)"
+                                        :href="relationHref(line)"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="text-red-600 hover:underline"
+                                    >{{ line.relation }}</a>
+                                    <template v-else>{{ line.relation || '—' }}</template>
+                                </td>
                                 <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ line.tax_type || '—' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ line.debit ? money(line.debit) : '' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ line.credit ? money(line.credit) : '' }}</td>
