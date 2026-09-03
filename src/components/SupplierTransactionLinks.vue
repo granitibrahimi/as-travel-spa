@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../helpers/money.js';
 import { supplierTransactionPathById } from '../helpers/supplierTransactions.js';
+import { routeUrl } from '../helpers/route.js';
 
 /**
  * Renders a supplier record's "linked transactions" table — shared by Bills,
@@ -27,11 +28,21 @@ const props = defineProps({
     total: { type: Number, default: null },
     totalLabel: { type: String, default: 'Total' },
     emptyText: { type: String, default: 'No linked transactions.' },
+    // Opt-in "Supplier" column, shown where rows span multiple suppliers (the
+    // Journal show page). Each row must then carry `party: { id, name }`.
+    // Redundant on a single supplier's own show page, so off by default.
+    showParty: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['unlink']);
 
 const hasUnlink = computed(() => props.links.some((l) => l.can_unlink));
+
+// Columns left of "Amount" (ID, Type, [Supplier], Reference, Date) — drives the
+// footer total's label colspan; the empty-state cell spans one more (Amount)
+// plus the unlink column when present.
+const leadingCols = computed(() => 4 + (props.showParty ? 1 : 0));
+const spanAllCols = computed(() => leadingCols.value + 1 + (hasUnlink.value ? 1 : 0));
 </script>
 
 <template>
@@ -41,6 +52,7 @@ const hasUnlink = computed(() => props.links.some((l) => l.can_unlink));
                 <tr class="border-b text-left text-gray-500">
                     <th class="border border-gray-300 px-2 py-2">ID</th>
                     <th class="border border-gray-300 px-2 py-2">Type</th>
+                    <th v-if="showParty" class="border border-gray-300 px-2 py-2">Supplier</th>
                     <th class="border border-gray-300 px-2 py-2">Reference</th>
                     <th class="border border-gray-300 px-2 py-2">Date</th>
                     <th class="border border-gray-300 px-2 py-2 text-right">Amount</th>
@@ -51,6 +63,14 @@ const hasUnlink = computed(() => props.links.some((l) => l.can_unlink));
                 <tr v-for="link in links" :key="link.id" class="border-b last:border-0 hover:bg-gray-50">
                     <td class="border border-gray-300 px-2 py-2">{{ link.id }}</td>
                     <td class="border border-gray-300 px-2 py-2">{{ link.type?.name }}</td>
+                    <td v-if="showParty" class="border border-gray-300 px-2 py-2">
+                        <RouterLink
+                            v-if="link.party?.id"
+                            :to="routeUrl('suppliers.show', link.party.id)"
+                            class="text-red-600 hover:underline"
+                        >{{ link.party.name }}</RouterLink>
+                        <span v-else>{{ link.party?.name ?? '—' }}</span>
+                    </td>
                     <td class="border border-gray-300 px-2 py-2">
                         <RouterLink
                             v-if="supplierTransactionPathById(link.type?.id, link.transaction_id)"
@@ -77,13 +97,13 @@ const hasUnlink = computed(() => props.links.some((l) => l.can_unlink));
                 </tr>
 
                 <tr v-if="links.length && total !== null" class="border-b last:border-0 bg-gray-50 font-semibold">
-                    <th class="border border-gray-300 px-2 py-2 text-right" colspan="4">{{ totalLabel }}</th>
+                    <th class="border border-gray-300 px-2 py-2 text-right" :colspan="leadingCols">{{ totalLabel }}</th>
                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(total) }}</td>
                     <td v-if="hasUnlink" class="border border-gray-300 px-2 py-2"></td>
                 </tr>
 
                 <tr v-if="links.length === 0">
-                    <td :colspan="hasUnlink ? 6 : 5" class="border border-gray-300 px-2 py-6 text-center text-gray-500">{{ emptyText }}</td>
+                    <td :colspan="spanAllCols" class="border border-gray-300 px-2 py-6 text-center text-gray-500">{{ emptyText }}</td>
                 </tr>
             </tbody>
         </table>
