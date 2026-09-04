@@ -37,8 +37,24 @@ function toggle(id) {
 const roots = computed(() => data.value?.accounts ?? []);
 
 function nodeMatches(node, needle) {
-    return [node.number, node.name, node.type]
+    const textMatch = [node.number, node.name, node.type]
         .some((field) => String(field ?? '').toLowerCase().includes(needle));
+
+    if (textMatch) {
+        return true;
+    }
+
+    // Amount search: strip grouping / currency from the query and match it
+    // against either balance figure at two decimals, so typing what the
+    // Balance column shows ("1,234.50", "1234.5", "-500") finds the row.
+    const amountNeedle = needle.replace(/[^0-9.-]/g, '');
+
+    if (amountNeedle === '' || ! /[0-9]/.test(amountNeedle)) {
+        return false;
+    }
+
+    return [node.balance, node.balance_with_children]
+        .some((value) => value != null && Number(value).toFixed(2).includes(amountNeedle));
 }
 
 // Keep a node when it matches the query or has a kept descendant, so a match
@@ -98,7 +114,7 @@ onMounted(() => load());
                 <input
                     v-model="q"
                     type="text"
-                    placeholder="Filter by number, name or type…"
+                    placeholder="Filter by number, name, type or amount…"
                     class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500"
                 >
             </form>
