@@ -73,6 +73,12 @@ export const workspaces = [
                 ],
             },
             {
+                label: 'Pro Invoices',
+                items: [
+                    { label: 'Pro Invoices', to: '/customers/pro-invoices', can: 'customerProInvoices.list' },
+                ],
+            },
+            {
                 label: 'Credit Notes',
                 items: [
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
@@ -94,6 +100,7 @@ export const workspaces = [
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
                     { label: 'Payments', to: '/customers/payments', canAny: ['customerPayments.viewAll', 'customerPayments.viewOwn'] },
+                    { label: 'Online Payments', to: '/customers/online-payments', can: 'onlinePayments.generate' },
                     { label: 'Reimbursements', to: '/customers/refunds', can: 'customerRefunds.list' },
                     { label: 'GiftCards', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
                     { label: 'Reconciliations', to: '/customers/reconciliations', can: 'customerReconciliations.list' },

@@ -5,10 +5,11 @@ import { castResource } from '../../../types/responses.js';
 import Button from '../../../components/Button.vue';
 import InputNumber from '../../../components/Form/InputNumber.vue';
 
-// Generate an online payment link for an invoice: confirm the amount (defaults
-// to the outstanding debt), then show the generated URL to copy.
+// Generate an online payment link for a pro-invoice: confirm the amount
+// (defaults to its full amount — a pro-invoice has no debt/paid concept),
+// then show the generated URL to copy. Mirrors Invoices/PaymentLinkModal.vue.
 const props = defineProps({
-    invoice: { type: Object, default: null },
+    proInvoice: { type: Object, default: null },
     show: { type: Boolean, default: false },
 });
 
@@ -25,13 +26,12 @@ watch(() => props.show, (open) => {
         error.value = '';
         link.value = '';
         copied.value = false;
-        // Detail payload exposes `debt`; the list row may not — leave blank then.
-        amount.value = props.invoice?.debt ?? '';
+        amount.value = props.proInvoice?.amount ?? '';
     }
 });
 
 async function generate() {
-    if (generating.value || !props.invoice) {
+    if (generating.value || !props.proInvoice) {
         return;
     }
 
@@ -39,7 +39,7 @@ async function generate() {
     error.value = '';
 
     try {
-        const { data } = await api.post(`/customers/invoices/${props.invoice.id}/payment-link`, {
+        const { data } = await api.post(`/customers/pro-invoices/${props.proInvoice.id}/payment-link`, {
             amount: amount.value || undefined,
         });
         link.value = castResource(data).url ?? '';
@@ -76,11 +76,11 @@ async function copy() {
                 :class="{ 'pointer-events-none opacity-75': generating }"
             >
                 <h3 class="text-lg font-semibold text-gray-900">
-                    Payment link<span v-if="invoice"> · {{ invoice.gen_id }}</span>
+                    Payment link<span v-if="proInvoice"> · {{ proInvoice.gen_id }}</span>
                 </h3>
 
                 <div v-if="!link" class="mt-4 space-y-3">
-                    <InputNumber v-model="amount" label="Amount" placeholder="Outstanding amount" />
+                    <InputNumber v-model="amount" label="Amount" placeholder="Amount" />
                     <p v-if="error" class="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
                     <div class="flex justify-end gap-3 pt-2">
                         <Button :disabled="generating" @click="emit('close')">Cancel</Button>

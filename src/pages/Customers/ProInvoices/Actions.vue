@@ -7,6 +7,7 @@ import { downloadFile } from '../../../helpers/download';
 import { useAuthStore } from '../../../stores/auth';
 import ActionsOverlay from '../../../components/ActionsOverlay.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import PaymentLinkModal from './PaymentLinkModal.vue';
 
 // Reusable pro-invoice actions side overlay (mirrors
 // Customers/Payments/Actions.vue and Customers/Invoices/Actions.vue).
@@ -14,19 +15,17 @@ import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 // user holds the action's permission. Used by Index.vue and Show.vue.
 //
 // Endpoint/permission names verified against the backend source
-// (Show/Update/Delete/PrintCustomerProInvoiceAction) in
-// /Users/granit.ibrahimi/Projects/as-travel-platform-api. Two actions from
-// the original reference screenshot are NOT here because the backend has
-// no support for them at all (not just an unconfirmed guess — grepped and
+// (Show/Update/Delete/PrintCustomerProInvoiceAction,
+// GenerateProInvoicePaymentLinkAction) in
+// /Users/granit.ibrahimi/Projects/as-travel-platform-api. One action from
+// the original reference screenshot is still NOT here because the backend
+// has no support for it at all (not just an unconfirmed guess — grepped and
 // found nothing):
 //   - "Convert to Invoice": no dedicated convert endpoint exists.
 //     CreateCustomerInvoiceAction accepts an optional pro_invoice_id, so
 //     converting really means creating an invoice from this pro-invoice's
 //     data — that needs the invoice Create page to support pre-filling
 //     from a pro-invoice, which it doesn't yet.
-//   - "Generate Payment Link": OnlinePaymentTypeEnum::PRO_INVOICE exists,
-//     but no action anywhere creates one (GenerateInvoicePaymentLinkAction
-//     only handles customer invoices) — it's a reserved-but-unbuilt case.
 const props = defineProps({
     proInvoice: { type: Object, default: null },
     show: { type: Boolean, default: false },
@@ -56,12 +55,15 @@ const groups = computed(() => {
             action: () => downloadFile(`/customers/pro-invoices/${proInvoice.id}/print`, { fallbackName: `pro-invoice-${proInvoice.gen_id ?? proInvoice.id}.pdf` }),
             can: 'customerProInvoices.print',
         },
+        { label: 'Generate Payment Link', action: () => (paymentLinkOpen.value = true), can: 'onlinePayments.generate' },
         { label: 'Edit', to: routeUrl('customerProInvoices.edit', proInvoice.id), canAny: ['customerProInvoices.update', 'customerProInvoices.updateOwn'] },
         { label: 'Delete', danger: true, action: () => (toDelete.value = proInvoice), canAny: ['customerProInvoices.deleteAll', 'customerProInvoices.deleteOwn'] },
     ].filter(allowed);
 
     return items.length ? [{ label: null, items }] : [];
 });
+
+const paymentLinkOpen = ref(false);
 
 const toDelete = ref(null);
 const deleting = ref(false);
@@ -123,4 +125,6 @@ const dangerClass = 'block w-full rounded border border-red-200 px-3 py-2 text-l
         @confirm="confirmDelete"
         @cancel="toDelete = null"
     />
+
+    <PaymentLinkModal :pro-invoice="proInvoice" :show="paymentLinkOpen" @close="paymentLinkOpen = false" />
 </template>

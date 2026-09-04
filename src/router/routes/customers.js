@@ -37,6 +37,8 @@ const CustomerGiftCardsEdit = () => import('../../pages/Customers/GiftCards/Edit
 const CustomerReconciliationsIndex = () => import('../../pages/Customers/Reconciliations/Index.vue');
 const CustomerReconciliationShow = () => import('../../pages/Customers/Reconciliations/Show.vue');
 const CustomerTransactionLinksIndex = () => import('../../pages/Customers/TransactionLinks/Index.vue');
+const CustomerOnlinePaymentsIndex = () => import('../../pages/Customers/OnlinePayments/Index.vue');
+const CustomerOnlinePaymentsShow = () => import('../../pages/Customers/OnlinePayments/Show.vue');
 const CustomerRefundsIndex = () => import('../../pages/Customers/Refunds/Index.vue');
 const CustomerRefundCreate = () => import('../../pages/Customers/Refunds/Create.vue');
 const CustomerRefundShow = () => import('../../pages/Customers/Refunds/Show.vue');
@@ -62,6 +64,8 @@ export default [
     { path: '/customers/invoices/due', name: 'customerInvoices.due', component: InvoicesDue },
     { path: '/customers/invoices/my-report', name: 'customerInvoices.myReport', component: MyInvoicesReport },
     { path: '/customers/credit-notes', name: 'customerCreditNotes.list', component: CreditNotesIndex },
+    { path: '/customers/online-payments', name: 'customerOnlinePayments.list', component: CustomerOnlinePaymentsIndex },
+    { path: '/customers/online-payments/:id', name: 'customerOnlinePayments.show', component: CustomerOnlinePaymentsShow },
     { path: '/customers/pro-invoices', name: 'customerProInvoices.list', component: ProInvoicesIndex },
     { path: '/customers/pro-invoices/:id/edit', name: 'customerProInvoices.edit', component: CustomerProInvoicesEdit },
     { path: '/customers/pro-invoices/:id', name: 'customerProInvoices.show', component: CustomerProInvoicesShow },

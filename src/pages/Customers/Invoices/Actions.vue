@@ -51,6 +51,8 @@ const customerName = computed(() => {
 
 const allowed = (action) => (action.canAny ? auth.canAny(action.canAny) : auth.can(action.can));
 
+const hasDebt = (invoice) => invoice.has_debt ?? Number(invoice.debt) > 0;
+
 // Grouped, permission-filtered actions. Each item is a link (`to`) or an
 // external link (`href`). Empty groups are dropped.
 const groups = computed(() => {
@@ -70,7 +72,9 @@ const groups = computed(() => {
             ? [{ label: 'Add document', action: () => emit('addDocument'), can: 'invoiceDocuments.manageDocuments' }]
             : []),
         // Payment link only makes sense while there's an outstanding debt.
-        ...(invoice.has_debt
+        // The show payload exposes `has_debt`; the list row only sends the
+        // numeric `debt`, so fall back to that.
+        ...(hasDebt(invoice)
             ? [{ label: 'Generate Payment Link', action: () => (paymentLinkOpen.value = true), can: 'onlinePayments.generate' }]
             : []),
     ].filter(allowed);
