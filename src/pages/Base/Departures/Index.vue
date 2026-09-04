@@ -29,9 +29,10 @@ const search = ref('');
 
 // Agent name to filter by (null = all). Departures carry the agent's full name
 // only (no id), and `auth.user.name` is that same `fullName()`, so "only mine"
-// is a plain name match.
-const agent = ref(null);
+// is a plain name match. Defaults to the current user — "only mine" starts on
+// (auth.user is resolved before this page mounts; falls back to "all" if not).
 const myName = computed(() => auth.user?.name ?? '');
+const agent = ref(myName.value || null);
 const onlyMine = computed({
     get: () => !! agent.value && agent.value === myName.value,
     set: (on) => { agent.value = on ? myName.value : null; },
