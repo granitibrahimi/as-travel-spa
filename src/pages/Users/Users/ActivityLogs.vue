@@ -1,25 +1,31 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import api, {getUsersAutosuggestEndpoint} from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
+import SearchSelect from '../../../components/Form/SearchSelect.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
 
 const router = useRouter();
+const formOptions = useFormOptionsStore();
 
 const apiResponse = ref(null);
 const loading = ref(false);
-const search = ref('');
+const actionId = ref(null);
 const userId = ref('');
 const from = ref('');
 const to = ref('');
+
+// Static list of audited actions, synced with the rest of the form options.
+const actionOptions = computed(() => toOptions(formOptions.options('user_activity_log_actions')));
 
 let request = null;
 
@@ -33,7 +39,7 @@ async function fetchLogs(page = 1) {
         const { data } = await api.get('/audit-logs/user-activity-logs', {
             signal: controller.signal,
             params: {
-                q: search.value || undefined,
+                action: actionId.value || undefined,
                 user: userId.value || undefined,
                 from: from.value || undefined,
                 to: to.value || undefined,
@@ -58,7 +64,7 @@ onMounted(() => {
 });
 
 function clearFilters() {
-    search.value = '';
+    actionId.value = null;
     userId.value = '';
     from.value = '';
     to.value = '';
@@ -93,7 +99,9 @@ function formatInput(input) {
     <AppLayout title="User activity logs" fluid>
         <FullWidthBox title="User activity logs" :collapsible="false">
             <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchLogs()">
-                <input v-model="search" type="text" placeholder="Action…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-base leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-56">
+                <div class="w-full sm:w-72">
+                    <SearchSelect v-model="actionId" :options="actionOptions" placeholder="All actions" />
+                </div>
                 <div class="w-full sm:w-56">
                     <AsyncSelect v-model="userId" :url="getUsersAutosuggestEndpoint()" placeholder="All agents" />
                 </div>
