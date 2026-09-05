@@ -53,13 +53,23 @@ const statusClass = (status) => ({
         <Loader v-if="! payment" />
 
         <template v-else>
-            <FullWidthBox title="Payment link generated" :collapsible="false" class="mb-6">
-                <div class="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_1fr]">
+            <div class="mb-6 grid grid-cols-1 gap-6" :class="payment.customer ? 'lg:grid-cols-2' : ''">
+                <CustomerDetails v-if="payment.customer" :customer="payment.customer" />
+
+                <FullWidthBox title="Payment link generated" :collapsible="false">
+                    <template #actions>
+                        <Button variant="primary" size="sm" :loading="checking" @click="checkStatus">Check payment status</Button>
+                    </template>
+
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <tbody>
                             <tr>
                                 <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Type</th>
                                 <td class="border border-gray-300 px-2 py-2">{{ payment.type }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Email</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ payment.email ?? '—' }}</td>
                             </tr>
                             <tr>
                                 <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Created by</th>
@@ -90,12 +100,8 @@ const statusClass = (status) => ({
                             </tr>
                         </tbody>
                     </table>
-
-                    <div>
-                        <Button variant="primary" :loading="checking" @click="checkStatus">Check payment status</Button>
-                    </div>
-                </div>
-            </FullWidthBox>
+                </FullWidthBox>
+            </div>
 
             <FullWidthBox title="Payment attempts" :collapsible="false" class="mb-6">
                 <p v-if="! payment.sessions.length" class="text-sm text-gray-400">No payment attempts yet.</p>
@@ -122,8 +128,6 @@ const statusClass = (status) => ({
                     </table>
                 </div>
             </FullWidthBox>
-
-            <CustomerDetails v-if="payment.customer" :customer="payment.customer" />
         </template>
     </AppLayout>
 </template>
