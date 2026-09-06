@@ -118,6 +118,7 @@ function formatInput(input) {
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 70px;">ID</th>
                             <th class="border border-gray-300 px-2 py-2">User</th>
                             <th class="border border-gray-300 px-2 py-2">Action</th>
+                            <th class="border border-gray-300 px-2 py-2 text-center" style="width: 100px;">Reference ID</th>
                             <th class="border border-gray-300 px-2 py-2">Input</th>
                             <th class="border border-gray-300 px-2 py-2" style="width: 140px;">Date</th>
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 120px;">Audit Logs</th>
@@ -125,15 +126,16 @@ function formatInput(input) {
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="6" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No logs found.</td>
+                            <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No logs found.</td>
                         </tr>
                         <tr v-for="log in (loading ? [] : apiResponse?.data ?? [])" :key="log.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ log.id }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ log.user ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ log.action ?? '—' }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-center">{{ log.entity_id ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ formatInput(log.input_data) }}</td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ log.timestamp }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
