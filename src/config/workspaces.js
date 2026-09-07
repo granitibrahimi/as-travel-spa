@@ -253,6 +253,7 @@ export const workspaces = [
                     { label: 'Gift Cards', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
                     { label: 'Payments', to: '/customers/payments', canAny: ['customerPayments.viewAll', 'customerPayments.viewOwn'] },
                     { label: 'Payments for Approval', to: '/customers/payments/for-approval', can: 'customerPayments.approve' },
+                    { label: 'Online Payments', to: '/customers/online-payments', can: 'onlinePayments.generate' },
                     { label: 'Reimbursements', to: '/customers/refunds', can: 'customerRefunds.list' },
                     { label: 'Reconciliations', to: '/customers/reconciliations', can: 'customerReconciliations.list' },
                     { label: 'Customer Transaction Links', to: '/customers/transaction-links', can: 'customerTransactionsLinks.list' },
