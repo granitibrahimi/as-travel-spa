@@ -86,7 +86,7 @@ async function recalculate() {
                                 <td class="border border-gray-300 px-2 py-2">{{ request.to }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">{{ request.working_days }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">
-                                    <span class="rounded px-2 py-0.5 text-xs font-medium" :class="statusClass(request.status_label)">{{ request.status_label }}</span>
+                                    <span class="rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wide" :class="statusClass(request.status_label)">{{ request.status_label }}</span>
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">
                                     <RouterLink v-if="auth.can('vacations.showRequest')" :to="routeUrl('vacations.show', request.id)" class="text-red-700 hover:underline">Open</RouterLink>

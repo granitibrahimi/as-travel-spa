@@ -23,7 +23,7 @@ const errors = ref({});
 const processing = ref(false);
 
 onMounted(async () => {
-    const { data } = await api.get(`/vacations/${id}/balance`);
+    const { data } = await api.get(`/users/vacations/${id}/balance`);
     balance.value = data.data;
     userId.value = data.data.user_id;
     form.days = data.data.this_year_days;
@@ -38,7 +38,7 @@ async function submit() {
     errors.value = {};
 
     try {
-        await api.put(`/vacations/${id}/balance`, form);
+        await api.put(`/users/vacations/${id}/balance`, form);
         router.push(routeUrl('vacations.requests', { user: userId.value }));
     } catch (error) {
         if (error.response?.status === 422) {

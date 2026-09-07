@@ -59,6 +59,24 @@ async function load() {
 
 onMounted(() => load());
 
+// Once a request has been answered (a responder is recorded, or the status has
+// moved off "Open"), the inline Respond form is retired — further changes to the
+// decision or note are made from the Edit page instead.
+const hasResponse = computed(() => {
+    const r = request.value;
+
+    return !! r && (!! r.responder || r.status_label !== 'Open');
+});
+
+// Same colour language as the list views so the decision reads at a glance.
+const statusClass = (status) => ({
+    Approved: 'bg-green-100 text-green-700',
+    Rejected: 'bg-red-100 text-red-700',
+    Open: 'bg-amber-100 text-amber-700',
+    Canceled: 'bg-gray-200 text-gray-700',
+    'Self-canceled': 'bg-gray-200 text-gray-700',
+}[status] ?? 'bg-gray-100 text-gray-600');
+
 const requestRows = computed(() => {
     const r = request.value;
 
@@ -87,7 +105,7 @@ async function respond() {
     respondErrors.value = {};
 
     try {
-        await api.post(`/vacations/${id}/respond`, respondForm);
+        await api.post(`/users/vacations/${id}/respond`, respondForm);
         await load();
     } catch (error) {
         if (error.response?.status === 422) {
@@ -111,7 +129,7 @@ async function confirmDelete() {
 
     try {
         const userId = request.value.user_id;
-        await api.delete(`/vacations/${id}`);
+        await api.delete(`/users/vacations/${id}`);
         showDelete.value = false;
         router.push(routeUrl('vacations.requests', { user: userId }));
     } finally {
@@ -141,14 +159,21 @@ async function confirmDelete() {
                         <tbody>
                             <tr v-for="[label, value] in requestRows" :key="label">
                                 <th class="w-48 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">{{ label }}</th>
-                                <td class="border border-gray-300 px-2 py-2">{{ value ?? '-' }}</td>
+                                <td class="border border-gray-300 px-2 py-2">
+                                    <span
+                                        v-if="label === 'Status'"
+                                        class="inline-block rounded px-2 py-0.5 text-sm font-bold uppercase tracking-wide"
+                                        :class="statusClass(value)"
+                                    >{{ value }}</span>
+                                    <template v-else>{{ value ?? '-' }}</template>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </FullWidthBox>
             </div>
 
-            <form v-if="auth.can('vacations.respond')" @submit.prevent="respond">
+            <form v-if="auth.can('vacations.respond') && ! hasResponse" @submit.prevent="respond">
                 <FullWidthBox title="Respond" :collapsible="false">
                     <div class="space-y-4">
                         <Select v-model="respondForm.type" :options="statuses" label="Decision" :placeholder="null" :error="respondErrors.type" />
@@ -164,6 +189,14 @@ async function confirmDelete() {
                     </template>
                 </FullWidthBox>
             </form>
+
+            <FullWidthBox v-else-if="hasResponse" title="Respond" :collapsible="false">
+                <p class="text-sm text-gray-600">
+                    This request has already been answered.
+                    <RouterLink v-if="auth.can('vacations.edit')" :to="routeUrl('vacations.edit', id)" class="text-red-700 hover:underline">Edit the request</RouterLink>
+                    <span v-if="auth.can('vacations.edit')"> to change the decision or note.</span>
+                </p>
+            </FullWidthBox>
         </div>
 
         <ConfirmDialog
