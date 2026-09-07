@@ -8,9 +8,9 @@ import { useAuthStore } from '../../../stores/auth.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
-import Button from '../../../components/Button.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import UserDetails from '../../../components/UserDetails.vue';
+import VacationBalanceBox from '../../../components/VacationBalanceBox.vue';
 import Loader from '../../../components/Loader.vue';
 import AddVacationModal from './AddVacationModal.vue';
 
@@ -20,26 +20,8 @@ const route = useRoute();
 const id = route.params.id;
 
 const user = ref(null);
-const recalculating = ref(false);
 const toggling = ref(false);
 const showAddVacation = ref(false);
-
-const thisYear = new Date().getFullYear();
-const lastYear = thisYear - 1;
-
-const vacationRows = computed(() => {
-    const b = user.value?.balance;
-    if (! b) {
-        return [];
-    }
-
-    return [
-        [`Leftover days from ${lastYear}`, b.leftover_days],
-        [`Days for this year ${thisYear}`, b.this_year_days],
-        ['Days used', b.days_used],
-        ['Days left', b.days_left],
-    ];
-});
 
 async function fetchUser() {
     const { data } = await api.get(`/users/users/${id}`);
@@ -92,24 +74,6 @@ function onVacationSaved() {
     notifications.push({ type: 'success', message: 'Vacation recorded.' });
     fetchUser();
 }
-
-async function recalculate() {
-    if (recalculating.value) {
-        return;
-    }
-
-    recalculating.value = true;
-
-    try {
-        await api.post(`/users/vacations/${id}/recalculate`);
-        await fetchUser();
-        notifications.push({ type: 'success', message: 'Vacation days recalculated.' });
-    } catch (e) {
-        notifications.push({ type: 'error', message: 'Could not recalculate vacation days.' });
-    } finally {
-        recalculating.value = false;
-    }
-}
 </script>
 
 <template>
@@ -128,36 +92,7 @@ async function recalculate() {
                 <UserDetails :user="user" :boxed="false" :show-view-link="false" />
             </FullWidthBox>
 
-            <FullWidthBox title="Vacation details" :collapsible="false">
-                <table v-if="vacationRows.length" class="w-full border-collapse border border-gray-300 text-sm">
-                    <tbody>
-                        <tr v-for="[label, value] in vacationRows" :key="label">
-                            <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">{{ label }}</th>
-                            <td class="w-24 border border-gray-300 px-2 py-2 tabular-nums">{{ value ?? '-' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p v-else class="text-sm text-gray-400">No vacation balance for this user.</p>
-
-                <div class="mt-4 flex flex-wrap gap-2">
-                    <RouterLink
-                        v-if="auth.can('vacations.showRequests')"
-                        :to="routeUrl('vacations.requests', { user: user.id })"
-                        class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                        View all vacation details
-                    </RouterLink>
-                    <Button
-                        v-if="auth.can('vacations.reCalculate')"
-                        size="sm"
-                        :loading="recalculating"
-                        :disabled="recalculating"
-                        @click="recalculate"
-                    >
-                        {{ recalculating ? 'Recalculating…' : 'RE-Calculate all vacations' }}
-                    </Button>
-                </div>
-            </FullWidthBox>
+            <VacationBalanceBox :user="user" @recalculated="fetchUser" />
         </div>
 
         <AddVacationModal

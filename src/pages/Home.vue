@@ -5,11 +5,12 @@ import { useAuthStore } from '../stores/auth';
 import { useLayoutStore } from '../stores/layout';
 
 // Lazy — only the active workspace's dashboard is ever rendered (see the
-// v-if chain below), but a static import would still bundle all three (and
+// v-if chain below), but a static import would still bundle all of them (and
 // AdministratorDashboard's chart.js dependency) into this page's chunk.
 const CrmDashboard = defineAsyncComponent(() => import('./Dashboards/CrmDashboard.vue'));
 const AdministratorDashboard = defineAsyncComponent(() => import('./Dashboards/AdministratorDashboard.vue'));
 const FinanceDashboard = defineAsyncComponent(() => import('./Dashboards/FinanceDashboard.vue'));
+const HrDashboard = defineAsyncComponent(() => import('./Dashboards/HrDashboard.vue'));
 
 const auth = useAuthStore();
 const layout = useLayoutStore();
@@ -21,6 +22,7 @@ const layout = useLayoutStore();
         <CrmDashboard v-if="layout.activeWorkspace === 'crm'" />
         <AdministratorDashboard v-else-if="layout.activeWorkspace === 'administration'" />
         <FinanceDashboard v-else-if="layout.activeWorkspace === 'finance'" />
+        <HrDashboard v-else-if="layout.activeWorkspace === 'hr'" />
 
         <div v-else class="space-y-4">
             <h1 class="text-2xl font-bold">Welcome, {{ auth.user?.name }}</h1>
