@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
+import { quickBooksSyncEntityPath } from '../../helpers/quickbooksSyncEntity.js';
 import { castResource } from '../../types/responses.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
@@ -20,6 +21,12 @@ const form = reactive({ status: null, qb_id: '' });
 const errors = ref({});
 const saving = ref(false);
 const retrying = ref(false);
+
+// The API's `entity_url` is a platform API path (or `#`) — resolve the entity's
+// real in-SPA route from its type (`entity_value`) instead.
+const entityPath = computed(() =>
+    row.value ? quickBooksSyncEntityPath(row.value.entity_value, row.value.entity_id) : null,
+);
 
 async function load() {
     const [{ data: detail }, { data: options }] = await Promise.all([
@@ -88,7 +95,7 @@ async function saveStatus() {
                         <div class="flex gap-2">
                             <dt class="w-28 shrink-0 font-medium text-gray-500">Entity ID</dt>
                             <dd>
-                                <a v-if="row.entity_url" :href="row.entity_url" target="_blank" class="text-red-700 hover:underline">{{ row.entity_id }}</a>
+                                <RouterLink v-if="entityPath" :to="entityPath" class="text-red-700 hover:underline">{{ row.entity_id }}</RouterLink>
                                 <span v-else>{{ row.entity_id }}</span>
                             </dd>
                         </div>

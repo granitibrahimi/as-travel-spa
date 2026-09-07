@@ -1,8 +1,10 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
+import { RouterLink } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
+import { quickBooksSyncEntityPath } from '../../helpers/quickbooksSyncEntity.js';
 import { castPaginated } from '../../types/responses.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
@@ -108,6 +110,10 @@ const rowActions = (row) => [
     ...(row.can_delete && auth.can('quickBooksSync.delete') ? [{ label: 'Delete', danger: true, action: () => (pendingDelete.value = row) }] : []),
 ];
 
+// The API's `entity_url` is a platform API path (or `#`) — resolve the entity's
+// real in-SPA route from its type (`entity_value`) instead.
+const entityPath = (row) => quickBooksSyncEntityPath(row.entity_value, row.entity_id);
+
 const statusClass = (status) => ({
     Open: 'bg-gray-100 text-gray-600',
     'In progress': 'bg-blue-100 text-blue-700',
@@ -159,7 +165,7 @@ const statusClass = (status) => ({
                                 <td class="border border-gray-300 px-2 py-2">{{ row.entity }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.action }}</td>
                                 <td class="border border-gray-300 px-2 py-2">
-                                    <a v-if="row.entity_url" :href="row.entity_url" target="_blank" class="text-red-700 hover:underline">{{ row.entity_id }}</a>
+                                    <RouterLink v-if="entityPath(row)" :to="entityPath(row)" class="text-red-700 hover:underline">{{ row.entity_id }}</RouterLink>
                                     <span v-else>{{ row.entity_id }}</span>
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2">
