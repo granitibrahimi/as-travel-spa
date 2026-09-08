@@ -8,7 +8,6 @@ import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
 import ConfirmDialog from '../../components/ConfirmDialog.vue';
-import DropdownMenu from '../../components/DropdownMenu.vue';
 import ApiPagination from '../../components/ApiPagination.vue';
 import InputText from '../../components/Form/InputText.vue';
 import Loader from '../../components/Loader.vue';
@@ -50,11 +49,6 @@ async function fetchTasks(page = 1) {
 }
 
 onMounted(() => fetchTasks());
-
-const rowActions = (task) => [
-    { label: 'View', href: routeUrl('tasks.show', task.id) },
-    ...(task.ignored ? [] : [{ label: 'Ignore', danger: true, action: () => openIgnore(task) }]),
-];
 
 // --- Ignore with a required reason ---
 const taskToIgnore = ref(null);
@@ -127,7 +121,7 @@ const statusClass = (status) => ({
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 100px;">Status</th>
                             <th class="border border-gray-300 px-2 py-2">Assigned to</th>
                             <th class="border border-gray-300 px-2 py-2">Created</th>
-                            <th class="border border-gray-300 px-2 py-2 text-center" style="width: 80px;">Actions</th>
+                            <th class="border border-gray-300 px-2 py-2 text-center" style="width: 110px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -156,8 +150,11 @@ const statusClass = (status) => ({
                                 {{ task.created_at }}
                                 <span class="block text-gray-400">by {{ task.created_by }}</span>
                             </td>
-                            <td class="border border-gray-300 px-2 py-2 text-center">
-                                <DropdownMenu :items="rowActions(task)" />
+                            <td class="border border-gray-300 px-2 py-2">
+                                <div class="flex items-center justify-center gap-3">
+                                    <RouterLink :to="routeUrl('tasks.show', task.id)" class="text-red-600 hover:underline">View</RouterLink>
+                                    <button v-if="! task.ignored" type="button" class="text-red-600 hover:underline" @click="openIgnore(task)">Ignore</button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>

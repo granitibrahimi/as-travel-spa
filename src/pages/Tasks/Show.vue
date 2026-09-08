@@ -4,6 +4,7 @@ import { RouterLink, useRoute } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castResource } from '../../types/responses.js';
+import { useAuthStore } from '../../stores/auth';
 import AppLayout from '../../layouts/AppLayout.vue';
 import Button from '../../components/Button.vue';
 import ConfirmDialog from '../../components/ConfirmDialog.vue';
@@ -16,11 +17,8 @@ import Select from '../../components/Form/Select.vue';
 import Loader from '../../components/Loader.vue';
 
 const route = useRoute();
+const auth = useAuthStore();
 const id = route.params.id;
-
-// Child-destination lookup lives under /api/customers (sibling of /api/v1).
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-const destinationsUrl = `${apiOrigin}/api/customers/child-destinations`;
 
 const task = ref(null);
 const contactReference = ref(null);
@@ -185,7 +183,13 @@ async function storeRequest() {
 }
 
 const requestActions = (request) => [
-    ...request.offers.map((offer) => ({ label: `View ${offer.name}`, action: () => {} })),
+    ...(!request.obsolete && auth.can('tasksOffers.createOffer')
+        ? [{ label: 'Prepare offer', href: routeUrl('taskRequestOffers.create', [id, request.id]) }]
+        : []),
+    ...request.offers.map((offer) => ({
+        label: `View ${offer.name}`,
+        href: routeUrl('taskRequestOffers.show', [id, request.id, offer.id]),
+    })),
     ...(request.obsolete ? [] : [{ label: 'Mark obsolete', danger: true, action: () => (requestToObsolete.value = request) }]),
 ];
 
@@ -331,6 +335,9 @@ const tabs = [
                                             <span v-for="offer in request.offers" :key="offer.id" class="block text-xs text-gray-500">
                                                 ↳ {{ offer.name }} · {{ offer.created_at }}
                                             </span>
+                                            <span v-if="request.obsolete && request.obsoleted_by" class="mt-0.5 block text-xs text-amber-700">
+                                                Marked obsolete by {{ request.obsoleted_by }}<template v-if="request.obsoleted_at"> · {{ request.obsoleted_at }}</template>
+                                            </span>
                                         </td>
                                         <td class="border border-gray-300 px-2 py-2 text-xs">
                                             {{ request.created_at }}
@@ -358,7 +365,7 @@ const tabs = [
                                 <p v-if="requestErrors.destinations" class="mb-1 text-xs text-red-600">{{ requestErrors.destinations }}</p>
                                 <div v-for="(leg, li) in requestForm.destinations" :key="li" class="mb-2 grid grid-cols-1 gap-3 md:grid-cols-12">
                                     <div class="md:col-span-5">
-                                        <AsyncSelect v-model="leg.destination_id" :url="destinationsUrl"
+                                        <AsyncSelect v-model="leg.destination_id" url="/destinations/autosuggest"
                                                      :placeholder="`Destination ${li + 1}…`"
                                                      :error="requestErrors[`destinations.${li}.destination_id`]" />
                                     </div>

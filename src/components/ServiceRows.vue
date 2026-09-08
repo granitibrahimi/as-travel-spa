@@ -1,5 +1,5 @@
 <script setup>
-import { inject, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import AsyncSelect from './Form/AsyncSelect.vue';
 import AutoGrowTextarea from './Form/Textarea.vue';
 import InputNumber from './Form/InputNumber.vue';
@@ -14,11 +14,16 @@ const props = defineProps({
     destinationId: { type: [Number, String, null], default: null },
     // Destination label used when quick-creating a hotel from a row.
     destinationName: { type: String, default: '' },
+    // Restrict the category dropdown to this subset ([{ value, label }]);
+    // defaults to every category from `offerMeta`.
+    categories: { type: Array, default: null },
 });
 
 defineEmits(['remove']);
 
 const meta = inject('offerMeta');
+
+const categoryOptions = computed(() => props.categories ?? meta.categories);
 
 // Hotel popup targets one row at a time; with a hotel id it opens in edit
 // mode (e.g. to add a missing room), otherwise it creates a new hotel.
@@ -114,7 +119,7 @@ function onRoomChange(line, option) {
                     <td class="px-2 py-2">
                         <Select
                             v-model="line.category"
-                            :options="meta.categories"
+                            :options="categoryOptions"
                             :placeholder="null"
                             @update:model-value="onCategoryChange(line)"
                         />
