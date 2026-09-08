@@ -50,7 +50,7 @@ export default [
     { path: '/suppliers/credit-notes', name: 'supplierCreditNotes.list', component: SupplierCreditNotesIndex },
     { path: '/suppliers/credit-notes/:id', name: 'supplierCreditNotes.show', component: SupplierCreditNoteShow },
     { path: '/suppliers/credit-notes/:supplierId/create', name: 'supplierCreditNotes.create', component: SupplierCreditNotesManage },
-    { path: '/suppliers/credit-notes/:id/edit', name: 'supplierCreditNotes.edit', component: SupplierCreditNoteShow },
+    { path: '/suppliers/credit-notes/:id/edit', name: 'supplierCreditNotes.edit', component: SupplierCreditNotesManage },
 
     // Deposits
     { path: '/suppliers/deposits', name: 'supplierDeposits.list', component: SupplierDepositsIndex },

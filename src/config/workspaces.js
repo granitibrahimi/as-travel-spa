@@ -284,6 +284,7 @@ export const workspaces = [
                     { label: 'New Supplier', to: '/suppliers/create', can: 'suppliers.create' },
                     { label: 'Export', to: '/suppliers/export', can: 'suppliers.export' },
                     { label: 'Bills', to: '/suppliers/bills', can: 'supplierBills.list' },
+                    { label: 'Credit Notes', to: '/suppliers/credit-notes', can: 'supplierCreditNotes.list' },
                     { label: 'Deposits', to: '/suppliers/deposits', can: 'supplierDeposits.list' },
                     { label: 'Payments', to: '/suppliers/payments', can: 'supplierPayments.list' },
                     { label: 'Gift Cards', to: '/suppliers/gift-cards', can: 'supplierGiftCards.list' },
