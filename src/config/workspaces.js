@@ -241,6 +241,24 @@ export const workspaces = [
                     { label: 'Mapping', to: '/finance/accounts/mapping', can: 'accounts.mapping' },
                 ],
             },
+            { separator: true },
+            {
+                // Mirrors the "Reports" list on the Finance dashboard
+                // (pages/Dashboards/FinanceDashboard.vue) — same links, labels
+                // and permission slugs.
+                label: 'Reports',
+                items: [
+                    { label: 'Chart of Accounts', to: '/finance/reports/chart-of-accounts', can: 'financeReports.chartOfAccounts' },
+                    { label: 'Customer Invoices Report', to: '/finance/reports/customer-invoices', can: 'customerInvoices.reports' },
+                    { label: 'Accounts Receivable', to: '/finance/reports/accounts-receivable', can: 'financeReports.accountsReceivable' },
+                    { label: 'Accounts Payable', to: '/finance/reports/accounts-payable', can: 'financeReports.accountsPayable' },
+                    { label: '4000 vs 5000', to: '/finance/reports/4000-vs-5000', can: 'financeReports.accountComparison' },
+                    { label: 'Sales Book (Libri i Shitjes)', to: '/finance/reports/sales-book', can: 'financeReports.salesBook' },
+                    { label: 'Purchases Book (Libri i Blerjeve)', to: '/finance/reports/purchases-book', can: 'financeReports.purchasesBook' },
+                    { label: 'Balance Sheet', to: '/finance/reports/balance-sheet', can: 'financeReports.balanceSheet' },
+                ],
+            },
+            { separator: true },
             {
                 label: 'Customers',
                 items: [
