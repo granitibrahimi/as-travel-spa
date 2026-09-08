@@ -168,6 +168,9 @@ onMounted(() => {
     <AppLayout :title="title" fluid>
         <FullWidthBox :title="title" :collapsible="false" class="mb-6">
             <template #actions>
+                <RouterLink :to="routeUrl('customers.show', id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">
+                    Back to customer
+                </RouterLink>
                 <Button variant="primary" size="sm" :disabled="processing || ! balanced" @click="submit">
                     {{ processing ? 'Saving…' : 'Reconcile' }}
                 </Button>
