@@ -24,6 +24,44 @@ const query = ref('');
 const loading = ref(false);
 const inputRef = ref(null);
 const sections = ref([]); // [{ title, items: [{ type, id, label }] }]
+const highlighted = ref(0);
+const itemRefs = ref([]);
+
+// The section list rendered flat, for arrow-key navigation, plus the index at
+// which each section starts in that flat list.
+const flatItems = computed(() => sections.value.flatMap((section) => section.items));
+const sectionOffsets = computed(() => {
+    const offsets = [];
+    let acc = 0;
+
+    for (const section of sections.value) {
+        offsets.push(acc);
+        acc += section.items.length;
+    }
+
+    return offsets;
+});
+
+function move(delta) {
+    const count = flatItems.value.length;
+
+    if (!count) {
+        return;
+    }
+
+    highlighted.value = (highlighted.value + delta + count) % count;
+}
+
+// Reset the highlight and drop stale element refs whenever the results change.
+watch(sections, () => {
+    highlighted.value = 0;
+    itemRefs.value = [];
+});
+
+// Keep the highlighted row scrolled into view as it moves past a visible edge.
+watch(highlighted, (index) => {
+    nextTick(() => itemRefs.value[index]?.scrollIntoView({ block: 'nearest' }));
+});
 
 useDoubleShift(() => {
     if (algoliaEnabled && auth.sessionActive) {
@@ -121,11 +159,30 @@ function routeFor(item) {
 }
 
 function select(item) {
+    if (!item) {
+        return;
+    }
+
     const to = routeFor(item);
     close();
 
     if (to) {
         router.push(to);
+    }
+}
+
+// Arrow keys move the highlight, Enter opens it. Bound on the input (where
+// focus lives while the overlay is open); Escape is handled at document level.
+function onInputKeydown(event) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        move(1);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        move(-1);
+    } else if (event.key === 'Enter') {
+        event.preventDefault();
+        select(flatItems.value[highlighted.value]);
     }
 }
 
@@ -232,6 +289,7 @@ const hasResults = computed(() => sections.value.length > 0);
                         type="text"
                         placeholder="Search customers, suppliers, invoices, bills…"
                         class="w-full border-0 p-0 text-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+                        @keydown="onInputKeydown"
                     >
                     <svg v-if="loading" class="h-4 w-4 shrink-0 animate-spin text-gray-300" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
@@ -247,9 +305,12 @@ const hasResults = computed(() => sections.value.length > 0);
                         <button
                             v-for="(item, itemIndex) in section.items"
                             :key="`${item.type}-${item.id}-${itemIndex}`"
+                            :ref="(el) => (itemRefs[sectionOffsets[index] + itemIndex] = el)"
                             type="button"
-                            class="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                            class="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-sm"
+                            :class="sectionOffsets[index] + itemIndex === highlighted ? 'bg-red-50 text-red-700' : 'text-gray-700 hover:bg-gray-50'"
                             @click="select(item)"
+                            @mousemove="highlighted = sectionOffsets[index] + itemIndex"
                         >
                             <svg v-if="item.type === 'customer' || item.type === 'supplier'" class="mt-0.5 h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

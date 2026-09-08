@@ -87,6 +87,46 @@ export const useLayoutStore = defineStore('layout', {
 
             return USER_MENU.filter((item) => allows(auth, item));
         },
+
+        // Every nav item across all workspaces the user can access, flattened
+        // and permission-filtered — the data source for the nav palette
+        // (NavPalette.vue). De-duplicated by destination path (some items, e.g.
+        // "Messages", appear in several workspaces); the first workspace wins
+        // for the displayed context.
+        allNavItems() {
+            const auth = useAuthStore();
+            const seen = new Set();
+            const items = [];
+
+            for (const workspace of WORKSPACES) {
+                if (!allows(auth, workspace)) {
+                    continue;
+                }
+
+                for (const group of workspace.groups) {
+                    if (group.separator) {
+                        continue;
+                    }
+
+                    for (const item of group.items) {
+                        if (!allows(auth, item) || seen.has(item.to)) {
+                            continue;
+                        }
+
+                        seen.add(item.to);
+                        items.push({
+                            label: item.label,
+                            to: item.to,
+                            workspace: workspace.label,
+                            workspaceKey: workspace.key,
+                            group: group.label,
+                        });
+                    }
+                }
+            }
+
+            return items;
+        },
     },
 
     actions: {

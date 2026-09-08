@@ -40,21 +40,30 @@ onMounted(async () => {
 
     rows.value = (undeposited.payments ?? []).map((payment) => ({
         ...payment,
-        included: false,
-        amount: payment.open_amount,
+        amount: null,
     }));
 
     ready.value = true;
 });
 
-// Keep a line's deposited amount within [0, open_amount].
+// A line counts as "in" the deposit purely from its typed amount — a non-empty,
+// non-zero value. The checkbox just mirrors this (and is a shortcut for filling
+// / clearing the amount); there is no separate `included` flag.
+const isIncluded = (row) => (parseFloat(row.amount) || 0) > 0;
+
+// Keep a line's deposited amount within [0, open_amount]; leave an empty field
+// empty so the user can clear a row back out.
 function clampAmount(row) {
+    if (row.amount === null || row.amount === undefined || row.amount === '') {
+        return;
+    }
+
     const value = parseFloat(row.amount) || 0;
     row.amount = Math.min(Math.max(value, 0), row.open_amount);
 }
 
 const selectedTotal = computed(() => rows.value
-    .filter((row) => row.included)
+    .filter((row) => isIncluded(row))
     .reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0));
 
 const expected = computed(() => parseFloat(form.expected_amount) || 0);
@@ -79,7 +88,7 @@ async function submit() {
         expected_amount: form.expected_amount,
         notes: form.notes,
         entries: rows.value
-            .filter((row) => row.included && (parseFloat(row.amount) || 0) > 0)
+            .filter((row) => isIncluded(row))
             .map((row) => ({ customer_payment_id: row.id, amount: row.amount })),
     };
 
@@ -144,9 +153,14 @@ async function submit() {
                             <tr v-if="rows.length === 0">
                                 <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No undeposited cash payments.</td>
                             </tr>
-                            <tr v-for="row in rows" :key="row.id" class="hover:bg-gray-50" :class="row.included ? 'bg-green-50' : ''">
+                            <tr v-for="row in rows" :key="row.id" class="hover:bg-gray-50" :class="isIncluded(row) ? 'bg-green-50' : ''">
                                 <td class="border border-gray-300 px-2 py-2 text-center">
-                                    <input v-model="row.included" type="checkbox">
+                                    <input
+                                        type="checkbox"
+                                        class="h-5 w-5 cursor-pointer accent-red-600 align-middle"
+                                        :checked="isIncluded(row)"
+                                        @change="row.amount = $event.target.checked ? row.open_amount : null"
+                                    >
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ row.gen_id ?? row.id }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.customer }}</td>
@@ -155,8 +169,8 @@ async function submit() {
                                 <td class="border border-gray-300 px-2 py-2 text-right">
                                     <InputNumber
                                         v-model="row.amount"
-                                        :disabled="! row.included"
                                         class="!w-28 text-right text-sm"
+                                        placeholder="0.00"
                                         @input="clampAmount(row)"
                                     />
                                 </td>
