@@ -176,10 +176,8 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                     <thead>
                         <tr class="text-left text-xs uppercase text-gray-500">
                             <th class="border border-gray-300 px-2 py-2" style="width: 100px;">Date</th>
-                            <th class="border border-gray-300 px-2 py-2" style="width: 150px;">Type</th>
-                            <th class="border border-gray-300 px-2 py-2" style="width: 100px;">Reference</th>
-                            <th class="border border-gray-300 px-2 py-2" style="width: 160px;">Payee</th>
-                            <th class="border border-gray-300 px-2 py-2" style="width: 200px;">Split</th>
+                            <th class="border border-gray-300 px-2 py-2" style="width: 230px;">Type</th>
+                            <th class="border border-gray-300 px-2 py-2" style="width: 220px;">Payee / Split</th>
                             <th class="border border-gray-300 px-2 py-2">Notes</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Debit</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Credit</th>
@@ -188,33 +186,34 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="9" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No transactions found.</td>
+                            <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No transactions found.</td>
                         </tr>
                         <tr v-for="row in (loading ? [] : apiResponse?.data ?? [])" :key="row.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ row.on_date }}</td>
-                            <td class="border border-gray-300 px-2 py-2">{{ row.type }}</td>
                             <td class="border border-gray-300 px-2 py-2">
-                                <RouterLink v-if="referenceLink(row)" :to="referenceLink(row)" class="text-red-600 hover:underline">{{ row.reference_id }}</RouterLink>
-                                <span v-else>{{ row.reference_id }}</span>
+                                <div>
+                                    <RouterLink v-if="referenceLink(row)" :to="referenceLink(row)" class="text-red-600 hover:underline">{{ row.type }}</RouterLink>
+                                    <span v-else>{{ row.type }}</span>
+                                </div>
+                                <div v-if="row.reference_label ?? row.reference_id" class="text-xs text-gray-500">{{ row.reference_label ?? row.reference_id }}</div>
                             </td>
-                            <td class="border border-gray-300 px-2 py-2">{{ row.payee ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2">
-                                <template v-if="row.split">
+                                <div v-if="row.payee">{{ row.payee }}</div>
+                                <div v-if="row.split" class="text-xs text-gray-500">
                                     <RouterLink
                                         v-if="! row.split.is_split && row.split.id"
                                         :to="routeUrl('accounts.history', row.split.id)"
                                         class="text-red-600 hover:underline"
                                     >{{ row.split.full_name ?? row.split.name }}</RouterLink>
                                     <span v-else>{{ row.split.full_name ?? row.split.name }}</span>
-                                </template>
-                                <span v-else>—</span>
+                                </div>
                             </td>
-                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ row.notes ?? '—' }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ row.debit ? money(row.debit) : '—' }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ row.credit ? money(row.credit) : '—' }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ row.notes }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ row.debit ? money(row.debit) : '' }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ row.credit ? money(row.credit) : '' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums font-medium">{{ money(row.balance) }}</td>
                         </tr>
                     </tbody>
