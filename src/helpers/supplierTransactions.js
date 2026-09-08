@@ -1,6 +1,10 @@
 // Maps a supplier transaction (as returned by SupplierTransactionResource:
 // `type` is the enum display name, `id` the record id) to its in-SPA detail
 // route. Returns null for types without a detail page (e.g. Expense).
+//
+// Some endpoints (the reconcile debit/credit lists) key a Journal row by its
+// journal_line id in `id` and expose the parent journal id separately as
+// `transaction_id` — the navigable one. Prefer `transaction_id` when present.
 const PATHS = {
     Bill: 'suppliers/bills',
     'Credit Note': 'suppliers/credit-notes',
@@ -12,10 +16,10 @@ const PATHS = {
     Reconciliation: 'suppliers/reconciliations',
 };
 
-export function supplierTransactionPath({ type, id }) {
+export function supplierTransactionPath({ type, id, transaction_id }) {
     const segment = PATHS[type];
 
-    return segment ? `/${segment}/${id}` : null;
+    return segment ? `/${segment}/${transaction_id ?? id}` : null;
 }
 
 // Some endpoints (the supplier reconciliation detail links) return `type` as a
