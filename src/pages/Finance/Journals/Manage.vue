@@ -21,6 +21,10 @@ const route = useRoute();
 const router = useRouter();
 const id = route.params.id ?? null;
 const isEdit = Boolean(id);
+// "Clone" opens this create form pre-filled from an existing journal
+// (?clone=<id>). `isEdit` stays false, so submit still POSTs a brand-new
+// journal — only the field values carry over, not the identity/number.
+const cloneId = ! isEdit ? (route.query.clone ?? null) : null;
 
 const formOptions = useFormOptionsStore();
 const accounts = computed(() => toOptions(formOptions.accounts));
@@ -48,12 +52,16 @@ const form = reactive({
 });
 
 onMounted(async () => {
-    const journal = isEdit
-        ? await api.get(`/finance/journals/${id}`).then((r) => castResource(r.data))
+    const sourceId = id ?? cloneId;
+    const journal = sourceId
+        ? await api.get(`/finance/journals/${sourceId}`).then((r) => castResource(r.data))
         : null;
 
     if (journal) {
-        genId.value = journal.gen_id;
+        // A clone copies the field values but not the journal number.
+        if (isEdit) {
+            genId.value = journal.gen_id;
+        }
         form.date = journal.on_date;
         form.reference = journal.reference ?? '';
         form.notes = journal.notes ?? '';
@@ -136,6 +144,10 @@ async function submit() {
     <AppLayout :title="isEdit ? `Edit ${genId ?? 'journal'}` : 'New journal'" fluid>
         <Loader v-if="! ready" />
         <form v-else class="space-y-6" @submit.prevent="submit">
+            <p v-if="cloneId" class="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                Pre-filled from journal #{{ cloneId }}. Saving will create a new journal.
+            </p>
+
             <FullWidthBox title="Journal" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <DateInput v-model="form.date" label="Date *" :error="errors.date" />

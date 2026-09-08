@@ -9,18 +9,18 @@ import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
-import ConfirmDialog from '../../../components/ConfirmDialog.vue';
-import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
+import JournalActions from './Actions.vue';
 
 const auth = useAuthStore();
 
 const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
-const toDelete = ref(null);
-const deleting = ref(false);
+
+// Row picked via the ⋯ button — opens the actions side overlay.
+const selected = ref(null);
 
 let request = null;
 
@@ -49,28 +49,11 @@ async function fetchJournals(page = 1) {
 
 onMounted(() => fetchJournals());
 
-async function confirmDelete() {
-    if (deleting.value) {
-        return;
-    }
-
-    deleting.value = true;
-
-    try {
-        await api.delete(`/finance/journals/${toDelete.value.id}`);
-        toDelete.value = null;
-        await fetchJournals(apiResponse.value?.pagination?.current_page ?? 1);
-    } finally {
-        deleting.value = false;
-    }
+// After a delete from the actions overlay, refresh the current page.
+function onJournalDeleted() {
+    selected.value = null;
+    fetchJournals(apiResponse.value?.pagination?.current_page ?? 1);
 }
-
-const rowActions = (journal) => [
-    ...(auth.can('journals.show') ? [{ label: 'View', href: routeUrl('journals.show', journal.id) }] : []),
-    ...(auth.can('journals.edit') ? [{ label: 'Edit', href: routeUrl('journals.edit', journal.id) }] : []),
-    ...(journal.qb_link ? [{ label: 'QB', href: journal.qb_link }] : []),
-    ...(auth.can('journals.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = journal) }] : []),
-];
 </script>
 
 <template>
@@ -113,7 +96,18 @@ const rowActions = (journal) => [
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(journal.amount) }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ journal.user }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
-                                <DropdownMenu :items="rowActions(journal)" />
+                                <button
+                                    type="button"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                                    aria-label="Journal actions"
+                                    @click="selected = journal"
+                                >
+                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="5" r="1.8" />
+                                        <circle cx="12" cy="12" r="1.8" />
+                                        <circle cx="12" cy="19" r="1.8" />
+                                    </svg>
+                                </button>
                             </td>
                         </tr>
                     </tbody>
@@ -129,14 +123,12 @@ const rowActions = (journal) => [
             </template>
         </FullWidthBox>
 
-        <ConfirmDialog
-            :show="Boolean(toDelete)"
-            title="Delete journal?"
-            :message="toDelete ? `${toDelete.gen_id} will be permanently deleted.` : ''"
-            confirm-label="Yes, delete"
-            :processing="deleting"
-            @confirm="confirmDelete"
-            @cancel="toDelete = null"
+        <!-- Per-journal actions — defined locally and permission-gated (Actions.vue). -->
+        <JournalActions
+            :journal="selected"
+            :show="Boolean(selected)"
+            @close="selected = null"
+            @deleted="onJournalDeleted"
         />
     </AppLayout>
 </template>

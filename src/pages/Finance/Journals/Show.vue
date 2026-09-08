@@ -42,6 +42,7 @@ const deleting = ref(false);
 // `qb_id`, same field-name convention as Suppliers/Bills/Show.vue).
 const actions = computed(() => (journal.value ? [
     ...(auth.can('journals.edit') ? [{ label: 'Edit', to: routeUrl('journals.edit', journal.value.id) }] : []),
+    ...(auth.can('journals.create') ? [{ label: 'Clone', to: routeUrl('journals.create', { clone: journal.value.id }) }] : []),
     ...(journal.value.qb_link ? [{ label: 'QB', href: journal.value.qb_link }] : []),
     ...(auth.can('journals.delete') ? [{ label: 'Delete', danger: true, action: () => (showDelete.value = true) }] : []),
 ] : []));
