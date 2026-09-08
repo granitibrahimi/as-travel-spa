@@ -13,12 +13,15 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useLayoutStore } from '../stores/layout';
 import { useDoubleTap } from '../composables/useDoubleTap';
+import { useNavPalette } from '../composables/useNavPalette';
 
 const auth = useAuthStore();
 const layout = useLayoutStore();
 const router = useRouter();
 
-const open = ref(false);
+// Open-state lives in a shared composable so the header logo (double-tap on
+// touch devices) can open the same overlay — see useNavPalette.
+const { isOpen: open } = useNavPalette();
 const query = ref('');
 const inputRef = ref(null);
 const highlighted = ref(0);
@@ -50,24 +53,24 @@ useDoubleTap('Control', () => {
 });
 
 function toggle() {
-    if (open.value) {
-        close();
-    } else {
-        openPalette();
-    }
-}
-
-function openPalette() {
-    open.value = true;
-    query.value = '';
-    highlighted.value = 0;
-    nextTick(() => inputRef.value?.focus());
+    open.value = !open.value;
 }
 
 function close() {
     open.value = false;
-    query.value = '';
 }
+
+// Reset the query and focus the input every time the palette opens — however
+// it was opened (double-Ctrl / Cmd+K here, or a double-tap on the header logo,
+// which flips the shared open-state directly).
+watch(open, (isOpen) => {
+    query.value = '';
+    highlighted.value = 0;
+
+    if (isOpen) {
+        nextTick(() => inputRef.value?.focus());
+    }
+});
 
 function select(item) {
     close();
@@ -159,6 +162,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onDocKeydown));
                         type="text"
                         placeholder="Jump to a page…"
                         class="w-full border-0 p-0 text-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        spellcheck="false"
                         @keydown="onInputKeydown"
                     >
                 </div>

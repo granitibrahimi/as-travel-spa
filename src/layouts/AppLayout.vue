@@ -6,6 +6,7 @@ import { useLayoutStore } from '../stores/layout';
 import { useNotificationsStore } from '../stores/notifications';
 import { useFormOptionsStore } from '../stores/formOptions';
 import { isDark, toggleTheme } from '../helpers/theme';
+import { useNavPalette } from '../composables/useNavPalette';
 
 const props = defineProps({
     title: { type: String, default: '' },
@@ -30,6 +31,25 @@ function updateData() {
 }
 
 const canSeeNotifications = computed(() => auth.can('userNotifications.list'));
+
+// Double-tap the logo to open the nav palette — the touch-device equivalent of
+// the double-Ctrl / Cmd+K gesture. A single tap still navigates home.
+const navPalette = useNavPalette();
+
+function onLogoClick(event, navigate) {
+    // Leave modified clicks (open-in-new-tab etc.) to the browser.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (navPalette.registerLogoTap()) {
+        return;
+    }
+
+    navigate();
+}
 
 // Resolve the active workspace once the user is known. Keyed off
 // `sessionActive` (not a plain onMounted) because the app now mounts before
@@ -167,9 +187,16 @@ async function signOut() {
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <RouterLink :to="activeHome" class="flex items-baseline gap-1">
-                        <span class="font-semibold text-red-600">AS Travel</span>
-                        <span v-if="activeWorkspace" class="hidden text-xs font-medium uppercase text-gray-400 sm:inline">[{{ activeWorkspace }}]</span>
+                    <RouterLink v-slot="{ href, navigate }" :to="activeHome" custom>
+                        <a
+                            :href="href"
+                            class="flex touch-manipulation select-none items-baseline gap-1"
+                            title="Double-tap to search navigation"
+                            @click="onLogoClick($event, navigate)"
+                        >
+                            <span class="font-semibold text-red-600">AS Travel</span>
+                            <span v-if="activeWorkspace" class="hidden text-xs font-medium uppercase text-gray-400 sm:inline">[{{ activeWorkspace }}]</span>
+                        </a>
                     </RouterLink>
                 </div>
 

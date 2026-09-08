@@ -289,6 +289,10 @@ const hasResults = computed(() => sections.value.length > 0);
                         type="text"
                         placeholder="Search customers, suppliers, invoices, bills…"
                         class="w-full border-0 p-0 text-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        spellcheck="false"
                         @keydown="onInputKeydown"
                     >
                     <svg v-if="loading" class="h-4 w-4 shrink-0 animate-spin text-gray-300" fill="none" viewBox="0 0 24 24">
