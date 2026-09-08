@@ -50,6 +50,15 @@ async function submit() {
     processing.value = true;
     errors.value = {};
 
+    if (! form.flight_info.trim() && ! form.hotel_info.trim()) {
+        errors.value = {
+            flight_info: 'Either flight info or hotel info is required.',
+            hotel_info: 'Either flight info or hotel info is required.',
+        };
+        processing.value = false;
+        return;
+    }
+
     try {
         const { data } = await api.post(`/customers/pro-invoices`, form);
         createdId.value = castMutation(data).id;
@@ -90,6 +99,7 @@ function done() {
                     </div>
 
                     <div class="mt-4 space-y-4">
+                        <p class="text-xs text-gray-500">Provide flight info, hotel info, or both — at least one is required.</p>
                         <Textarea v-model="form.flight_info" label="Flight info" :rows="4" :error="errors.flight_info" />
                         <Textarea v-model="form.hotel_info" label="Hotel info" :rows="4" :error="errors.hotel_info" />
                     </div>
