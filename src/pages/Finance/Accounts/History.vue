@@ -66,6 +66,19 @@ function referenceLink(row) {
     return name ? routeUrl(name, row.reference_id) : null;
 }
 
+// `payee` is `{ id, name, type: 'customer' | 'supplier' }` or null — link the
+// name to the party's detail page.
+function payeeLink(payee) {
+    if (!payee?.id) {
+        return null;
+    }
+
+    if (payee.type === 'customer') return routeUrl('customers.show', payee.id);
+    if (payee.type === 'supplier') return routeUrl('suppliers.show', payee.id);
+
+    return null;
+}
+
 let request = null;
 
 async function fetchTransactions(page = 1) {
@@ -201,7 +214,10 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                                 <div v-if="row.reference_label ?? row.reference_id" class="text-xs text-gray-500">{{ row.reference_label ?? row.reference_id }}</div>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">
-                                <div v-if="row.payee">{{ row.payee }}</div>
+                                <div v-if="row.payee">
+                                    <RouterLink v-if="payeeLink(row.payee)" :to="payeeLink(row.payee)" class="text-red-600 hover:underline">{{ row.payee.name }}</RouterLink>
+                                    <span v-else>{{ row.payee.name }}</span>
+                                </div>
                                 <div v-if="row.split" class="text-xs text-gray-500">
                                     <RouterLink
                                         v-if="! row.split.is_split && row.split.id"
