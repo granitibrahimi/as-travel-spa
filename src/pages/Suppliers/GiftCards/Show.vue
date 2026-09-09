@@ -9,11 +9,10 @@ import { useAuthStore } from '../../../stores/auth';
 import { DOCUMENT_ENTITY } from '../../../config/documentEntities.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
-import Button from '../../../components/Button.vue';
-import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 import DocumentsBox from '../../../components/DocumentsBox.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
+import GiftCardActions from './Actions.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -21,6 +20,7 @@ const auth = useAuthStore();
 
 const giftCard = ref(null);
 const documentsBox = ref(null);
+const actionsOpen = ref(false);
 
 async function load() {
     const { data } = await api.get(`/suppliers/gift-cards/${route.params.id}`);
@@ -37,22 +37,10 @@ const rows = computed(() => giftCard.value ? [
     ['Notes', giftCard.value.notes],
 ] : []);
 
-const confirmingDelete = ref(false);
-const deleting = ref(false);
-
-async function confirmDelete() {
-    if (deleting.value) {
-        return;
-    }
-
-    deleting.value = true;
-
-    try {
-        await api.delete(`/suppliers/gift-cards/${giftCard.value.id}`);
-        router.push(giftCard.value.supplier ? routeUrl('suppliers.show', giftCard.value.supplier.id) : routeUrl('supplierGiftCards.list'));
-    } finally {
-        deleting.value = false;
-    }
+function onDeleted() {
+    router.push(giftCard.value.supplier
+        ? routeUrl('suppliers.show', giftCard.value.supplier.id)
+        : routeUrl('supplierGiftCards.list'));
 }
 </script>
 
@@ -63,6 +51,21 @@ async function confirmDelete() {
             <SupplierDetails :supplier="giftCard.supplier" />
 
             <FullWidthBox :title="`Gift card ${giftCard.gen_id}`" :collapsible="false">
+            <template #actions>
+                <button
+                    type="button"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                    aria-label="Gift card actions"
+                    @click="actionsOpen = true"
+                >
+                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="5" r="1.8" />
+                        <circle cx="12" cy="12" r="1.8" />
+                        <circle cx="12" cy="19" r="1.8" />
+                    </svg>
+                </button>
+            </template>
+
             <table class="w-full border-collapse border border-gray-300 text-sm">
                 <tbody>
                     <tr v-for="[label, value] in rows" :key="label">
@@ -73,12 +76,7 @@ async function confirmDelete() {
             </table>
 
             <template #footer>
-                <div class="flex flex-wrap items-center gap-3">
-                    <RouterLink :to="routeUrl('supplierGiftCards.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
-                    <RouterLink v-if="auth.can('supplierGiftCards.edit')" :to="routeUrl('supplierGiftCards.edit', giftCard.id)" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Edit</RouterLink>
-                    <button v-if="auth.can('supplierGiftCards.edit')" type="button" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50" @click="documentsBox?.openUpload()">Add document</button>
-                    <Button v-if="auth.can('supplierGiftCards.delete')" variant="danger" size="sm" @click="confirmingDelete = true">Delete</Button>
-                </div>
+                <RouterLink :to="routeUrl('supplierGiftCards.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back</RouterLink>
             </template>
             </FullWidthBox>
         </div>
@@ -93,15 +91,15 @@ async function confirmDelete() {
             :show-add-button="false"
         />
 
-        <ConfirmDialog
-            :show="confirmingDelete"
-            title="Delete gift card?"
-            :message="giftCard ? `Gift card ${giftCard.gen_id} will be permanently deleted.` : ''"
-            confirm-label="Yes, delete"
-            confirm-variant="danger"
-            :processing="deleting"
-            @confirm="confirmDelete"
-            @cancel="confirmingDelete = false"
+        <!-- Per-gift-card actions — defined locally and permission-gated (Actions.vue). -->
+        <GiftCardActions
+            :gift-card="giftCard"
+            :show="actionsOpen"
+            :show-view-action="false"
+            :show-add-document="true"
+            @close="actionsOpen = false"
+            @add-document="documentsBox?.openUpload()"
+            @deleted="onDeleted"
         />
     </AppLayout>
 </template>
