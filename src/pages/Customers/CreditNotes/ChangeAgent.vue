@@ -15,7 +15,6 @@ const route = useRoute();
 const creditNote = ref(null);
 
 const endpoints = computed(() => ({
-    agentsSearch: 'users/autosuggest',
     submit: `/customers/credit-notes/${creditNote.value.id}/agent`,
     redirect: `/customers/credit-notes/${creditNote.value.id}`,
 }));

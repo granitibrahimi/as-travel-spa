@@ -100,6 +100,7 @@ export const useFormOptionsStore = defineStore('formOptions', {
         customerTypes: (state) => state.data.customer_types ?? [],
         taskTypes: (state) => state.data.task_types ?? [],
         userRoles: (state) => state.data.user_roles ?? [],
+        agents: (state) => state.data.agents ?? [],
         products: (state) => state.data.products ?? [],
         parentDestinations: (state) => state.data.parent_destinations ?? [],
         customerTransactionTypes: (state) => state.data.customer_transactions_types ?? [],

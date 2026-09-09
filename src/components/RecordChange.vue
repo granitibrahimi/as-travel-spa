@@ -1,12 +1,14 @@
 <script setup>
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../helpers/api';
 import { useNotificationsStore } from '../stores/notifications.js';
+import { useFormOptionsStore, toOptions } from '../stores/formOptions.js';
 import AppLayout from '../layouts/AppLayout.vue';
 import FullWidthBox from './FullWidthBox.vue';
 import CustomerDetails from './CustomerDetails.vue';
 import AsyncSelect from './Form/AsyncSelect.vue';
+import SearchSelect from './Form/SearchSelect.vue';
 import InputText from './Form/InputText.vue';
 import Textarea from './Form/Textarea.vue';
 
@@ -30,6 +32,22 @@ const props = defineProps({
 
 const router = useRouter();
 const notifications = useNotificationsStore();
+const formOptions = useFormOptionsStore();
+
+// Agent picker is filtered client-side from the shared form-options snapshot
+// (the `agents` category) rather than a per-keystroke autosuggest request. The
+// record's current agent is folded in so its label shows even if that user is
+// no longer in the active list.
+const agentOptions = computed(() => {
+    const options = toOptions(formOptions.agents);
+    const currentAgent = props.current.agent;
+
+    if (currentAgent && !options.some((option) => option.value === currentAgent.id)) {
+        options.unshift({ value: currentAgent.id, label: currentAgent.name });
+    }
+
+    return options;
+});
 
 const form = reactive({
     customer_id: null,
@@ -95,13 +113,12 @@ async function submit() {
                         :error="fieldError('customer_id')"
                     />
 
-                    <AsyncSelect
+                    <SearchSelect
                         v-else-if="field === 'agent'"
                         v-model="form.agent_id"
-                        :url="endpoints.agentsSearch"
+                        :options="agentOptions"
                         label="New Agent"
                         placeholder="Search agents…"
-                        :initial-option="current.agent"
                         :error="fieldError('agent_id')"
                     />
 
