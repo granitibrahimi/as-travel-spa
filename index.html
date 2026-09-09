@@ -4,7 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="/favicon.png">
-    <link rel="apple-touch-icon" href="/favicon.png">
+    <!-- iOS "Add to Home Screen": needs an opaque, padded 180×180 PNG — a
+         transparent favicon renders on a black square with the mark edge-to-edge. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <title>AS Travel</title>
     <!--
         Apply the persisted theme synchronously, before first paint, so the
