@@ -1,9 +1,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
+import { routeUrl } from '../../../helpers/route.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -11,10 +12,13 @@ import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import Loader from '../../../components/Loader.vue';
 import CustomerDetails from "../../../components/CustomerDetails.vue";
+import GiftCardActions from './Actions.vue';
 
 const route = useRoute();
+const router = useRouter();
 const notifications = useNotificationsStore();
 const giftCard = ref(null);
+const actionsOpen = ref(false);
 
 async function load() {
     const { data } = await api.get(`/customers/gift-cards/${route.params.id}`);
@@ -61,6 +65,21 @@ async function confirmUnlink() {
                 <CustomerDetails :customer="giftCard.customer" />
 
                 <FullWidthBox title="Gift Cards" :collapsible="false">
+                        <template #actions>
+                            <button
+                                type="button"
+                                class="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                                aria-label="Gift card actions"
+                                @click="actionsOpen = true"
+                            >
+                                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="5" r="1.8" />
+                                    <circle cx="12" cy="12" r="1.8" />
+                                    <circle cx="12" cy="19" r="1.8" />
+                                </svg>
+                            </button>
+                        </template>
+
                         <table class="w-full border-collapse border border-gray-300 text-sm">
                             <tbody>
                             <tr>
@@ -115,6 +134,15 @@ async function confirmUnlink() {
                 :processing="unlinking"
                 @confirm="confirmUnlink"
                 @cancel="toUnlink = null"
+            />
+
+            <!-- Per-gift-card actions — defined locally and permission-gated (Actions.vue). -->
+            <GiftCardActions
+                :gift-card="giftCard"
+                :show="actionsOpen"
+                :show-view-action="false"
+                @close="actionsOpen = false"
+                @deleted="router.push(giftCard.customer ? routeUrl('customers.show', giftCard.customer.id) : routeUrl('customerGiftCards.list'))"
             />
         </template>
     </AppLayout>
