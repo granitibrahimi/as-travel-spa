@@ -19,6 +19,8 @@ const BankDepositsCreate = () => import('../../pages/Finance/BankDeposits/Create
 const BankDepositsShow = () => import('../../pages/Finance/BankDeposits/Show.vue');
 const BspSyncIndex = () => import('../../pages/Finance/BspSync/Index.vue');
 const BspSyncPay = () => import('../../pages/Finance/BspSync/Pay.vue');
+const BspOperationalCalendarIndex = () => import('../../pages/Finance/BspOperationalCalendar/Index.vue');
+const BspOperationalCalendarImport = () => import('../../pages/Finance/BspOperationalCalendar/Import.vue');
 const AccountTransfersIndex = () => import('../../pages/Finance/AccountTransfers/Index.vue');
 const AccountTransfersManage = () => import('../../pages/Finance/AccountTransfers/Manage.vue');
 const AccountTransfersShow = () => import('../../pages/Finance/AccountTransfers/Show.vue');
@@ -62,6 +64,8 @@ export default [
     { path: '/finance/bank-deposits/:id', name: 'bankDeposits.show', component: BankDepositsShow },
     { path: '/finance/bsp-sync', name: 'bspSync.index', component: BspSyncIndex },
     { path: '/finance/bsp-sync/:hash/pay', name: 'bspSync.pay', component: BspSyncPay },
+    { path: '/finance/bsp-operational-calendar', name: 'bspOperationalCalendar.index', component: BspOperationalCalendarIndex },
+    { path: '/finance/bsp-operational-calendar/import', name: 'bspOperationalCalendar.import', component: BspOperationalCalendarImport },
     { path: '/finance/account-transfers', name: 'accountTransfers.list', component: AccountTransfersIndex },
     { path: '/finance/account-transfers/create', name: 'accountTransfers.create', component: AccountTransfersManage },
     { path: '/finance/account-transfers/:id/edit', name: 'accountTransfers.edit', component: AccountTransfersManage },

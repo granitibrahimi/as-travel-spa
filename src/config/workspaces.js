@@ -337,9 +337,11 @@ export const workspaces = [
                 ],
             },
             {
-                label: 'BSP Sync',
+                label: 'BSP',
                 items: [
-                    { label: 'BSP Sync', to: '/finance/bsp-sync', can: 'supplierPayments.create' },
+                    { label: 'Create Payment', to: '/finance/bsp-sync', can: 'supplierPayments.create' },
+                    { label: 'Operational Calendar', to: '/finance/bsp-operational-calendar', can: 'bspOperationalCalendar.view' },
+                    { label: 'Import (update) Operational Calendar', to: '/finance/bsp-operational-calendar/import', can: 'bspOperationalCalendar.import' },
                 ],
             },
             {

@@ -34,8 +34,15 @@ const processing = ref(false);
 const errors = ref({});
 const error = ref('');
 
+const unpaidPeriods = ref([]);
+const periodOptions = computed(() => unpaidPeriods.value.map((period) => ({
+    value: period.id,
+    label: `${period.period_code} — remittance ${period.remittance_day}`,
+})));
+
 const form = reactive({
     payment_method_id: null,
+    bsp_operational_calendar_period_id: null,
     on_date: todayApiDate(),
     transaction_nr: '',
     notes: '',
@@ -61,6 +68,13 @@ onMounted(async () => {
     } finally {
         loaded.value = true;
     }
+
+    try {
+        const { data } = await api.get('/finance/bsp-operational-calendar/unpaid-periods');
+        unpaidPeriods.value = castResource(data) ?? [];
+    } catch (e) {
+        error.value = e.response?.data?.message ?? 'Could not load the unpaid BSP operational calendar periods.';
+    }
 });
 
 async function submit() {
@@ -76,6 +90,7 @@ async function submit() {
         const { data } = await api.post('/finance/bsp-sync/pay', {
             hash,
             payment_method_id: form.payment_method_id,
+            bsp_operational_calendar_period_id: form.bsp_operational_calendar_period_id,
             amount: preview.value.expectedAmount,
             on_date: form.on_date,
             transaction_nr: form.transaction_nr || null,
@@ -114,6 +129,13 @@ async function submit() {
             <FullWidthBox title="Payment details" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Select v-model="form.payment_method_id" :options="paymentMethods" label="Payment method *" :error="errors.payment_method_id" />
+                    <Select
+                        v-model="form.bsp_operational_calendar_period_id"
+                        :options="periodOptions"
+                        label="BSP period *"
+                        placeholder="Choose the period being remitted…"
+                        :error="errors.bsp_operational_calendar_period_id"
+                    />
                     <InputText :model-value="money(preview.expectedAmount)" label="Amount" disabled />
                     <DateInput v-model="form.on_date" label="Date *" :error="errors.on_date" />
                     <InputText v-model="form.transaction_nr" label="Transaction #" :error="errors.transaction_nr" />
