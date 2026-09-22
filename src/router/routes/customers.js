@@ -28,6 +28,7 @@ const CustomerPaymentShow = () => import('../../pages/Customers/Payments/Show.vu
 const CustomerPaymentsIndex = () => import('../../pages/Customers/Payments/Index.vue');
 const CustomerPaymentsForApproval = () => import('../../pages/Customers/Payments/ForApproval.vue');
 const CustomerPaymentsOpen = () => import('../../pages/Customers/Payments/OpenPayments.vue');
+const CustomerPaymentsReconcileUnused = () => import('../../pages/Customers/Payments/ReconcileUnused.vue');
 const CustomerPaymentCreate = () => import('../../pages/Customers/Payments/Create.vue');
 const CustomerPaymentEdit = () => import('../../pages/Customers/Payments/Edit.vue');
 const CustomerGiftCardShow = () => import('../../pages/Customers/GiftCards/Show.vue');
@@ -99,6 +100,7 @@ export default [
     { path: '/customers/payments', name: 'customerPayments.list', component: CustomerPaymentsIndex },
     { path: '/customers/payments/for-approval', name: 'customerPayments.forApproval', component: CustomerPaymentsForApproval },
     { path: '/customers/payments/open', name: 'customerPayments.open', component: CustomerPaymentsOpen },
+    { path: '/customers/payments/reconcile-unused', name: 'customerPayments.reconcileUnused', component: CustomerPaymentsReconcileUnused },
     { path: '/customers/payments/:id/edit', name: 'customerPayments.edit', component: CustomerPaymentEdit },
     { path: '/customers/payments/:id', name: 'customerPayments.show', component: CustomerPaymentShow },
     { path: '/customers/gift-cards', name: 'customerGiftCards.list', component: CustomerGiftCardsIndex },

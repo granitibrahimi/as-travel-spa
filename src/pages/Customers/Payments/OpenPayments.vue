@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
@@ -8,6 +8,7 @@ import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { downloadFile } from '../../../helpers/download.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
+import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import DashboardWidget from '../../../components/DashboardWidget.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
@@ -15,6 +16,8 @@ import Loader from '../../../components/Loader.vue';
 import Button from '../../../components/Button.vue';
 
 const notifications = useNotificationsStore();
+const auth = useAuthStore();
+const router = useRouter();
 
 // GET /customers/payments?open=1 — standard paginated envelope.
 const { response: apiResponse, loading, goToPage } = useListFilters(
@@ -58,6 +61,14 @@ function approvedByName(payment) {
     <AppLayout title="Open Customer Payments" fluid>
         <DashboardWidget title="List of all Open Payments">
             <template #actions>
+                <Button
+                    v-if="auth.can('customers.reconcile')"
+                    size="sm"
+                    :href="routeUrl('customerPayments.reconcileUnused')"
+                    @click.prevent="router.push(routeUrl('customerPayments.reconcileUnused'))"
+                >
+                    Reconcile Unused Payments
+                </Button>
                 <Button type="button" size="sm" :loading="downloading" @click="downloadExcel">
                     {{ downloading ? 'Preparing…' : 'Download Excel' }}
                 </Button>

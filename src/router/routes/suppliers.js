@@ -16,6 +16,7 @@ const SupplierDepositsEdit = () => import('../../pages/Suppliers/Deposits/Edit.v
 const SupplierDepositsShow = () => import('../../pages/Suppliers/Deposits/Show.vue');
 const SupplierPaymentsIndex = () => import('../../pages/Suppliers/Payments/Index.vue');
 const SupplierPaymentsOpen = () => import('../../pages/Suppliers/Payments/OpenPayments.vue');
+const SupplierPaymentsReconcileUnused = () => import('../../pages/Suppliers/Payments/ReconcileUnused.vue');
 const SupplierPaymentsCreate = () => import('../../pages/Suppliers/Payments/Create.vue');
 const SupplierPaymentsEdit = () => import('../../pages/Suppliers/Payments/Edit.vue');
 const SupplierPaymentsShow = () => import('../../pages/Suppliers/Payments/Show.vue');
@@ -62,6 +63,7 @@ export default [
     // Payments
     { path: '/suppliers/payments', name: 'supplierPayments.list', component: SupplierPaymentsIndex },
     { path: '/suppliers/payments/open', name: 'supplierPayments.open', component: SupplierPaymentsOpen },
+    { path: '/suppliers/payments/reconcile-unused', name: 'supplierPayments.reconcileUnused', component: SupplierPaymentsReconcileUnused },
     { path: '/suppliers/payments/:supplierId/create', name: 'supplierPayments.create', component: SupplierPaymentsCreate },
     { path: '/suppliers/payments/:id/edit', name: 'supplierPayments.edit', component: SupplierPaymentsEdit },
     { path: '/suppliers/payments/:id', name: 'supplierPayments.show', component: SupplierPaymentsShow },
