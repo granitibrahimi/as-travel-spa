@@ -6,6 +6,8 @@ import FullWidthBox from './FullWidthBox.vue';
  * Card chrome for the admin dashboard: a FullWidthBox with a collapse/expand
  * control on the right — instead of FullWidthBox's own left-side chevron.
  * Reuse this for any new dashboard widget so the cards read as one system.
+ * An optional `actions` slot renders before the collapse toggle, for widgets
+ * that need their own header button (e.g. a Download Excel button).
  */
 defineProps({
     title: { type: String, required: true },
@@ -17,6 +19,7 @@ const collapsed = ref(false);
 <template>
     <FullWidthBox :title="title" :collapsible="false" :collapsed="collapsed">
         <template #actions>
+            <slot name="actions" />
             <button
                 type="button"
                 class="text-gray-400 hover:text-gray-600"

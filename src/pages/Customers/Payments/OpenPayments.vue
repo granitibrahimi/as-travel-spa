@@ -5,14 +5,20 @@ import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
+import { downloadFile } from '../../../helpers/download.js';
+import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import DashboardWidget from '../../../components/DashboardWidget.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
+import Button from '../../../components/Button.vue';
+
+const notifications = useNotificationsStore();
 
 // GET /customers/payments?open=1 — standard paginated envelope.
 const apiResponse = ref(null);
 const loading = ref(false);
+const downloading = ref(false);
 
 async function fetchPayments(page = 1) {
     loading.value = true;
@@ -22,6 +28,25 @@ async function fetchPayments(page = 1) {
         apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
+    }
+}
+
+async function downloadExcel() {
+    if (downloading.value) {
+        return;
+    }
+
+    downloading.value = true;
+
+    try {
+        await downloadFile('/customers/payments/excel', {
+            fallbackName: 'customer-payments.xlsx',
+            config: { params: { open: 1 } },
+        });
+    } catch {
+        notifications.push({ type: 'error', message: 'Could not export the payments.' });
+    } finally {
+        downloading.value = false;
     }
 }
 
@@ -41,6 +66,12 @@ onMounted(() => fetchPayments());
 <template>
     <AppLayout title="Open Customer Payments" fluid>
         <DashboardWidget title="List of all Open Payments">
+            <template #actions>
+                <Button type="button" size="sm" :loading="downloading" @click="downloadExcel">
+                    {{ downloading ? 'Preparing…' : 'Download Excel' }}
+                </Button>
+            </template>
+
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
                     <thead>
