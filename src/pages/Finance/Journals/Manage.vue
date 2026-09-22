@@ -81,6 +81,19 @@ onMounted(async () => {
     ready.value = true;
 });
 
+// Only lines with at least one input filled are sent — blank rows (the
+// default 4, or ones the user never got to) shouldn't trigger validation.
+function hasContent(entry) {
+    return Boolean(
+        entry.account
+        || entry.debit
+        || entry.credit
+        || entry.description?.trim()
+        || entry.tax_type
+        || entry.customer_supplier,
+    );
+}
+
 function addRow() {
     form.entries.push(blankLine());
 }
@@ -114,11 +127,23 @@ async function submit() {
     processing.value = true;
     errors.value = {};
 
+    // Filter out blank rows, but remember each kept row's original index so
+    // a 422's `entries.<n>.*` keys (indexed into the filtered list) can be
+    // mapped back to the row actually shown on screen.
+    const originalIndices = [];
+    const entries = form.entries.filter((entry, index) => {
+        if (! hasContent(entry)) {
+            return false;
+        }
+        originalIndices.push(index);
+        return true;
+    });
+
     const payload = {
         date: form.date,
         reference: form.reference,
         notes: form.notes,
-        entries: form.entries,
+        entries,
     };
 
     try {
@@ -129,7 +154,14 @@ async function submit() {
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
-                Object.entries(error.response.data.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
+                Object.entries(error.response.data.errors ?? {}).map(([field, messages]) => {
+                    const match = field.match(/^entries\.(\d+)\.(.+)$/);
+                    if (! match) {
+                        return [field, messages[0]];
+                    }
+                    const originalIndex = originalIndices[Number(match[1])] ?? match[1];
+                    return [`entries.${originalIndex}.${match[2]}`, messages[0]];
+                }),
             );
         } else {
             throw error;
@@ -183,10 +215,10 @@ async function submit() {
                             <SearchSelect v-model="entry.tax_type" :options="taxTypes" placeholder="Tax" />
                         </div>
                         <div>
-                            <InputNumber v-model="entry.debit" placeholder="Debit" @input="onDebit(entry)" />
+                            <InputNumber v-model="entry.debit" placeholder="Debit" :disabled="Boolean(entry.credit)" @input="onDebit(entry)" />
                         </div>
                         <div class="flex items-start gap-1">
-                            <InputNumber v-model="entry.credit" placeholder="Credit" @input="onCredit(entry)" />
+                            <InputNumber v-model="entry.credit" placeholder="Credit" :disabled="Boolean(entry.debit)" @input="onCredit(entry)" />
                             <button
                                 type="button"
                                 class="mt-1 shrink-0 rounded px-1.5 text-gray-400 hover:text-red-600"
