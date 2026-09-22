@@ -1,18 +1,23 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
+import { routeUrl } from '../../../helpers/route.js';
 import { castResource } from '../../../types/responses.js';
+import { useAuthStore } from '../../../stores/auth';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
+import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import Loader from '../../../components/Loader.vue';
 import CustomerDetails from "../../../components/CustomerDetails.vue";
 
 const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
 const notifications = useNotificationsStore();
 const giftCard = ref(null);
 
@@ -22,6 +27,40 @@ async function load() {
 }
 
 onMounted(load);
+
+// Title ⋯ menu, same pattern as Customers/Refunds/Show.vue.
+const actions = computed(() => {
+    const g = giftCard.value;
+
+    if (! g) {
+        return [];
+    }
+
+    return [
+        ...(auth.can('customerGiftCards.edit') ? [{ label: 'Edit', href: routeUrl('customerGiftCards.edit', g.id) }] : []),
+        ...(auth.can('customerGiftCards.delete') ? [{ label: 'Delete', danger: true, action: () => (confirmingDelete.value = true) }] : []),
+    ];
+});
+
+const confirmingDelete = ref(false);
+const deleting = ref(false);
+
+async function confirmDelete() {
+    if (deleting.value) {
+        return;
+    }
+
+    deleting.value = true;
+
+    try {
+        await api.delete(`/customers/gift-cards/${giftCard.value.id}`);
+        router.push(giftCard.value.customer?.id
+            ? routeUrl('customers.show', giftCard.value.customer.id)
+            : routeUrl('customerGiftCards.list'));
+    } finally {
+        deleting.value = false;
+    }
+}
 
 const toUnlink = ref(null);
 const unlinking = ref(false);
@@ -61,6 +100,10 @@ async function confirmUnlink() {
                 <CustomerDetails :customer="giftCard.customer" />
 
                 <FullWidthBox title="Financial Credit Note" :collapsible="false">
+                        <template v-if="actions.length" #actions>
+                            <DropdownMenu :items="actions" />
+                        </template>
+
                         <table class="w-full border-collapse border border-gray-300 text-sm">
                             <tbody>
                             <tr>
@@ -115,6 +158,17 @@ async function confirmUnlink() {
                 :processing="unlinking"
                 @confirm="confirmUnlink"
                 @cancel="toUnlink = null"
+            />
+
+            <ConfirmDialog
+                :show="confirmingDelete"
+                title="Delete financial credit note?"
+                :message="`Financial credit note ${giftCard.gen_id} will be permanently deleted.`"
+                confirm-label="Yes, delete"
+                confirm-variant="danger"
+                :processing="deleting"
+                @confirm="confirmDelete"
+                @cancel="confirmingDelete = false"
             />
         </template>
     </AppLayout>
