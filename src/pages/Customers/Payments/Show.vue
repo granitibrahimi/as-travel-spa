@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
@@ -132,6 +132,30 @@ async function confirmUnlink() {
                                     {{ payment.user?.name ?? '—' }}
                                     <br>
                                     <span class="text-gray-500">{{ payment.created_at }}</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Approved by</th>
+                                <td class="border border-gray-300 px-2 py-2">
+                                    <template v-if="payment.approved_by">
+                                        {{ payment.approved_by.name }}
+                                        <br>
+                                        <span class="text-gray-500">{{ payment.approved_at }}</span>
+                                    </template>
+                                    <span v-else class="text-gray-500">Not approved</span>
+                                </td>
+                            </tr>
+                            <tr v-if="payment.approval_transfer">
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Approval transfer</th>
+                                <td class="border border-gray-300 px-2 py-2">
+                                    <RouterLink
+                                        v-if="auth.can('accountTransfers.show')"
+                                        :to="routeUrl('accountTransfers.show', payment.approval_transfer.id)"
+                                        class="text-red-600 hover:underline"
+                                    >
+                                        {{ payment.approval_transfer.gen_id }}
+                                    </RouterLink>
+                                    <template v-else>{{ payment.approval_transfer.gen_id }}</template>
                                 </td>
                             </tr>
                             <tr>
