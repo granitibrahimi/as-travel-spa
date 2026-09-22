@@ -6,7 +6,10 @@ import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { quickBooksSyncEntityPath } from '../../helpers/quickbooksSyncEntity.js';
 import { castPaginated } from '../../types/responses.js';
+import { useListFilters } from '../../composables/useListFilters.js';
 import AppLayout from '../../layouts/AppLayout.vue';
+import FiltersButton from '../../components/FiltersButton.vue';
+import FiltersPanel from '../../components/FiltersPanel.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
 import InputText from '../../components/Form/InputText.vue';
@@ -19,10 +22,13 @@ import Loader from '../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
 const options = reactive({ entities: [], statuses: [], actions: [] });
-const form = reactive({ entity: null, status: null, action: null, entity_id: '' });
+// Option values can legitimately be 0 (enum ids); the composable only drops
+// null/'' so a selected 0 is still sent.
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage, reload } = useListFilters(
+    { entity: null, status: null, action: null, entity_id: '' },
+    async (params, { signal }) => castPaginated((await api.get('/quickbooks-sync', { params, signal })).data),
+);
 
 // Row pending deletion (drives the confirm dialog) + row being retried.
 const pendingDelete = ref(null);
@@ -40,48 +46,14 @@ async function fetchOptions() {
     options.actions = Object.values(data.actions);
 }
 
-async function fetchRows(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/quickbooks-sync', {
-            params: {
-                // `entity`/`status`/`action` come from Select (unselected = null,
-                // not ''), and their option values can legitimately be falsy
-                // (e.g. a 0-valued enum) — use `??` so a falsy-but-selected value
-                // isn't dropped from the request the way `||` would drop it.
-                entity: form.entity ?? undefined,
-                status: form.status ?? undefined,
-                action: form.action ?? undefined,
-                entity_id: form.entity_id || undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => {
-    fetchOptions();
-    fetchRows();
-});
-
-function clear() {
-    form.entity = null;
-    form.status = null;
-    form.action = null;
-    form.entity_id = '';
-    fetchRows();
-}
+onMounted(fetchOptions);
 
 async function retry(row) {
     retryingId.value = row.id;
 
     try {
         await api.post(`/quickbooks-sync/${row.id}/retry`);
-        await fetchRows(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         retryingId.value = null;
     }
@@ -97,7 +69,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/quickbooks-sync/${pendingDelete.value.id}`);
         pendingDelete.value = null;
-        await fetchRows(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         processing.value = false;
     }
@@ -125,20 +97,24 @@ const statusClass = (status) => ({
 <template>
     <AppLayout title="QuickBooks Sync" fluid>
         <div class="space-y-6">
-            <FullWidthBox title="Filters" :collapsible="false">
-                <form class="grid grid-cols-1 gap-3 md:grid-cols-5" @submit.prevent="fetchRows()">
-                    <SearchSelect v-model="form.entity" :options="options.entities" label="Entity" placeholder="All entities" />
-                    <Select v-model="form.status" :options="options.statuses" label="Status" placeholder="All statuses" />
-                    <Select v-model="form.action" :options="options.actions" label="Action" placeholder="All actions" />
-                    <InputText v-model="form.entity_id" label="Entity / QB ID" placeholder="ID…" />
-                    <div class="flex items-end gap-2">
-                        <Button type="submit" variant="primary">Filter</Button>
-                        <Button type="button" @click="clear">Clear</Button>
-                    </div>
-                </form>
-            </FullWidthBox>
-
             <FullWidthBox title="QuickBooks Sync Data" :collapsible="false">
+                <template #actions>
+                    <FiltersButton v-model="showFilters" :count="activeCount" />
+                </template>
+
+                <FiltersPanel :open="showFilters">
+                    <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
+                        <SearchSelect v-model="filters.entity" :options="options.entities" label="Entity" placeholder="All entities" />
+                        <Select v-model="filters.status" :options="options.statuses" label="Status" placeholder="All statuses" />
+                        <Select v-model="filters.action" :options="options.actions" label="Action" placeholder="All actions" />
+                        <InputText v-model="filters.entity_id" label="Entity / QB ID" placeholder="ID…" />
+                        <div class="flex items-end gap-2 md:col-span-4">
+                            <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                            <Button type="button" @click="clear">Clear</Button>
+                        </div>
+                    </form>
+                </FiltersPanel>
+
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
@@ -185,7 +161,7 @@ const statusClass = (status) => ({
                     </table>
                 </div>
 
-                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchRows" />
+                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
             </FullWidthBox>
         </div>
 

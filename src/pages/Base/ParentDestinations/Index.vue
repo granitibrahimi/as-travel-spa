@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -17,23 +18,11 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/parent-destinations', { params, signal })).data),
+);
 const error = ref('');
-
-async function fetchParentDestinations(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/parent-destinations', { params: { q: search.value || undefined, page } });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => fetchParentDestinations());
 
 const toggling = ref(new Set());
 
@@ -66,7 +55,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/parent-destinations/${destinationToDelete.value.id}`);
         destinationToDelete.value = null;
-        await fetchParentDestinations(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } catch (e) {
         if (e.response?.status === 409) {
             error.value = e.response.data.message;
@@ -91,10 +80,10 @@ const rowActions = (destination) => [
         <FullWidthBox title="Parent Destinations" :collapsible="false">
             <Alert v-if="error" type="danger" class="mb-4">{{ error }}</Alert>
 
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchParentDestinations()">
-                <input v-model="search" type="text" placeholder="Name or code…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-64">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
+                <input v-model="filters.q" type="text" placeholder="Name or code…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-64">
                 <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchParentDestinations();">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -144,7 +133,7 @@ const rowActions = (destination) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchParentDestinations" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink

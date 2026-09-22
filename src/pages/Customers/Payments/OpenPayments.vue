@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { downloadFile } from '../../../helpers/download.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
@@ -16,20 +17,11 @@ import Button from '../../../components/Button.vue';
 const notifications = useNotificationsStore();
 
 // GET /customers/payments?open=1 — standard paginated envelope.
-const apiResponse = ref(null);
-const loading = ref(false);
+const { response: apiResponse, loading, goToPage } = useListFilters(
+    {},
+    async (params, { signal }) => castPaginated((await api.get('/customers/payments', { params: { ...params, open: 1 }, signal })).data),
+);
 const downloading = ref(false);
-
-async function fetchPayments(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/customers/payments', { params: { open: 1, page } });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
 
 async function downloadExcel() {
     if (downloading.value) {
@@ -60,7 +52,6 @@ function approvedByName(payment) {
     return payment.approved_by?.name ?? payment.approved_by ?? null;
 }
 
-onMounted(() => fetchPayments());
 </script>
 
 <template>
@@ -136,7 +127,7 @@ onMounted(() => fetchPayments());
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchPayments" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </DashboardWidget>
     </AppLayout>
 </template>

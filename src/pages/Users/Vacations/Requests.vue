@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -15,9 +16,17 @@ const auth = useAuthStore();
 const route = useRoute();
 const userId = route.query.user;
 
-const apiResponse = ref(null);
 const user = ref(null);
-const loading = ref(false);
+const { response: apiResponse, loading, goToPage, reload } = useListFilters(
+    {},
+    async (params, { signal }) => {
+        const { data } = await api.get(`/users/vacations/requests/${userId}`, { params, signal });
+        const pageResult = castPaginated(data);
+        user.value = pageResult.extra.user;
+
+        return pageResult;
+    },
+);
 const recalculating = ref(false);
 
 const statusClass = (status) => ({
@@ -25,21 +34,6 @@ const statusClass = (status) => ({
     Rejected: 'bg-red-100 text-red-700',
     Open: 'bg-amber-100 text-amber-700',
 }[status] ?? 'bg-gray-100 text-gray-600');
-
-async function fetchRequests(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get(`/users/vacations/requests/${userId}`, { params: { page } });
-        const pageResult = castPaginated(data);
-        apiResponse.value = pageResult;
-        user.value = pageResult.extra.user;
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => fetchRequests());
 
 async function recalculate() {
     if (recalculating.value) {
@@ -50,7 +44,7 @@ async function recalculate() {
 
     try {
         await api.post(`/users/vacations/${userId}/recalculate`);
-        await fetchRequests(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         recalculating.value = false;
     }
@@ -96,7 +90,7 @@ async function recalculate() {
                     </table>
                 </div>
 
-                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchRequests" />
+                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
                 <template #footer>
                     <Button v-if="auth.can('vacations.reCalculate')" :disabled="recalculating" @click="recalculate">

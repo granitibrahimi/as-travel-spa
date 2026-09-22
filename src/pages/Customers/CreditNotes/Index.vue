@@ -1,11 +1,12 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useAuthStore } from '../../../stores/auth.js';
 import { money } from '../../../helpers/money.js';
 import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -16,36 +17,10 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
-
-let request = null;
-
-async function fetchCreditNotes(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/customers/credit-notes', {
-            signal: controller.signal,
-            params: { q: search.value || undefined, page },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(fetchCreditNotes);
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/customers/credit-notes', { params, signal })).data),
+);
 
 // Actions side overlay for the row picked via the ⋯ button.
 const selected = ref(null);
@@ -54,12 +29,12 @@ const selected = ref(null);
 <template>
     <AppLayout title="Credit Notes" fluid>
         <FullWidthBox v-if="auth.canAny(['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'])" title="Credit Notes" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchCreditNotes()">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
                 <div class="w-full sm:w-80">
-                    <InputText v-model="search" label="Search" placeholder="Credit note ID or ticket…" />
+                    <InputText v-model="filters.q" label="Search" placeholder="Credit note ID or ticket…" />
                 </div>
                 <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchCreditNotes();">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -110,7 +85,7 @@ const selected = ref(null);
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchCreditNotes" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
 
         <!-- Per-credit-note actions — defined locally and permission-gated (Actions.vue). -->
@@ -118,7 +93,7 @@ const selected = ref(null);
             :credit-note="selected"
             :show="Boolean(selected)"
             @close="selected = null"
-            @deleted="selected = null; fetchCreditNotes()"
+            @deleted="selected = null; reload()"
         />
     </AppLayout>
 </template>

@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { downloadFile } from '../../../helpers/download.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
@@ -16,26 +17,11 @@ import PaymentActions from './Actions.vue';
 
 const notifications = useNotificationsStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
+const { filters, applied, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/customers/payments', { params, signal })).data),
+);
 const downloading = ref(false);
-
-// Shared by the list load and the Excel export so both always see the same filters.
-function filters() {
-    return { q: search.value || undefined };
-}
-
-async function fetchPayments(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/customers/payments', { params: { ...filters(), page } });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
 
 async function downloadExcel() {
     if (downloading.value) {
@@ -47,7 +33,8 @@ async function downloadExcel() {
     try {
         await downloadFile('/customers/payments/excel', {
             fallbackName: 'customer-payments.xlsx',
-            config: { params: filters() },
+            // Export what's on screen: the applied filters, not half-typed input.
+            config: { params: applied.value },
         });
     } catch {
         notifications.push({ type: 'error', message: 'Could not export the payments.' });
@@ -56,8 +43,6 @@ async function downloadExcel() {
     }
 }
 
-onMounted(() => fetchPayments());
-
 // Actions side overlay for the row picked via the ⋯ button (Actions.vue —
 // same component used on Payments/Show.vue).
 const selected = ref(null);
@@ -65,17 +50,17 @@ const selected = ref(null);
 // After a delete from the actions overlay, refresh the current page.
 function onPaymentDeleted() {
     selected.value = null;
-    fetchPayments(apiResponse.value?.pagination?.current_page ?? 1);
+    reload();
 }
 </script>
 
 <template>
     <AppLayout title="Customer Payments" fluid>
         <FullWidthBox title="Customer Payments" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchPayments()">
-                <input v-model="search" type="text" placeholder="Gen ID, transaction #, reference, amount, customer…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
+                <input v-model="filters.q" type="text" placeholder="Gen ID, transaction #, reference, amount, customer…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
                 <button type="submit" class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">Search</button>
-                <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="search = ''; fetchPayments();">Clear</button>
+                <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="clear">Clear</button>
                 <Button type="button" class="ml-auto" :loading="downloading" @click="downloadExcel">
                     {{ downloading ? 'Preparing…' : 'Download Excel' }}
                 </Button>
@@ -138,7 +123,7 @@ function onPaymentDeleted() {
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchPayments" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
 
         <!-- Per-payment actions — defined locally and permission-gated (Actions.vue). -->

@@ -1,14 +1,19 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
+import FiltersButton from '../../../components/FiltersButton.vue';
+import FiltersPanel from '../../../components/FiltersPanel.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
+import InputText from '../../../components/Form/InputText.vue';
+import DateInput from '../../../components/Form/DateInput.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
@@ -16,38 +21,12 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage, reload } = useListFilters(
+    { q: '', date_from: '', date_to: '' },
+    async (params, { signal }) => castPaginated((await api.get('/finance/bank-deposits', { params, signal })).data),
+);
 const toDelete = ref(null);
 const deleting = ref(false);
-
-let request = null;
-
-async function fetchDeposits(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/finance/bank-deposits', {
-            signal: controller.signal,
-            params: { q: search.value || undefined, page },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchDeposits());
 
 async function confirmDelete() {
     if (deleting.value) {
@@ -59,7 +38,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/finance/bank-deposits/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchDeposits(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
     }
@@ -76,11 +55,21 @@ const rowActions = (deposit) => [
 <template>
     <AppLayout title="Bank Deposits" fluid>
         <FullWidthBox title="Bank Deposits" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchDeposits()">
-                <input v-model="search" type="text" placeholder="Deposit ID…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-64">
-                <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchDeposits();">Clear</Button>
-            </form>
+            <template #actions>
+                <FiltersButton v-model="showFilters" :count="activeCount" />
+            </template>
+
+            <FiltersPanel :open="showFilters">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-3" @submit.prevent="apply">
+                    <InputText v-model="filters.q" label="Search" placeholder="Deposit ID or amount…" />
+                    <DateInput v-model="filters.date_from" label="Date from" />
+                    <DateInput v-model="filters.date_to" label="Date to" />
+                    <div class="flex items-end gap-2 md:col-span-3">
+                        <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                        <Button type="button" @click="clear">Clear</Button>
+                    </div>
+                </form>
+            </FiltersPanel>
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -115,7 +104,7 @@ const rowActions = (deposit) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchDeposits" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink v-if="auth.can('bankDeposits.create')" :to="routeUrl('bankDeposits.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">

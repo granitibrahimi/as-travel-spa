@@ -1,11 +1,12 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money';
 import { customerTransactionPathForLabel } from '../../../helpers/customerTransactions.js';
 import { routeUrl } from '../../../helpers/route.js';
 import api from '../../../helpers/api';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useAuthStore } from '../../../stores/auth';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -16,22 +17,10 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
-
-async function fetchLinks(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/customers/transaction-links', { params: { q: search.value || undefined, page } });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => fetchLinks());
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/customers/transaction-links', { params, signal })).data),
+);
 
 const toUnlink = ref(null);
 const unlinking = ref(false);
@@ -65,7 +54,7 @@ async function confirmUnlink() {
     try {
         await api.delete(`/customers/transaction-links/${toUnlink.value.id}`);
         toUnlink.value = null;
-        await fetchLinks(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         unlinking.value = false;
     }
@@ -81,10 +70,10 @@ const rowActions = (link) => [
 <template>
     <AppLayout title="Customer Transactions" fluid>
         <FullWidthBox title="Customer Transactions" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchLinks()">
-                <input v-model="search" type="text" placeholder="Customer name or link ID…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
+                <input v-model="filters.q" type="text" placeholder="Customer name or link ID…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
                 <button type="submit" class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">Search</button>
-                <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="search = ''; fetchLinks();">Clear</button>
+                <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="clear">Clear</button>
             </form>
 
             <div class="overflow-x-auto">
@@ -138,7 +127,7 @@ const rowActions = (link) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchLinks" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
 
         <ConfirmDialog

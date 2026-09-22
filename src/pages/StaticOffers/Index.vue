@@ -5,8 +5,11 @@ import { money } from '../../helpers/money';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castPaginated } from '../../types/responses.js';
+import { useListFilters } from '../../composables/useListFilters.js';
 import { useAuthStore } from '../../stores/auth';
 import AppLayout from '../../layouts/AppLayout.vue';
+import FiltersButton from '../../components/FiltersButton.vue';
+import FiltersPanel from '../../components/FiltersPanel.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
 import ConfirmDialog from '../../components/ConfirmDialog.vue';
@@ -18,45 +21,14 @@ import Select from '../../components/Form/Select.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
-const destination = ref(null);
-const status = ref(null);
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage, reload } = useListFilters(
+    { search: '', destination: null, status: null },
+    async (params, { signal }) => castPaginated((await api.get('/static-offers', { params, signal })).data),
+);
 const destinations = ref([]);
 const statuses = ref([]);
 const offerToDelete = ref(null);
 const deleting = ref(false);
-
-let request = null;
-
-async function fetchOffers(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/static-offers', {
-            signal: controller.signal,
-            params: {
-                search: search.value || undefined,
-                destination: destination.value || undefined,
-                status: status.value || undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
 
 async function fetchFilterOptions() {
     const { data } = await api.get('/static-offers/filter-options');
@@ -64,10 +36,7 @@ async function fetchFilterOptions() {
     statuses.value = data.statuses ?? [];
 }
 
-onMounted(() => {
-    fetchFilterOptions();
-    fetchOffers();
-});
+onMounted(fetchFilterOptions);
 
 const rowActions = (offer) => [
     { label: 'View', href: routeUrl('staticOffers.show', offer.id) },
@@ -85,7 +54,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/static-offers/${offerToDelete.value.id}`);
         offerToDelete.value = null;
-        await fetchOffers(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
     }
@@ -95,16 +64,23 @@ async function confirmDelete() {
 <template>
     <AppLayout title="Static offers" fluid>
         <FullWidthBox title="Static offers" :collapsible="false">
-            <form class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-5" @submit.prevent="fetchOffers()">
-                <div class="md:col-span-2">
-                    <InputText v-model="search" label="Search" placeholder="Code or name…" />
-                </div>
-                <Select v-model="destination" :options="destinations" label="Destination" placeholder="All" />
-                <Select v-model="status" :options="statuses" label="Status" placeholder="All" />
-                <div class="flex items-end">
-                    <Button type="submit">Filter</Button>
-                </div>
-            </form>
+            <template #actions>
+                <FiltersButton v-model="showFilters" :count="activeCount" />
+            </template>
+
+            <FiltersPanel :open="showFilters">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
+                    <div class="md:col-span-2">
+                        <InputText v-model="filters.search" label="Search" placeholder="Code or name…" />
+                    </div>
+                    <Select v-model="filters.destination" :options="destinations" label="Destination" placeholder="All" />
+                    <Select v-model="filters.status" :options="statuses" label="Status" placeholder="All" />
+                    <div class="flex items-end gap-2 md:col-span-4">
+                        <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                        <Button type="button" @click="clear">Clear</Button>
+                    </div>
+                </form>
+            </FiltersPanel>
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -173,7 +149,7 @@ async function confirmDelete() {
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchOffers" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink v-if="auth.can('staticOffers.create')" :to="routeUrl('staticOffers.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">

@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -14,57 +15,30 @@ import Loader from '../../../components/Loader.vue';
 
 // All data comes from the platform JSON API (bearer token). Paths are relative
 // to the api client's base (VITE_API_URL, e.g. https://csrm.test/api/v1).
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/suppliers/suppliers', { params, signal })).data),
+);
 
 // Row picked via the ⋯ button — opens the actions side overlay.
 const selected = ref(null);
 
-let request = null;
-
-async function fetchSuppliers(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/suppliers/suppliers', {
-            signal: controller.signal,
-            params: { q: search.value || undefined, page },
-        });
-        // Resource collection envelope: rows in `data`, paginator in `meta`.
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchSuppliers());
-
 // After a delete from the actions overlay, refresh the current page.
 function onSupplierDeleted() {
     selected.value = null;
-    fetchSuppliers(apiResponse.value?.pagination?.current_page ?? 1);
+    reload();
 }
 </script>
 
 <template>
     <AppLayout title="Suppliers" fluid>
         <FullWidthBox title="Suppliers" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchSuppliers()">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
                 <div class="w-full sm:w-72">
-                    <InputText v-model="search" label="Search" placeholder="Supplier name…" />
+                    <InputText v-model="filters.q" label="Search" placeholder="Supplier name…" />
                 </div>
                 <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchSuppliers();">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -115,7 +89,7 @@ function onSupplierDeleted() {
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchSuppliers" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink

@@ -1,68 +1,42 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
+import FiltersButton from '../../../components/FiltersButton.vue';
+import FiltersPanel from '../../../components/FiltersPanel.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
+import InputText from '../../../components/Form/InputText.vue';
+import Select from '../../../components/Form/Select.vue';
 import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 const formOptions = useFormOptionsStore();
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
-const status = ref('');
-const roleId = ref('');
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage, reload } = useListFilters(
+    { q: '', role_id: null, status: null },
+    async (params, { signal }) => castPaginated((await api.get('/users/users', { params, signal })).data),
+);
+const statuses = [
+    { value: 'active', label: 'Active' },
+    { value: 'disabled', label: 'Disabled' },
+];
 const roles = computed(() => toOptions(formOptions.userRoles));
 const toggling = ref(null);
-
-let request = null;
-
-async function fetchUsers(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/users/users', {
-            signal: controller.signal,
-            params: {
-                q: search.value || undefined,
-                status: status.value || undefined,
-                role_id: roleId.value || undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => {
-    fetchUsers();
-});
 
 async function toggleDisabled(user) {
     if (toggling.value) return;
     toggling.value = user.id;
     try {
         await api.post(`/users/users/${user.id}/toggle-disabled`);
-        await fetchUsers(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         toggling.value = null;
     }
@@ -80,20 +54,21 @@ const rowActions = (user) => [
 <template>
     <AppLayout title="Users" fluid>
         <FullWidthBox title="Users" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchUsers()">
-                <input v-model="search" type="text" placeholder="Name, email, phone…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-64">
-                <select v-model="roleId" class="rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500">
-                    <option value="">All roles</option>
-                    <option v-for="role in roles" :key="role.value" :value="role.value">{{ role.label }}</option>
-                </select>
-                <select v-model="status" class="rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500">
-                    <option value="">All statuses</option>
-                    <option value="active">Active</option>
-                    <option value="disabled">Disabled</option>
-                </select>
-                <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; status = ''; roleId = ''; fetchUsers();">Clear</Button>
-            </form>
+            <template #actions>
+                <FiltersButton v-model="showFilters" :count="activeCount" />
+            </template>
+
+            <FiltersPanel :open="showFilters">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-3" @submit.prevent="apply">
+                    <InputText v-model="filters.q" label="Search" placeholder="Name, email, phone…" />
+                    <Select v-model="filters.role_id" :options="roles" label="Role" placeholder="All roles" />
+                    <Select v-model="filters.status" :options="statuses" label="Status" placeholder="All statuses" />
+                    <div class="flex items-end gap-2 md:col-span-3">
+                        <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                        <Button type="button" @click="clear">Clear</Button>
+                    </div>
+                </form>
+            </FiltersPanel>
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -136,7 +111,7 @@ const rowActions = (user) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchUsers" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink v-if="auth.can('users.create')" :to="routeUrl('users.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">

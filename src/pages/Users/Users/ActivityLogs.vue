@@ -1,11 +1,14 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import api, {getUsersAutosuggestEndpoint} from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
+import FiltersButton from '../../../components/FiltersButton.vue';
+import FiltersPanel from '../../../components/FiltersPanel.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
@@ -17,59 +20,15 @@ import Loader from '../../../components/Loader.vue';
 const router = useRouter();
 const formOptions = useFormOptionsStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const actionId = ref(null);
-const userId = ref('');
-const from = ref('');
-const to = ref('');
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage } = useListFilters(
+    { action: null, user: null, user_name: '', from: '', to: '' },
+    async (params, { signal }) => castPaginated((await api.get('/audit-logs/user-activity-logs', { params, signal })).data),
+    // The agent's name rides along in the URL so the picker can show it again on Back.
+    { urlOnly: ['user_name'] },
+);
 
 // Static list of audited actions, synced with the rest of the form options.
 const actionOptions = computed(() => toOptions(formOptions.options('user_activity_log_actions')));
-
-let request = null;
-
-async function fetchLogs(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/audit-logs/user-activity-logs', {
-            signal: controller.signal,
-            params: {
-                action: actionId.value || undefined,
-                user: userId.value || undefined,
-                from: from.value || undefined,
-                to: to.value || undefined,
-                page,
-            },
-        });
-        // Envelope: { data: { items: [...], pagination: {...} } }.
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => {
-    fetchLogs();
-});
-
-function clearFilters() {
-    actionId.value = null;
-    userId.value = '';
-    from.value = '';
-    to.value = '';
-    fetchLogs();
-}
 
 // Shown only when the row has audit logs — open the per-entry audit log view.
 function viewAuditLogs(log) {
@@ -98,18 +57,31 @@ function formatInput(input) {
 <template>
     <AppLayout title="User activity logs" fluid>
         <FullWidthBox title="User activity logs" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchLogs()">
-                <div class="w-full sm:w-72">
-                    <SearchSelect v-model="actionId" :options="actionOptions" placeholder="All actions" />
-                </div>
-                <div class="w-full sm:w-56">
-                    <AsyncSelect v-model="userId" :url="getUsersAutosuggestEndpoint()" placeholder="All agents" />
-                </div>
-                <DateInput v-model="from" />
-                <DateInput v-model="to" />
-                <Button type="submit" variant="primary" :loading="loading">Search</Button>
-                <Button type="button" @click="clearFilters">Clear</Button>
-            </form>
+            <template #actions>
+                <FiltersButton v-model="showFilters" :count="activeCount" />
+            </template>
+
+            <FiltersPanel :open="showFilters">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
+                    <SearchSelect v-model="filters.action" :options="actionOptions" label="Action" placeholder="All actions" />
+                    <!-- AsyncSelect only reads initialOption on mount, so re-key it whenever the value changes (restore/clear). -->
+                    <AsyncSelect
+                        :key="filters.user ?? 'none'"
+                        v-model="filters.user"
+                        label="Agent"
+                        :url="getUsersAutosuggestEndpoint()"
+                        placeholder="All agents"
+                        :initial-option="filters.user ? { name: filters.user_name } : null"
+                        @change="(option) => (filters.user_name = option?.label ?? '')"
+                    />
+                    <DateInput v-model="filters.from" label="From" />
+                    <DateInput v-model="filters.to" label="To" />
+                    <div class="flex items-end gap-2 md:col-span-4">
+                        <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                        <Button type="button" @click="clear">Clear</Button>
+                    </div>
+                </form>
+            </FiltersPanel>
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -146,7 +118,7 @@ function formatInput(input) {
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchLogs" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
     </AppLayout>
 </template>

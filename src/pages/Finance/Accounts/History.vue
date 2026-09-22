@@ -1,13 +1,16 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { downloadFile } from '../../../helpers/download.js';
 import { money } from '../../../helpers/money.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
+import FiltersButton from '../../../components/FiltersButton.vue';
+import FiltersPanel from '../../../components/FiltersPanel.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import Select from '../../../components/Form/Select.vue';
@@ -19,18 +22,14 @@ const route = useRoute();
 const notifications = useNotificationsStore();
 const accountId = route.params.id;
 
-const apiResponse = ref(null);
-const loading = ref(false);
 const downloading = ref(false);
-const q = ref('');
-const filters = reactive({
-    type: '',
-    // The account-history endpoint validates these as Y-m-d (unlike the
-    // platform-wide d.m.Y convention — see AS Travel SPA CLAUDE.md), so
-    // these are plain native date inputs rather than the DateInput component.
-    date_from: '',
-    date_to: '',
-});
+// The account-history endpoint validates the dates as Y-m-d (unlike the
+// platform-wide d.m.Y convention — see AGENTS.md), so they are plain native
+// date inputs rather than the DateInput component.
+const { filters, applied, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage } = useListFilters(
+    { q: '', type: null, date_from: '', date_to: '' },
+    async (params, { signal }) => castPaginated((await api.get(`/finance/accounts/${accountId}/transactions`, { params, signal })).data),
+);
 
 // AccountTransactionType slugs this endpoint accepts, paired with the exact
 // human label GetAccountTransactionsAction renders in a row's `type` field
@@ -79,40 +78,9 @@ function payeeLink(payee) {
     return null;
 }
 
-let request = null;
-
-async function fetchTransactions(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get(`/finance/accounts/${accountId}/transactions`, {
-            signal: controller.signal,
-            params: {
-                q: q.value || undefined,
-                type: filters.type || undefined,
-                date_from: filters.date_from || undefined,
-                date_to: filters.date_to || undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
 // Export the account history to Excel. The endpoint accepts the same optional
 // filters as the table; with no date range it exports every posting for the
-// account. Sends only the filters that are set (empty ones are omitted).
+// account. Sends the applied filters (what's on screen), not half-typed input.
 async function downloadExcel() {
     if (downloading.value) {
         return;
@@ -123,14 +91,7 @@ async function downloadExcel() {
     try {
         await downloadFile(`/finance/accounts/${accountId}/transactions/excel`, {
             fallbackName: 'account-history.xlsx',
-            config: {
-                params: {
-                    q: q.value || undefined,
-                    type: filters.type || undefined,
-                    date_from: filters.date_from || undefined,
-                    date_to: filters.date_to || undefined,
-                },
-            },
+            config: { params: applied.value },
         });
     } catch {
         notifications.push({ type: 'error', message: 'Could not export the account history.' });
@@ -138,11 +99,6 @@ async function downloadExcel() {
         downloading.value = false;
     }
 }
-
-onMounted(() => fetchTransactions());
-
-// Nothing refetches on change: every filter (search, type, date range) is
-// applied together only when the Filter button submits the form.
 
 const account = computed(() => apiResponse.value?.extra?.account ?? null);
 const openingBalance = computed(() => apiResponse.value?.extra?.opening_balance ?? 0);
@@ -157,7 +113,21 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                     {{ downloading ? 'Preparing…' : 'Download Excel' }}
                 </Button>
                 <RouterLink :to="routeUrl('accounts.list')" class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Back to Accounts</RouterLink>
+                <FiltersButton v-model="showFilters" :count="activeCount" />
             </template>
+
+            <FiltersPanel :open="showFilters">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
+                    <InputText v-model="filters.q" label="Search" placeholder="Notes, reference # or amount…" />
+                    <Select v-model="filters.type" :options="typeSelectOptions" label="Type" placeholder="All types" />
+                    <InputText v-model="filters.date_from" type="date" label="From" />
+                    <InputText v-model="filters.date_to" type="date" label="To" />
+                    <div class="flex items-end gap-2 md:col-span-4">
+                        <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                        <Button type="button" @click="clear">Clear</Button>
+                    </div>
+                </form>
+            </FiltersPanel>
 
             <div v-if="account" class="mb-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
                 <div class="rounded border border-gray-200 bg-gray-50 px-3 py-2">
@@ -173,16 +143,6 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                     <div class="font-medium tabular-nums">{{ money(closingBalance) }}</div>
                 </div>
             </div>
-
-            <form class="mb-4 grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="fetchTransactions()">
-                <InputText v-model="q" label="Search" placeholder="Notes, reference # or amount…" />
-                <Select v-model="filters.type" :options="typeSelectOptions" label="Type" placeholder="All types" />
-                <InputText v-model="filters.date_from" type="date" label="From" />
-                <InputText v-model="filters.date_to" type="date" label="To" />
-                <div>
-                    <Button type="submit" variant="primary" :loading="loading" class="w-full sm:w-auto">Filter</Button>
-                </div>
-            </form>
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -236,7 +196,7 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchTransactions" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
     </AppLayout>
 </template>

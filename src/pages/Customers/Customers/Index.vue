@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -12,56 +13,30 @@ import ApiPagination from '../../../components/ApiPagination.vue';
 import CustomerActions from './Actions.vue';
 import Loader from '../../../components/Loader.vue';
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/customers/customers', { params, signal })).data),
+);
 
 // Row picked via the ⋯ button — opens the actions side overlay.
 const selected = ref(null);
 
-let request = null;
-
-async function fetchCustomers(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/customers/customers', {
-            signal: controller.signal,
-            params: { q: search.value || undefined, page },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchCustomers());
-
 // After a delete from the actions overlay, refresh the current page.
 function onCustomerDeleted() {
     selected.value = null;
-    fetchCustomers(apiResponse.value?.pagination?.current_page ?? 1);
+    reload();
 }
 </script>
 
 <template>
     <AppLayout title="Customers" fluid>
         <FullWidthBox title="Customers" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchCustomers()">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
                 <div class="w-full sm:w-72">
-                    <InputText v-model="search" label="Search" placeholder="Name, email, unique ID…" />
+                    <InputText v-model="filters.q" label="Search" placeholder="Name, email, unique ID…" />
                 </div>
                 <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchCustomers();">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -112,7 +87,7 @@ function onCustomerDeleted() {
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchCustomers" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink :to="routeUrl('customers.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">

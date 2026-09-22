@@ -1,12 +1,15 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useAuthStore } from '../../../stores/auth.js';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
+import FiltersButton from '../../../components/FiltersButton.vue';
+import FiltersPanel from '../../../components/FiltersPanel.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
@@ -19,57 +22,10 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-
-// Date inputs speak Y-m-d; the API expects d.m.Y (see helpers/date.js).
-const filters = reactive({
-    q: '',
-    date_from: '',
-    date_to: '',
-    openOnly: false,
-});
-
-let request = null;
-
-async function fetchBills(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/suppliers/bills', {
-            signal: controller.signal,
-            params: {
-                q: filters.q || undefined,
-                date_from: filters.date_from || undefined,
-                date_to: filters.date_to || undefined,
-                open: filters.openOnly ? 1 : undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-function clearFilters() {
-    filters.q = '';
-    filters.date_from = '';
-    filters.date_to = '';
-    filters.openOnly = false;
-    fetchBills();
-}
-
-onMounted(() => fetchBills());
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage, reload } = useListFilters(
+    { q: '', date_from: '', date_to: '', open: false },
+    async (params, { signal }) => castPaginated((await api.get('/suppliers/bills', { params, signal })).data),
+);
 
 const toDelete = ref(null);
 const deleting = ref(false);
@@ -84,7 +40,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/suppliers/bills/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchBills(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
     }
@@ -108,18 +64,24 @@ const rowActions = (bill) => [
 <template>
     <AppLayout title="Bills" fluid>
         <FullWidthBox v-if="auth.can('supplierBills.list')" title="Bills" :collapsible="false">
-            <form class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="fetchBills()">
-                <InputText v-model="filters.q" label="Search" placeholder="Bill ID, reference, supplier…" />
-                <DateInput v-model="filters.date_from" label="Date from" />
-                <DateInput v-model="filters.date_to" label="Date to" />
-                <div class="flex items-end">
-                    <NiceCheckbox v-model="filters.openOnly" label="Open only" />
-                </div>
-                <div class="flex items-end gap-2 md:col-span-4">
-                    <Button type="submit" variant="primary" :loading="loading">Filter</Button>
-                    <Button type="button" @click="clearFilters">Clear</Button>
-                </div>
-            </form>
+            <template #actions>
+                <FiltersButton v-model="showFilters" :count="activeCount" />
+            </template>
+
+            <FiltersPanel :open="showFilters">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
+                    <InputText v-model="filters.q" label="Search" placeholder="Bill ID, reference, supplier…" />
+                    <DateInput v-model="filters.date_from" label="Date from" />
+                    <DateInput v-model="filters.date_to" label="Date to" />
+                    <div class="flex items-end">
+                        <NiceCheckbox v-model="filters.open" label="Open only" />
+                    </div>
+                    <div class="flex items-end gap-2 md:col-span-4">
+                        <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                        <Button type="button" @click="clear">Clear</Button>
+                    </div>
+                </form>
+            </FiltersPanel>
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -160,7 +122,7 @@ const rowActions = (bill) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchBills" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
 
         <ConfirmDialog

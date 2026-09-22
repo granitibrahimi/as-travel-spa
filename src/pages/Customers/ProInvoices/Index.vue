@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -13,42 +14,10 @@ import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
 import ProInvoiceActions from './Actions.vue';
 
-const apiResponse = ref(null);
-const loading = ref(false);
-
-const filters = reactive({ q: '' });
-
-let request = null;
-
-async function fetchProInvoices(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/customers/pro-invoices', {
-            signal: controller.signal,
-            params: { q: filters.q || undefined, page },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-function clearFilters() {
-    filters.q = '';
-    fetchProInvoices();
-}
-
-onMounted(fetchProInvoices);
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/customers/pro-invoices', { params, signal })).data),
+);
 
 // Flight/hotel info are multi-line free text; show a single trimmed line and
 // keep the full value in the title tooltip.
@@ -61,17 +30,17 @@ const selected = ref(null);
 // After a delete from the actions overlay, refresh the current page.
 function onProInvoiceDeleted() {
     selected.value = null;
-    fetchProInvoices(apiResponse.value?.pagination?.current_page ?? 1);
+    reload();
 }
 </script>
 
 <template>
     <AppLayout title="Pro Invoices" fluid>
         <FullWidthBox title="Pro Invoices" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchProInvoices()">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
                 <InputText v-model="filters.q" label="Search" placeholder="Pro-invoice ID, customer…" class="w-full sm:w-72" />
                 <Button type="submit" variant="primary" :loading="loading">Filter</Button>
-                <Button type="button" @click="clearFilters">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -126,7 +95,7 @@ function onProInvoiceDeleted() {
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchProInvoices" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
 
         <!-- Per-pro-invoice actions — defined locally and permission-gated (Actions.vue). -->

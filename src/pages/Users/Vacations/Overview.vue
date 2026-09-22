@@ -1,11 +1,13 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
+import FiltersButton from '../../../components/FiltersButton.vue';
+import FiltersPanel from '../../../components/FiltersPanel.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
@@ -16,19 +18,12 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-// All filtering is server-side (the endpoint paginates). Submit re-fetches from
-// page 1; the paginator keeps the same filters when changing pages.
-const filters = reactive({
-    userId: null,
-    from: '',
-    to: '',
-    onlyOpen: false,
-});
-
-const apiResponse = ref(null);
-const loading = ref(false);
-
-let request = null;
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage } = useListFilters(
+    { user_id: null, user_name: '', from: '', to: '', only_open: false },
+    async (params, { signal }) => castPaginated((await api.get('/users/vacations', { params, signal })).data),
+    // The agent's name rides along in the URL so the picker can show it again on Back.
+    { urlOnly: ['user_name'] },
+);
 
 const statusClass = (status) => ({
     Approved: 'bg-green-100 text-green-700',
@@ -36,60 +31,40 @@ const statusClass = (status) => ({
     Open: 'bg-amber-100 text-amber-700',
 }[status] ?? 'bg-gray-100 text-gray-600');
 
-async function fetchRequests(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/users/vacations', {
-            signal: controller.signal,
-            params: {
-                page,
-                user_id: filters.userId || undefined,
-                from: filters.from || undefined,
-                to: filters.to || undefined,
-                only_open: filters.onlyOpen ? 1 : undefined,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchRequests());
 </script>
 
 <template>
     <AppLayout title="Vacation requests" fluid>
         <div v-if="auth.can('vacation.viewAllUsers')" class="space-y-6">
-            <FullWidthBox title="Filters" :collapsible="false">
-                <form
-                    class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
-                    @submit.prevent="fetchRequests()"
-                >
-                    <AsyncSelect
-                        v-model="filters.userId"
-                        url="/users/users/autosuggest"
-                        label="Agent"
-                        placeholder="All agents"
-                    />
-                    <DateInput v-model="filters.from" label="From date" />
-                    <DateInput v-model="filters.to" label="To date" />
-                    <NiceCheckbox v-model="filters.onlyOpen" label="Only open" class="pb-1.5" @update:model-value="fetchRequests()" />
-                    <Button type="submit" variant="primary" class="w-full">Filter</Button>
-                </form>
-            </FullWidthBox>
-
             <FullWidthBox title="Requests" :collapsible="false">
+                <template #actions>
+                    <FiltersButton v-model="showFilters" :count="activeCount" />
+                </template>
+
+                <FiltersPanel :open="showFilters">
+                    <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
+                        <!-- AsyncSelect only reads initialOption on mount, so re-key it whenever the value changes (restore/clear). -->
+                        <AsyncSelect
+                            :key="filters.user_id ?? 'none'"
+                            v-model="filters.user_id"
+                            url="/users/users/autosuggest"
+                            label="Agent"
+                            placeholder="All agents"
+                            :initial-option="filters.user_id ? { name: filters.user_name } : null"
+                            @change="(option) => (filters.user_name = option?.label ?? '')"
+                        />
+                        <DateInput v-model="filters.from" label="From date" />
+                        <DateInput v-model="filters.to" label="To date" />
+                        <div class="flex items-end">
+                            <NiceCheckbox v-model="filters.only_open" label="Only open" />
+                        </div>
+                        <div class="flex items-end gap-2 md:col-span-4">
+                            <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                            <Button type="button" @click="clear">Clear</Button>
+                        </div>
+                    </form>
+                </FiltersPanel>
+
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
@@ -131,7 +106,7 @@ onMounted(() => fetchRequests());
                     </table>
                 </div>
 
-                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchRequests" />
+                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
             </FullWidthBox>
         </div>
     </AppLayout>

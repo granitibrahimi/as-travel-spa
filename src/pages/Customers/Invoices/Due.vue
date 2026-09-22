@@ -1,11 +1,14 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useAuthStore } from '../../../stores/auth.js';
 import { useFormOptionsStore } from '../../../stores/formOptions.js';
 import { money } from '../../../helpers/money.js';
 import api, { getUsersAutosuggestEndpoint } from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
+import FiltersButton from '../../../components/FiltersButton.vue';
+import FiltersPanel from '../../../components/FiltersPanel.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
@@ -36,64 +39,12 @@ const contactTypes = computed(() =>
     formOptions.personContractReferenceTypes.map((type) => ({ value: type.value ?? type.id, label: type.label ?? type.name })),
 );
 
-const filters = reactive({
-    q: '',
-    agent: null,
-    parent_destination: null,
-    customer_type: null,
-    due_from: '',
-    due_to: '',
-});
-
-const apiResponse = ref(null);
-const loading = ref(false);
-
-let request = null;
-
-async function fetchDue(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/customers/invoices/due', {
-            signal: controller.signal,
-            params: {
-                q: filters.q || undefined,
-                agent: filters.agent || undefined,
-                parent_destination: filters.parent_destination || undefined,
-                customer_type: filters.customer_type || undefined,
-                due_from: filters.due_from || undefined,
-                due_to: filters.due_to || undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-function clear() {
-    filters.q = '';
-    filters.agent = null;
-    filters.parent_destination = null;
-    filters.customer_type = null;
-    filters.due_from = '';
-    filters.due_to = '';
-    fetchDue();
-}
-
-onMounted(() => {
-    fetchDue();
-});
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage } = useListFilters(
+    { q: '', agent: null, agent_name: '', parent_destination: null, customer_type: null, due_from: '', due_to: '' },
+    async (params, { signal }) => castPaginated((await api.get('/customers/invoices/due', { params, signal })).data),
+    // The agent's name rides along in the URL so the picker can show it again on Back.
+    { urlOnly: ['agent_name'] },
+);
 
 // --- "Customer contacted" slide-over ---
 const contactInvoice = ref(null);
@@ -138,23 +89,35 @@ async function saveContact() {
 <template>
     <AppLayout title="Due Invoices" fluid>
         <div v-if="auth.canAny(['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'])" class="space-y-6">
-            <FullWidthBox title="Filters" :collapsible="false">
-                <form class="grid grid-cols-1 gap-3 md:grid-cols-3" @submit.prevent="fetchDue()">
-                    <InputText v-model="filters.q" label="Search" placeholder="Invoice ID or ticket…" />
-                    <AsyncSelect v-model="filters.agent" :url="getUsersAutosuggestEndpoint()" label="Agent" placeholder="All agents" />
-
-                    <SearchSelect v-model="filters.parent_destination" :options="parentDestinationOptions" label="Parent Destination" placeholder="All" />
-                    <Select v-model="filters.customer_type" :options="customerTypes" label="Customer Type" placeholder="All types" />
-                    <DateInput v-model="filters.due_from" label="Due from" />
-                    <DateInput v-model="filters.due_to" label="Due to" />
-                    <div class="flex items-end gap-2 md:col-span-3">
-                        <Button type="submit" variant="primary">Filter</Button>
-                        <Button type="button" @click="clear">Clear</Button>
-                    </div>
-                </form>
-            </FullWidthBox>
-
             <FullWidthBox title="Due invoices" :collapsible="false">
+                <template #actions>
+                    <FiltersButton v-model="showFilters" :count="activeCount" />
+                </template>
+
+                <FiltersPanel :open="showFilters">
+                    <form class="grid grid-cols-1 gap-3 md:grid-cols-3" @submit.prevent="apply">
+                        <InputText v-model="filters.q" label="Search" placeholder="Invoice ID or ticket…" />
+                        <!-- AsyncSelect only reads initialOption on mount, so re-key it whenever the value changes (restore/clear). -->
+                        <AsyncSelect
+                            :key="filters.agent ?? 'none'"
+                            v-model="filters.agent"
+                            :url="getUsersAutosuggestEndpoint()"
+                            label="Agent"
+                            placeholder="All agents"
+                            :initial-option="filters.agent ? { name: filters.agent_name } : null"
+                            @change="(option) => (filters.agent_name = option?.label ?? '')"
+                        />
+                        <SearchSelect v-model="filters.parent_destination" :options="parentDestinationOptions" label="Parent Destination" placeholder="All" />
+                        <Select v-model="filters.customer_type" :options="customerTypes" label="Customer Type" placeholder="All types" />
+                        <DateInput v-model="filters.due_from" label="Due from" />
+                        <DateInput v-model="filters.due_to" label="Due to" />
+                        <div class="flex items-end gap-2 md:col-span-3">
+                            <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                            <Button type="button" @click="clear">Clear</Button>
+                        </div>
+                    </form>
+                </FiltersPanel>
+
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
@@ -208,7 +171,7 @@ async function saveContact() {
                     </table>
                 </div>
 
-                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchDue" />
+                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
             </FullWidthBox>
         </div>
 

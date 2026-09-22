@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -16,23 +17,11 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/countries', { params, signal })).data),
+);
 const error = ref('');
-
-async function fetchCountries(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/countries', { params: { q: search.value || undefined, page } });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => fetchCountries());
 
 const toggling = ref(new Set());
 
@@ -65,7 +54,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/countries/${countryToDelete.value.id}`);
         countryToDelete.value = null;
-        await fetchCountries(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } catch (e) {
         if (e.response?.status === 409) {
             error.value = e.response.data.message;
@@ -89,10 +78,10 @@ const rowActions = (country) => [
         <FullWidthBox title="Countries" :collapsible="false">
             <Alert v-if="error" type="danger" class="mb-4">{{ error }}</Alert>
 
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchCountries()">
-                <input v-model="search" type="text" placeholder="Name, nationality, ISO…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
+                <input v-model="filters.q" type="text" placeholder="Name, nationality, ISO…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
                 <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchCountries();">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -138,7 +127,7 @@ const rowActions = (country) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchCountries" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
 
         <ConfirmDialog

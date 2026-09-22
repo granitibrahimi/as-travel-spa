@@ -1,9 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -14,35 +14,10 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 const store = useNotificationsStore();
 const canView = auth.can('userNotifications.show');
-const apiResponse = ref(null);
-const loading = ref(false);
-
-let request = null;
-
-async function fetchNotifications(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/users/notifications', {
-            signal: controller.signal,
-            params: { page },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchNotifications());
+const { response: apiResponse, loading, goToPage, reload } = useListFilters(
+    {},
+    async (params, { signal }) => castPaginated((await api.get('/users/notifications', { params, signal })).data),
+);
 
 async function markRead(notification) {
     if (notification.is_read) {
@@ -147,7 +122,7 @@ async function open(notification) {
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchNotifications" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
     </AppLayout>
 </template>

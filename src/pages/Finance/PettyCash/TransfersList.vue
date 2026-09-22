@@ -1,12 +1,15 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
+import FiltersButton from '../../../components/FiltersButton.vue';
+import FiltersPanel from '../../../components/FiltersPanel.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
@@ -20,8 +23,10 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 const router = useRouter();
 
-const apiResponse = ref(null);
-const loading = ref(false);
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage, reload } = useListFilters(
+    { q: '', direction: null, date_from: '', date_to: '' },
+    async (params, { signal }) => castPaginated((await api.get('/finance/petty-cash/transfers', { params, signal })).data),
+);
 const toDelete = ref(null);
 const deleting = ref(false);
 
@@ -30,48 +35,10 @@ const rowActions = (transfer) => [
     ...(auth.can('accountTransfers.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = transfer) }] : []),
 ];
 
-const filters = reactive({
-    q: '',
-    direction: null,
-    date_from: '',
-    date_to: '',
-});
-
 const directions = [
     { value: 'in', label: 'Into petty cash' },
     { value: 'out', label: 'Out of petty cash' },
 ];
-
-let request = null;
-
-async function fetchTransfers(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/finance/petty-cash/transfers', {
-            signal: controller.signal,
-            params: {
-                q: filters.q || undefined,
-                direction: filters.direction || undefined,
-                date_from: filters.date_from || undefined,
-                date_to: filters.date_to || undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
 
 async function confirmDelete() {
     if (deleting.value || ! toDelete.value) {
@@ -83,28 +50,33 @@ async function confirmDelete() {
     try {
         await api.delete(`/finance/account-transfers/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchTransfers(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
     }
 }
 
-onMounted(() => fetchTransfers());
 </script>
 
 <template>
     <AppLayout title="Petty Cash — Transfers" fluid>
         <FullWidthBox title="Petty Cash Transfers" :collapsible="false">
-            <form class="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="fetchTransfers()">
-                <InputText v-model="filters.q" label="Search" placeholder="ID or note…" />
-                <Select v-model="filters.direction" :options="directions" label="Direction" placeholder="All" />
-                <DateInput v-model="filters.date_from" label="From" />
-                <DateInput v-model="filters.date_to" label="To" />
-                <div class="flex items-end gap-2">
-                    <Button type="submit" variant="primary">Filter</Button>
-                    <Button type="button" @click="filters.q = ''; filters.direction = null; filters.date_from = ''; filters.date_to = ''; fetchTransfers();">Clear</Button>
-                </div>
-            </form>
+            <template #actions>
+                <FiltersButton v-model="showFilters" :count="activeCount" />
+            </template>
+
+            <FiltersPanel :open="showFilters">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
+                    <InputText v-model="filters.q" label="Search" placeholder="ID or note…" />
+                    <Select v-model="filters.direction" :options="directions" label="Direction" placeholder="All" />
+                    <DateInput v-model="filters.date_from" label="From" />
+                    <DateInput v-model="filters.date_to" label="To" />
+                    <div class="flex items-end gap-2 md:col-span-4">
+                        <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                        <Button type="button" @click="clear">Clear</Button>
+                    </div>
+                </form>
+            </FiltersPanel>
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -146,7 +118,7 @@ onMounted(() => fetchTransfers());
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchTransfers" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <div class="flex gap-2">

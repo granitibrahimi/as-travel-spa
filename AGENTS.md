@@ -103,6 +103,54 @@ Do not read `record.actions` from API responses. See
 
 Count only the actions the user can actually see (after permission filtering).
 
+## List-view filters & pagination state
+
+Every paginated list page keeps its filters and page number **in the URL query
+string** through `src/composables/useListFilters.js`, so Back from a show page
+returns to the same filters and page. Don't hand-roll `fetchX(page)` +
+`AbortController` + `onMounted` on list pages.
+
+```js
+const { filters, applied, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage, reload } = useListFilters(
+    { q: '', from_account_id: null, date_from: '', cash_approvals: false },
+    async (params, { signal }) => castPaginated((await api.get('/finance/account-transfers', { params, signal })).data),
+);
+```
+
+- Default keys are the **API param names**. The default's type controls how the
+  value is read back from the URL: booleans become `1`/absent, strings stay
+  strings, `null`/number defaults become numbers when numeric, arrays become
+  lists. Blank values aren't sent. Wire it up as `@submit.prevent="apply"`, a
+  Clear button with `@click="clear"`, `ApiPagination @page="goToPage"`, and
+  `reload()` after a delete or other mutation. That keeps the current page.
+- Exports (Excel) send `applied.value`, the filters the table is showing.
+- **AsyncSelect** filters: add a `urlOnly` label key (e.g. `supplier_name`).
+  Set it from `@change`, pass it as `:initial-option`, and re-key the select on
+  its value so Back shows the name again. See `Suppliers/Deposits/Index.vue`.
+- Fixed extra params (e.g. `open: 1`) and deep-link params the list doesn't own
+  (`?supplier_id=`) are added in the loader. Unknown query keys are kept.
+
+**Which UI**:
+
+- **Search box only** (optionally plus one instant checkbox like "Open only"):
+  keep it **inline** above the table. Search is the main action, so don't hide
+  it behind a button.
+- **Real filters** (dates, accounts, selects, several fields): use the
+  **collapsible filters pattern**. Put `FiltersButton`
+  (`src/components/FiltersButton.vue`) in `FullWidthBox`'s `#actions` slot, as
+  the rightmost item: `<FiltersButton v-model="showFilters"
+  :count="activeCount" />`. Wrap the `<form>` in `<FiltersPanel
+  :open="showFilters">` (`src/components/FiltersPanel.vue`), which slides open
+  and closed and starts closed. Don't put `mb-4` on the form; the panel adds
+  spacing. The badge counts the *applied* filters. Inside the panel, use a
+  responsive grid (`grid grid-cols-1 gap-3 md:grid-cols-3/4`) with the standard
+  inputs (`InputText`, `Select`, `SearchSelect`, `AsyncSelect`, `DateInput`,
+  `NiceCheckbox`), then **Filter** (submit) and **Clear** buttons. Text search
+  goes in the panel too. Don't use a separate "Filters" box above the list.
+- Reference: `src/pages/Finance/AccountTransfers/Index.vue`.
+- Report pages (Statistics, Finance Reports, Departures) keep their own filter
+  boxes. This pattern is for list pages.
+
 ## Shared form options (reference data)
 
 - Cross-app dropdown data (payment methods, countries, destinations, meal

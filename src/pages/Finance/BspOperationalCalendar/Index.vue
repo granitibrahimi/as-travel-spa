@@ -1,8 +1,8 @@
 <script setup>
-import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -14,53 +14,19 @@ import ApiPagination from '../../../components/ApiPagination.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const filters = ref({ year: '' });
-
-let request = null;
-
-async function fetchPeriods(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/finance/bsp-operational-calendar', {
-            signal: controller.signal,
-            params: {
-                year: filters.value.year || undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchPeriods());
-
-function clearFilters() {
-    filters.value = { year: '' };
-    fetchPeriods();
-}
+const { filters, response: apiResponse, loading, apply, clear, goToPage } = useListFilters(
+    { year: '' },
+    async (params, { signal }) => castPaginated((await api.get('/finance/bsp-operational-calendar', { params, signal })).data),
+);
 </script>
 
 <template>
     <AppLayout title="Operational Calendar" fluid>
         <FullWidthBox title="BSP Operational Calendar" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchPeriods()">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
                 <InputText v-model="filters.year" label="Year" placeholder="2026" class="w-28" />
                 <Button type="submit" variant="primary">Filter</Button>
-                <Button type="button" @click="clearFilters">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -101,7 +67,7 @@ function clearFilters() {
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchPeriods" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink

@@ -1,10 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -14,21 +14,10 @@ import Loader from '../../../components/Loader.vue';
 
 const notifications = useNotificationsStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-
-async function fetchPayments(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/customers/online-payments', { params: { page } });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => fetchPayments());
+const { response: apiResponse, loading, goToPage } = useListFilters(
+    {},
+    async (params, { signal }) => castPaginated((await api.get('/customers/online-payments', { params, signal })).data),
+);
 
 // Reference links to the underlying invoice/pro-invoice show page — only
 // once `payable_id` is set (the backend leaves it null if that record was
@@ -111,7 +100,7 @@ const statusClass = (status) => ({
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchPayments" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
     </AppLayout>
 </template>

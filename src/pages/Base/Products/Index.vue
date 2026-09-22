@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -15,39 +16,12 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/products', { params, signal })).data),
+);
 const toDelete = ref(null);
 const deleting = ref(false);
-
-let request = null;
-
-async function fetchProducts(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/products', {
-            signal: controller.signal,
-            params: { q: search.value || undefined, page },
-        });
-        // Resource collection envelope: rows in `data`, paginator in `meta`.
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchProducts());
 
 async function confirmDelete() {
     if (deleting.value) {
@@ -59,7 +33,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/products/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchProducts(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
     }
@@ -74,10 +48,10 @@ const rowActions = (product) => [
 <template>
     <AppLayout title="Products" fluid>
         <FullWidthBox title="Products" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchProducts()">
-                <input v-model="search" type="text" placeholder="Search…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-64">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
+                <input v-model="filters.q" type="text" placeholder="Search…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-64">
                 <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchProducts();">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -109,7 +83,7 @@ const rowActions = (product) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchProducts" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink

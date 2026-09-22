@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -15,24 +16,12 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/meal-types', { params, signal })).data),
+);
 const toDelete = ref(null);
 const deleting = ref(false);
-
-async function fetchMealTypes(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/meal-types', { params: { q: search.value || undefined, page: 1 } });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => fetchMealTypes());
 
 async function confirmDelete() {
     if (deleting.value) {
@@ -44,7 +33,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/meal-types/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchMealTypes(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
     }
@@ -59,10 +48,10 @@ const rowActions = (mealType) => [
 <template>
     <AppLayout title="Meal types">
         <FullWidthBox title="Meal types" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchMealTypes()">
-                <input v-model="search" type="text" placeholder="Search…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-64">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
+                <input v-model="filters.q" type="text" placeholder="Search…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-64">
                 <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchMealTypes();">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -92,7 +81,7 @@ const rowActions = (mealType) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchMealTypes" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink v-if="auth.can('mealTypes.create')" :to="routeUrl('mealTypes.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">

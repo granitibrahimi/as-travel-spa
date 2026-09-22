@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -16,36 +17,10 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 const router = useRouter();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
-
-let request = null;
-
-async function fetchHotels(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/hotels', {
-            signal: controller.signal,
-            params: { q: search.value || undefined, page },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchHotels());
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/hotels', { params, signal })).data),
+);
 
 const hotelToDelete = ref(null);
 const deleting = ref(false);
@@ -60,7 +35,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/hotels/${hotelToDelete.value.id}`);
         hotelToDelete.value = null;
-        await fetchHotels(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
     }
@@ -75,10 +50,10 @@ const rowActions = (hotel) => [
 <template>
     <AppLayout title="Hotels" fluid>
         <FullWidthBox title="Hotels" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchHotels()">
-                <input v-model="search" type="text" placeholder="Hotel title…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-64">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
+                <input v-model="filters.q" type="text" placeholder="Hotel title…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-64">
                 <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchHotels();">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -117,7 +92,7 @@ const rowActions = (hotel) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchHotels" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink v-if="auth.can('hotels.create')" :to="routeUrl('hotels.create')" class="inline-block rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700">

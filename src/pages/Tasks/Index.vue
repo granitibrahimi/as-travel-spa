@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castPaginated } from '../../types/responses.js';
+import { useListFilters } from '../../composables/useListFilters.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
 import Button from '../../components/Button.vue';
@@ -14,41 +15,10 @@ import Loader from '../../components/Loader.vue';
 
 // All data comes from the platform JSON API (bearer token). Paths are relative
 // to the api client's base (VITE_API_URL, e.g. https://csrm.test/api/v1).
-const apiResponse = ref(null);
-const loading = ref(false);
-const q = ref('');
-const unassigned = ref(false);
-
-let request = null;
-
-async function fetchTasks(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/tasks', {
-            signal: controller.signal,
-            params: {
-                q: q.value || undefined,
-                unassigned: unassigned.value ? 1 : undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchTasks());
+const { filters, response: apiResponse, loading, apply, goToPage, reload } = useListFilters(
+    { q: '', unassigned: false },
+    async (params, { signal }) => castPaginated((await api.get('/tasks', { params, signal })).data),
+);
 
 // --- Ignore with a required reason ---
 const taskToIgnore = ref(null);
@@ -77,7 +47,7 @@ async function confirmIgnore() {
     try {
         await api.post(`/tasks/${taskToIgnore.value.id}/ignore`, { reason: ignoreReason.value.trim() });
         taskToIgnore.value = null;
-        await fetchTasks(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         ignoring.value = false;
     }
@@ -96,14 +66,14 @@ const statusClass = (status) => ({
 <template>
     <AppLayout title="Tasks" fluid>
         <FullWidthBox title="Tasks" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-4" @submit.prevent="fetchTasks()">
+            <form class="mb-4 flex flex-wrap items-end gap-4" @submit.prevent="apply">
                 <div class="w-full md:max-w-sm">
-                    <InputText v-model="q" label="Search" placeholder="Customer name or contact…" />
+                    <InputText v-model="filters.q" label="Search" placeholder="Customer name or contact…" />
                 </div>
                 <label class="inline-flex items-center gap-2 pb-2 text-sm text-gray-700">
-                    <input v-model="unassigned" type="checkbox"
+                    <input v-model="filters.unassigned" type="checkbox"
                            class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                           @change="fetchTasks()">
+                           @change="apply">
                     Not assigned only
                 </label>
                 <Button type="submit" variant="primary">Filter</Button>
@@ -161,7 +131,7 @@ const statusClass = (status) => ({
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchTasks" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <ConfirmDialog
                 :show="Boolean(taskToIgnore)"

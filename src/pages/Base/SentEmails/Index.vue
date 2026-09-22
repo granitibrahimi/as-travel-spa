@@ -1,10 +1,12 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
+import FiltersButton from '../../../components/FiltersButton.vue';
+import FiltersPanel from '../../../components/FiltersPanel.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
@@ -24,36 +26,10 @@ const statuses = [
     { value: 'bounced', label: 'Bounced' },
 ];
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const form = reactive({ search: '', type: null, status: null });
-
-async function fetchEmails(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/sent-emails', {
-            params: {
-                search: form.search || undefined,
-                type: form.type || undefined,
-                status: form.status || undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => fetchEmails());
-
-function clear() {
-    form.search = '';
-    form.type = null;
-    form.status = null;
-    fetchEmails();
-}
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage } = useListFilters(
+    { search: '', type: null, status: null },
+    async (params, { signal }) => castPaginated((await api.get('/sent-emails', { params, signal })).data),
+);
 
 const badgeClass = {
     sent: 'bg-gray-100 text-gray-600',
@@ -66,21 +42,25 @@ const statusLabel = { sent: 'Sent', opened: 'Opened', bounced: 'Bounced' };
 <template>
     <AppLayout title="Sent Emails" fluid>
         <div class="space-y-6">
-            <FullWidthBox title="Filters" :collapsible="false">
-                <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="fetchEmails()">
-                    <div class="md:col-span-2">
-                        <InputText v-model="form.search" label="Recipient / Subject" placeholder="Search…" />
-                    </div>
-                    <Select v-model="form.type" :options="types" label="Type" placeholder="All types" />
-                    <Select v-model="form.status" :options="statuses" label="Status" placeholder="All statuses" />
-                    <div class="flex items-end gap-2 md:col-span-4">
-                        <Button type="submit" variant="primary">Filter</Button>
-                        <Button type="button" @click="clear">Clear</Button>
-                    </div>
-                </form>
-            </FullWidthBox>
-
             <FullWidthBox title="Sent Emails" :collapsible="false">
+                <template #actions>
+                    <FiltersButton v-model="showFilters" :count="activeCount" />
+                </template>
+
+                <FiltersPanel :open="showFilters">
+                    <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
+                        <div class="md:col-span-2">
+                            <InputText v-model="filters.search" label="Recipient / Subject" placeholder="Search…" />
+                        </div>
+                        <Select v-model="filters.type" :options="types" label="Type" placeholder="All types" />
+                        <Select v-model="filters.status" :options="statuses" label="Status" placeholder="All statuses" />
+                        <div class="flex items-end gap-2 md:col-span-4">
+                            <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                            <Button type="button" @click="clear">Clear</Button>
+                        </div>
+                    </form>
+                </FiltersPanel>
+
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
@@ -125,7 +105,7 @@ const statusLabel = { sent: 'Sent', opened: 'Opened', bounced: 'Bounced' };
                     </table>
                 </div>
 
-                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchEmails" />
+                <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
             </FullWidthBox>
         </div>
     </AppLayout>

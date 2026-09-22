@@ -1,12 +1,15 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
+import FiltersButton from '../../../components/FiltersButton.vue';
+import FiltersPanel from '../../../components/FiltersPanel.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
@@ -19,12 +22,10 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 const formOptions = useFormOptionsStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-
-const search = ref('');
-const classification = ref('');
-const gender = ref('');
+const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage, reload } = useListFilters(
+    { q: '', gender: null, classification: null },
+    async (params, { signal }) => castPaginated((await api.get('/customers/persons', { params, signal })).data),
+);
 
 // Enum options for the filters — from the shared form-options store.
 const classifications = computed(() => toOptions(formOptions.personClassifications));
@@ -34,36 +35,6 @@ const genders = computed(() => toOptions(formOptions.personGenders));
 const selected = ref(null);
 const personToDelete = ref(null);
 const deleting = ref(false);
-
-let request = null;
-
-async function fetchPersons(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/customers/persons', {
-            signal: controller.signal,
-            params: {
-                q: search.value || undefined,
-                classification: classification.value || undefined,
-                gender: gender.value || undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
 
 async function confirmDelete() {
     if (deleting.value) {
@@ -75,30 +46,34 @@ async function confirmDelete() {
     try {
         await api.delete(`/customers/persons/${personToDelete.value.id}`);
         personToDelete.value = null;
-        await fetchPersons(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
     }
 }
 
-onMounted(async () => {
-    await fetchPersons();
-});
 </script>
 
 <template>
     <AppLayout title="Travelers" fluid>
         <FullWidthBox title="Travelers" :collapsible="false">
-            <form class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-5" @submit.prevent="fetchPersons()">
-                <div class="md:col-span-2">
-                    <InputText v-model="search" label="Search" placeholder="Name, email, phone, passport…" />
-                </div>
-                <Select v-model="gender" :options="genders" label="Gender" placeholder="All" />
-                <Select v-model="classification" :options="classifications" label="Classification" placeholder="All" />
-                <div class="flex items-end">
-                    <Button type="submit" variant="primary">Filter</Button>
-                </div>
-            </form>
+            <template #actions>
+                <FiltersButton v-model="showFilters" :count="activeCount" />
+            </template>
+
+            <FiltersPanel :open="showFilters">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
+                    <div class="md:col-span-2">
+                        <InputText v-model="filters.q" label="Search" placeholder="Name, email, phone, passport…" />
+                    </div>
+                    <Select v-model="filters.gender" :options="genders" label="Gender" placeholder="All" />
+                    <Select v-model="filters.classification" :options="classifications" label="Classification" placeholder="All" />
+                    <div class="flex items-end gap-2 md:col-span-4">
+                        <Button type="submit" variant="primary" :loading="loading">Filter</Button>
+                        <Button type="button" @click="clear">Clear</Button>
+                    </div>
+                </form>
+            </FiltersPanel>
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -157,7 +132,7 @@ onMounted(async () => {
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchPersons" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink

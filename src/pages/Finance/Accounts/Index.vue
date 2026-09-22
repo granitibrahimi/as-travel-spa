@@ -1,10 +1,11 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { money } from '../../../helpers/money.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -14,9 +15,10 @@ import Loader from '../../../components/Loader.vue';
 
 const formOptions = useFormOptionsStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const q = ref('');
+const { filters, response: apiResponse, loading, apply, goToPage } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/finance/accounts', { params, signal })).data),
+);
 const classification = ref('');
 
 // Classification options come from the shared form-options store.
@@ -47,41 +49,14 @@ function matchesClassification(row) {
     return option ? rowName === String(option.label).toLowerCase() : false;
 }
 
-let request = null;
-
-async function fetchAccounts(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/finance/accounts', {
-            signal: controller.signal,
-            params: { q: q.value || undefined, page },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchAccounts());
-
 const filtered = computed(() => (apiResponse.value?.data ?? []).filter(matchesClassification));
 </script>
 
 <template>
     <AppLayout title="Accounts" fluid>
         <FullWidthBox title="Accounts" :collapsible="false">
-            <form class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:max-w-2xl" @submit.prevent="fetchAccounts()">
-                <input v-model="q" type="text" placeholder="Number, name or type…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500">
+            <form class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:max-w-2xl" @submit.prevent="apply">
+                <input v-model="filters.q" type="text" placeholder="Number, name or type…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500">
                 <Select v-model="classification" :options="classifications" placeholder="All classifications" />
             </form>
 
@@ -120,7 +95,7 @@ const filtered = computed(() => (apiResponse.value?.data ?? []).filter(matchesCl
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchAccounts" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
     </AppLayout>
 </template>

@@ -1,9 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castPaginated } from '../../types/responses.js';
+import { useListFilters } from '../../composables/useListFilters.js';
 import { useAuthStore } from '../../stores/auth';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
@@ -13,35 +13,22 @@ import Loader from '../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const filter = ref('all');
+// Status tab ('' = All) lives in the URL so Back restores it.
+const { filters: query, response: apiResponse, loading, apply, goToPage } = useListFilters(
+    { status: '' },
+    async (params, { signal }) => castPaginated((await api.get('/support-tickets', { params, signal })).data),
+);
 
 const filters = [
-    { key: 'all', label: 'All' },
+    { key: '', label: 'All' },
     { key: 'open', label: 'Open' },
     { key: 'working', label: 'Working on it' },
     { key: 'resolved', label: 'Resolved' },
 ];
 
-async function fetchTickets(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/support-tickets', {
-            params: { status: filter.value === 'all' ? undefined : filter.value, page },
-        });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => fetchTickets());
-
 function setFilter(key) {
-    filter.value = key;
-    fetchTickets();
+    query.status = key;
+    apply();
 }
 
 const statusClass = (status) => ({
@@ -64,7 +51,7 @@ const rowActions = (ticket) => [
                     :key="f.key"
                     type="button"
                     class="rounded-full border px-3 py-1 text-sm"
-                    :class="filter === f.key ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+                    :class="query.status === f.key ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
                     @click="setFilter(f.key)"
                 >
                     {{ f.label }}
@@ -111,7 +98,7 @@ const rowActions = (ticket) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchTickets" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink

@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -15,29 +16,14 @@ import Loader from '../../../components/Loader.vue';
 const auth = useAuthStore();
 const route = useRoute();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
-
-async function fetchReconciliations(page = 1) {
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/suppliers/reconciliations', {
-            params: {
-                q: search.value || undefined,
-                // Deep-links from a supplier page (?supplier_id=…) narrow the list.
-                supplier_id: route.query.supplier_id || undefined,
-                page,
-            },
-        });
-        apiResponse.value = castPaginated(data);
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => fetchReconciliations());
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/suppliers/reconciliations', {
+        // Deep-links from a supplier page (?supplier_id=…) narrow the list.
+        params: { ...params, supplier_id: route.query.supplier_id || undefined },
+        signal,
+    })).data),
+);
 
 const toDelete = ref(null);
 const deleting = ref(false);
@@ -52,7 +38,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/suppliers/reconciliations/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchReconciliations(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
     }
@@ -76,10 +62,10 @@ const rowActions = (reconciliation) => [
 <template>
     <AppLayout title="Supplier Reconciliations" fluid>
         <FullWidthBox title="Supplier Reconciliations" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchReconciliations()">
-                <input v-model="search" type="text" placeholder="Reference…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
+                <input v-model="filters.q" type="text" placeholder="Reference…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
                 <button type="submit" class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">Search</button>
-                <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="search = ''; fetchReconciliations();">Clear</button>
+                <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="clear">Clear</button>
             </form>
 
             <div class="overflow-x-auto">
@@ -125,7 +111,7 @@ const rowActions = (reconciliation) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchReconciliations" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
 
         <ConfirmDialog

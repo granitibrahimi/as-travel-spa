@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -16,41 +17,14 @@ import Loader from '../../../components/Loader.vue';
 // to the api client's base (VITE_API_URL, e.g. https://csrm.test/api/v1).
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/messages', { params, signal })).data),
+);
 
 // Row queued for deletion — opens the confirm dialog.
 const toDelete = ref(null);
 const deleting = ref(false);
-
-let request = null;
-
-async function fetchMessages(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/messages', {
-            signal: controller.signal,
-            params: { q: search.value || undefined, page },
-        });
-        // Resource collection envelope: rows in `data`, paginator in `meta`.
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchMessages());
 
 // Messages have ≤4 row actions, so they live in the ⋯ dropdown (see CLAUDE.md).
 const rowActions = (message) => [
@@ -68,7 +42,7 @@ async function confirmDelete() {
     try {
         await api.delete(`/messages/${toDelete.value.id}`);
         toDelete.value = null;
-        await fetchMessages(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
     }
@@ -78,18 +52,18 @@ async function confirmDelete() {
 <template>
     <AppLayout title="Messages" fluid>
         <FullWidthBox title="Messages" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchMessages()">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
                 <div class="w-full sm:w-72">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Search</label>
                     <input
-                        v-model="search"
+                        v-model="filters.q"
                         type="text"
                         placeholder="Subject…"
                         class="w-full rounded border border-gray-300 px-2 py-1.5 text-base font-normal leading-normal focus:border-red-500 focus:ring-1 focus:ring-red-500"
                     >
                 </div>
                 <button type="submit" class="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50">Search</button>
-                <button type="button" class="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50" @click="search = ''; fetchMessages();">Clear</button>
+                <button type="button" class="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50" @click="clear">Clear</button>
             </form>
 
             <div class="overflow-x-auto">
@@ -126,7 +100,7 @@ async function confirmDelete() {
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchMessages" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <RouterLink

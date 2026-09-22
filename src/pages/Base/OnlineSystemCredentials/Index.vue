@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castPaginated, castResource } from '../../../types/responses.js';
+import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -19,9 +20,10 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 
-const apiResponse = ref(null);
-const loading = ref(false);
-const search = ref('');
+const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
+    { q: '' },
+    async (params, { signal }) => castPaginated((await api.get('/online-system-credentials', { params, signal })).data),
+);
 
 // Create / edit side panel.
 const overlayOpen = ref(false);
@@ -42,33 +44,6 @@ const form = reactive({
 // Pending delete (confirmed via ConfirmDialog).
 const pendingDelete = ref(null);
 const deleting = ref(false);
-
-let request = null;
-
-async function fetchCredentials(page = 1) {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    loading.value = true;
-
-    try {
-        const { data } = await api.get('/online-system-credentials', {
-            signal: controller.signal,
-            params: { q: search.value || undefined, page },
-        });
-        apiResponse.value = castPaginated(data);
-    } catch (error) {
-        if (error.code !== 'ERR_CANCELED') {
-            throw error;
-        }
-    } finally {
-        if (request === controller) {
-            loading.value = false;
-        }
-    }
-}
-
-onMounted(() => fetchCredentials());
 
 function resetForm() {
     Object.assign(form, {
@@ -118,7 +93,7 @@ async function submit() {
             await api.post('/online-system-credentials', form);
         }
         overlayOpen.value = false;
-        await fetchCredentials(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -141,7 +116,7 @@ async function confirmDelete() {
 
     try {
         await api.delete(`/online-system-credentials/${pendingDelete.value.id}`);
-        await fetchCredentials(apiResponse.value?.pagination?.current_page ?? 1);
+        await reload();
     } finally {
         deleting.value = false;
         pendingDelete.value = null;
@@ -158,12 +133,12 @@ const rowActions = (row) => [
 <template>
     <AppLayout title="Online System Credentials" fluid>
         <FullWidthBox title="Online System Credentials" :collapsible="false">
-            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchCredentials()">
+            <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="apply">
                 <div class="w-full sm:w-72">
-                    <InputText v-model="search" label="Search" placeholder="Title or supplier…" />
+                    <InputText v-model="filters.q" label="Search" placeholder="Title or supplier…" />
                 </div>
                 <Button type="submit" variant="primary">Search</Button>
-                <Button type="button" @click="search = ''; fetchCredentials();">Clear</Button>
+                <Button type="button" @click="clear">Clear</Button>
             </form>
 
             <div class="overflow-x-auto">
@@ -199,7 +174,7 @@ const rowActions = (row) => [
                 </table>
             </div>
 
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="fetchCredentials" />
+            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
 
             <template #footer>
                 <Button v-if="auth.can('onlineSystemCredentials.create')" variant="primary" size="sm" @click="openCreate">+ Credential</Button>
