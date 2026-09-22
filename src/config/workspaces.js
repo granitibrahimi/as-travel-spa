@@ -101,6 +101,13 @@ export const workspaces = [
                     { label: 'Transaction Links', to: '/customers/transaction-links', can: 'customerTransactionsLinks.list' },
                 ],
             },
+            {
+                label: 'Suppliers',
+                items: [
+                    { label: 'All Suppliers', to: '/suppliers', can: 'suppliers.list' },
+                    { label: 'New Supplier', to: '/suppliers/create', can: 'suppliers.create' },
+                ],
+            },
             { separator: true },
             {
                 label: 'Static Offers',
@@ -285,6 +292,12 @@ export const workspaces = [
                     { label: 'Reimbursements', to: '/suppliers/refunds', can: 'supplierRefunds.list' },
                     { label: 'Reconciliations', to: '/suppliers/reconciliations', can: 'supplierReconciliations.list' },
                     { label: 'Transaction Links', to: '/suppliers/transaction-links', can: 'supplierTransactionsLinks.list' },
+                ],
+            },
+            {
+                label: 'Online Credentials',
+                items: [
+                    { label: 'All Credentials', to: '/online-credentials', can: 'onlineSystemCredentials.list' },
                 ],
             },
             {
