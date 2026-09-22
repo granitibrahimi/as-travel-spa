@@ -44,7 +44,7 @@ const groups = computed(() => {
         { label: 'Pro Invoice', to: routeUrl('customerProInvoices.create', customer.id), can: 'customerProInvoices.create' },
         { label: 'Invoice', to: routeUrl('customerInvoices.create', customer.id), can: 'customerInvoices.create' },
         { label: 'Payment', to: routeUrl('customerPayments.create', customer.id), can: 'customerPayments.create' },
-        { label: 'GiftCard', to: routeUrl('customerGiftCards.create', customer.id), can: 'customerGiftCards.create' },
+        { label: 'Financial Credit Note', to: routeUrl('customerGiftCards.create', customer.id), can: 'customerGiftCards.create' },
         { label: 'Reimbursement', to: routeUrl('customerRefunds.create', customer.id), can: 'customerRefunds.create' },
     ].filter((action) => auth.can(action.can));
 

@@ -95,7 +95,7 @@ onMounted(apply);
                                 <th class="border border-gray-300 px-2 py-2 text-right">Invoices</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right">Credit Notes</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right">Payments</th>
-                                <th class="border border-gray-300 px-2 py-2 text-right">Gift Cards</th>
+                                <th class="border border-gray-300 px-2 py-2 text-right">Financial Credit Notes</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right">Refunds</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right">Journals</th>
                             </tr>

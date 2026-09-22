@@ -67,14 +67,14 @@ async function submit() {
 </script>
 
 <template>
-    <AppLayout title="Create a Customer Gift Card" fluid>
+    <AppLayout title="Create a Customer Financial Credit Note" fluid>
         <Loader v-if="! loaded"/>
 
         <form v-else class="space-y-6" @submit.prevent="submit">
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
                 <CustomerDetails v-if="customer" :customer="customer" />
 
-                <FullWidthBox title="Gift card details" :collapsible="false">
+                <FullWidthBox title="Financial credit note details" :collapsible="false">
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <InputNumber v-model="form.amount" label="Amount *" :error="errors.amount"/>
                     </div>
@@ -89,7 +89,7 @@ async function submit() {
                             class="rounded border border-gray-300 px-4 py-1.5 text-sm hover:bg-gray-50">Cancel
                 </RouterLink>
                 <Button type="submit" variant="primary" :disabled="processing || ! loaded">
-                    {{ processing ? 'Saving…' : 'Create gift card' }}
+                    {{ processing ? 'Saving…' : 'Create financial credit note' }}
                 </Button>
             </footer>
         </form>

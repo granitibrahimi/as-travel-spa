@@ -59,8 +59,8 @@ const rowActions = (giftCard) => [
 </script>
 
 <template>
-    <AppLayout title="Customer Gift Cards" fluid>
-        <FullWidthBox title="Customer Gift Cards" :collapsible="false">
+    <AppLayout title="Customer Financial Credit Notes" fluid>
+        <FullWidthBox title="Customer Financial Credit Notes" :collapsible="false">
             <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchGiftCards()">
                 <input v-model="search" type="text" placeholder="Gen ID…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
                 <button type="submit" class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">Search</button>
@@ -84,7 +84,7 @@ const rowActions = (giftCard) => [
                             <td colspan="6" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No gift cards found.</td>
+                            <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No financial credit notes found.</td>
                         </tr>
                         <tr v-for="giftCard in (loading ? [] : apiResponse?.data ?? [])" :key="giftCard.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">
@@ -110,8 +110,8 @@ const rowActions = (giftCard) => [
 
         <ConfirmDialog
             :show="Boolean(toDelete)"
-            title="Delete gift card?"
-            :message="toDelete ? `Gift card ${toDelete.gen_id} will be permanently deleted.` : ''"
+            title="Delete financial credit note?"
+            :message="toDelete ? `Financial credit note ${toDelete.gen_id} will be permanently deleted.` : ''"
             confirm-label="Yes, delete"
             confirm-variant="danger"
             :processing="deleting"

@@ -27,7 +27,7 @@ const toUnlink = ref(null);
 const unlinking = ref(false);
 
 const unlinkMessage = computed(() => toUnlink.value
-    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this gift card and restores its open amount.`
+    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this financial credit note and restores its open amount.`
     : '');
 
 async function confirmUnlink() {
@@ -53,14 +53,14 @@ async function confirmUnlink() {
 </script>
 
 <template>
-    <AppLayout :title="giftCard ? `Customer Gift Card #${giftCard.gen_id}` : 'Gift card'" fluid>
+    <AppLayout :title="giftCard ? `Customer Financial Credit Note #${giftCard.gen_id}` : 'Financial Credit Note'" fluid>
         <Loader v-if="! giftCard" />
 
         <template v-else>
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
                 <CustomerDetails :customer="giftCard.customer" />
 
-                <FullWidthBox title="Gift Cards" :collapsible="false">
+                <FullWidthBox title="Financial Credit Note" :collapsible="false">
                         <table class="w-full border-collapse border border-gray-300 text-sm">
                             <tbody>
                             <tr>

@@ -45,7 +45,7 @@ const TYPE_OPTIONS = [
     { slug: 'customer-payment', label: 'Customer Payment', route: 'customerPayments.show' },
     { slug: 'customer-refund', label: 'Customer Refund', route: 'customerRefunds.show' },
     { slug: 'customer-credit-note', label: 'Customer CreditNote', route: 'customerCreditNotes.show' },
-    { slug: 'customer-gift-card', label: 'Customer GiftCard', route: 'customerGiftCards.show' },
+    { slug: 'customer-gift-card', label: 'Customer Financial Credit Note', route: 'customerGiftCards.show' },
     { slug: 'supplier-bill', label: 'Supplier Bill', route: 'supplierBills.show' },
     { slug: 'supplier-payment', label: 'Supplier Payment', route: 'supplierPayments.show' },
     { slug: 'supplier-credit-note', label: 'Supplier Credit', route: 'supplierCreditNotes.show' },

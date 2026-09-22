@@ -53,12 +53,6 @@ export const workspaces = [
                     { label: 'New Task', to: '/tasks/create', can: 'tasks.create' },
                 ],
             },
-            {
-                label: 'WhatsApp',
-                items: [
-                    { label: 'Conversations', to: '/whatsapp', can: 'whatsappConversations.manage' },
-                ],
-            },
             { separator: true },
             {
                 label: 'Invoices',
@@ -102,7 +96,7 @@ export const workspaces = [
                     { label: 'Payments', to: '/customers/payments', canAny: ['customerPayments.viewAll', 'customerPayments.viewOwn'] },
                     { label: 'Online Payments', to: '/customers/online-payments', can: 'onlinePayments.generate' },
                     { label: 'Reimbursements', to: '/customers/refunds', can: 'customerRefunds.list' },
-                    { label: 'GiftCards', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
+                    { label: 'Financial Credit Notes', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
                     { label: 'Reconciliations', to: '/customers/reconciliations', can: 'customerReconciliations.list' },
                     { label: 'Transaction Links', to: '/customers/transaction-links', can: 'customerTransactionsLinks.list' },
                 ],
@@ -268,7 +262,7 @@ export const workspaces = [
                     { label: 'Pro Invoices', to: '/customers/pro-invoices', can: 'customerProInvoices.list' },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
-                    { label: 'Gift Cards', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
+                    { label: 'Financial Credit Notes', to: '/customers/gift-cards', can: 'customerGiftCards.list' },
                     { label: 'Payments', to: '/customers/payments', canAny: ['customerPayments.viewAll', 'customerPayments.viewOwn'] },
                     { label: 'Payments for Approval', to: '/customers/payments/for-approval', can: 'customerPayments.approve' },
                     { label: 'Online Payments', to: '/customers/online-payments', can: 'onlinePayments.generate' },
@@ -426,12 +420,6 @@ export const workspaces = [
                     { label: 'Search Flights', to: '/flight-search', can: 'charterFlights.search' },
                     { label: 'Flight Destinations', to: '/flight-destinations', can: 'flights.search' },
                     { label: 'Travel Options', to: '/travel-options', can: 'flights.search' },
-                ],
-            },
-            {
-                label: 'Online Users',
-                items: [
-                    { label: 'All Users', to: '/online-users', can: 'onlineUsers.list' },
                 ],
             },
             {
