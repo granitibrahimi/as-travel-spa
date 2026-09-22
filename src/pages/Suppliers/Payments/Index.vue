@@ -5,32 +5,59 @@ import { money } from '../../../helpers/money';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
+import { downloadFile } from '../../../helpers/download.js';
+import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
 import Loader from '../../../components/Loader.vue';
+import Button from '../../../components/Button.vue';
 import PaymentActions from './Actions.vue';
+
+const notifications = useNotificationsStore();
 
 const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
 const openOnly = ref(false);
+const downloading = ref(false);
+
+// Shared by the list load and the Excel export so both always see the same filters.
+function filters() {
+    return {
+        q: search.value || undefined,
+        open: openOnly.value ? 1 : undefined,
+    };
+}
 
 async function fetchPayments(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/suppliers/payments', {
-            params: {
-                q: search.value || undefined,
-                open: openOnly.value ? 1 : undefined,
-                page,
-            },
-        });
+        const { data } = await api.get('/suppliers/payments', { params: { ...filters(), page } });
         apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
+    }
+}
+
+async function downloadExcel() {
+    if (downloading.value) {
+        return;
+    }
+
+    downloading.value = true;
+
+    try {
+        await downloadFile('/suppliers/payments/excel', {
+            fallbackName: 'supplier-payments.xlsx',
+            config: { params: filters() },
+        });
+    } catch {
+        notifications.push({ type: 'error', message: 'Could not export the payments.' });
+    } finally {
+        downloading.value = false;
     }
 }
 
@@ -51,10 +78,13 @@ function onPaymentDeleted() {
     <AppLayout title="Supplier Payments" fluid>
         <FullWidthBox title="Supplier Payments" :collapsible="false">
             <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchPayments()">
-                <input v-model="search" type="text" placeholder="Gen ID, transaction #, reference…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
+                <input v-model="search" type="text" placeholder="Gen ID, transaction #, reference, amount, supplier…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
                 <NiceCheckbox v-model="openOnly" label="Open only" @update:model-value="fetchPayments()" />
                 <button type="submit" class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">Search</button>
                 <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="search = ''; openOnly = false; fetchPayments();">Clear</button>
+                <Button type="button" class="ml-auto" :loading="downloading" @click="downloadExcel">
+                    {{ downloading ? 'Preparing…' : 'Download Excel' }}
+                </Button>
             </form>
 
             <div class="overflow-x-auto">
