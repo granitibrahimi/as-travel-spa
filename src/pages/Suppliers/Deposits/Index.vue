@@ -12,6 +12,7 @@ import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
+import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -19,12 +20,18 @@ const router = useRouter();
 const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
+const supplierId = ref(null);
+// AsyncSelect doesn't react to its v-model being cleared externally, so
+// bumping this key remounts it (and clears its displayed text) on "Clear".
+const supplierFilterKey = ref(0);
 
 async function fetchDeposits(page = 1) {
     loading.value = true;
 
     try {
-        const { data } = await api.get('/suppliers/deposits', { params: { q: search.value || undefined, page } });
+        const { data } = await api.get('/suppliers/deposits', {
+            params: { q: search.value || undefined, supplier_id: supplierId.value || undefined, page },
+        });
         apiResponse.value = castPaginated(data);
     } finally {
         loading.value = false;
@@ -82,10 +89,18 @@ const rowActions = (deposit) => [
 <template>
     <AppLayout title="Supplier Deposits" fluid>
         <FullWidthBox title="Supplier Deposits" :collapsible="false">
+            <template #actions>
+                <span class="text-sm text-gray-500">Total:</span>
+                <span class="font-semibold tabular-nums">{{ money(apiResponse?.extra?.total_amount ?? 0) }}</span>
+            </template>
+
             <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="fetchDeposits()">
                 <input v-model="search" type="text" placeholder="Gen ID, transaction #, reference…" class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:w-72">
+                <div class="w-full sm:w-64">
+                    <AsyncSelect :key="supplierFilterKey" v-model="supplierId" url="/suppliers/suppliers/autosuggest" placeholder="All suppliers" />
+                </div>
                 <button type="submit" class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">Search</button>
-                <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="search = ''; fetchDeposits();">Clear</button>
+                <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50" @click="search = ''; supplierId = null; supplierFilterKey++; fetchDeposits();">Clear</button>
             </form>
 
             <div class="overflow-x-auto">
