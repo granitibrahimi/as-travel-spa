@@ -8,6 +8,7 @@ import { routeUrl } from '../../../helpers/route.js';
 import { castResource, castMutation } from '../../../types/responses.js';
 import { usePaymentMethodsRepository } from '../../../repositories/paymentMethods';
 import { useNotificationsStore } from '../../../stores/notifications';
+import { useAuthStore } from '../../../stores/auth';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -21,6 +22,7 @@ import SupplierDetails from '../../../components/SupplierDetails.vue';
 const route = useRoute();
 const router = useRouter();
 const notifications = useNotificationsStore();
+const auth = useAuthStore();
 
 const supplierId = route.params.supplierId;
 
@@ -45,10 +47,15 @@ const availableToReimburse = computed(() => {
 });
 const supplier = ref(null);
 
+// Users with this permission may reimburse past the available credit; the API
+// enforces the same rule.
+const canExceedBalance = computed(() => auth.can('supplierRefunds.createBeyondBalance'));
+
 // The amount may not exceed what's available to reimburse — flagged on the
 // field and blocks submitting rather than being silently clamped.
 const amountExceedsAvailable = computed(() =>
-    form.amount !== null
+    ! canExceedBalance.value
+    && form.amount !== null
     && form.amount !== ''
     && availableToReimburse.value > 0
     && Number(form.amount) > availableToReimburse.value,
@@ -74,7 +81,7 @@ onMounted(async () => {
 
     // Nothing to reimburse: bounce back to the supplier with a toast rather than
     // showing an empty form the user can't submit.
-    if (availableToReimburse.value <= 0) {
+    if (availableToReimburse.value <= 0 && ! canExceedBalance.value) {
         notifications.push({
             type: 'warning',
             message: 'This supplier has nothing to reimburse.',
@@ -125,6 +132,9 @@ const cancelTo = routeUrl('suppliers.show', supplierId);
                 <FullWidthBox title="Reimbursement details" :collapsible="false">
                     <p v-if="availableAmount !== null" class="mb-4 rounded bg-gray-50 px-3 py-2 text-sm text-gray-600">
                         Available for reimbursement: <span class="font-medium tabular-nums">{{ money(availableToReimburse) }}</span>
+                    </p>
+                    <p v-if="canExceedBalance && availableToReimburse <= 0" class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        This supplier has no credit to reimburse. You can still create the reimbursement because of your permissions.
                     </p>
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
