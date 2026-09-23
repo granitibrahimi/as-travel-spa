@@ -21,6 +21,10 @@ const auth = useAuthStore();
 const notifications = useNotificationsStore();
 const refund = ref(null);
 
+const connectedTotal = computed(() =>
+    (refund.value?.connected ?? []).reduce((sum, link) => sum + Number(link.amount ?? 0), 0),
+);
+
 async function load() {
     const { data } = await api.get(`/customers/refunds/${route.params.id}`);
     refund.value = castResource(data);
@@ -107,25 +111,62 @@ async function confirmUnlink() {
             <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
                 <CustomerDetails :customer="refund.customer" />
 
-                <FullWidthBox :title="`Reimbursement ${refund.gen_id}`" :collapsible="false">
+                <FullWidthBox title="Reimbursement details" :collapsible="false">
                     <template v-if="actions.length" #actions>
                         <DropdownMenu :items="actions" />
                     </template>
 
-                    <dl class="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-                        <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Date</dt><dd>{{ refund.on_date }}</dd></div>
-                        <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Amount</dt><dd class="tabular-nums">{{ money(refund.amount) }}</dd></div>
-                        <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Open amount</dt><dd class="tabular-nums" :class="refund.open_amount > 0 ? 'text-amber-600' : 'text-green-600'">{{ money(refund.open_amount) }}</dd></div>
-                        <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Method</dt><dd>{{ refund.payment_method ?? '—' }}</dd></div>
-                        <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Transaction nr</dt><dd>{{ refund.transaction_nr ?? '—' }}</dd></div>
-                        <div class="flex gap-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Created</dt><dd>{{ refund.agent ?? '—' }} · {{ refund.created_at ?? '—' }}</dd></div>
-                        <div class="flex gap-2 sm:col-span-2"><dt class="w-36 shrink-0 font-medium text-gray-500">Notes</dt><dd class="whitespace-pre-line">{{ refund.notes ?? '—' }}</dd></div>
-                    </dl>
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <tbody>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">ID</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ refund.id }} | {{ refund.gen_id }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Date</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ refund.on_date }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Amount</th>
+                                <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ money(refund.amount) }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Open amount</th>
+                                <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ money(refund.open_amount) }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Payment method</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ refund.payment_method ?? '—' }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Transaction #</th>
+                                <td class="border border-gray-300 px-2 py-2">{{ refund.transaction_nr ?? '—' }}</td>
+                            </tr>
+                            <tr>
+                                <th class="w-40 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">Created by</th>
+                                <td class="border border-gray-300 px-2 py-2">
+                                    {{ refund.agent ?? '—' }}
+                                    <br>
+                                    <span class="text-gray-500">{{ refund.created_at }}</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" class="border border-gray-300 px-2 py-2">
+                                    <p class="pb-2 font-bold text-gray-600">Notes:</p>
+                                    <span class="whitespace-pre-line">{{ refund.notes ?? '—' }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </FullWidthBox>
             </div>
 
             <FullWidthBox v-if="refund.connected.length" title="Connected transactions" :collapsible="false">
-                <CustomerTransactionLinks :links="refund.connected" @unlink="toUnlink = $event" />
+                <CustomerTransactionLinks
+                    :links="refund.connected"
+                    :total="connectedTotal"
+                    @unlink="toUnlink = $event"
+                />
             </FullWidthBox>
 
             <ConfirmDialog
