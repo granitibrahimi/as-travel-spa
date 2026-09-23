@@ -37,14 +37,30 @@ onMounted(async () => {
     rows.value = (undeposited.payments ?? []).map((payment) => ({
         ...payment,
         included: false,
-        amount: payment.open_amount,
+        amount: null,
     }));
     ready.value = true;
 });
 
-function clampAmount(row) {
-    const value = parseFloat(row.amount) || 0;
-    row.amount = Math.min(Math.max(value, 0), row.open_amount);
+// Plus toggle, same as the reconcile-unused page: adding a row fills its whole
+// open amount, clicking again removes it.
+function toggle(row) {
+    row.included = ! row.included;
+    row.amount = row.included ? row.open_amount : null;
+}
+
+// Typing an amount includes the row (clamped to its open amount); clearing it
+// removes it. A 0 is kept as typed (so "0.5" can still be entered) but doesn't
+// include the row.
+function setAmount(row, value) {
+    if (value === null || value === '') {
+        row.included = false;
+        row.amount = null;
+        return;
+    }
+
+    row.amount = Math.min(Math.max(Number(value), 0), row.open_amount);
+    row.included = row.amount > 0;
 }
 
 const selectedTotal = computed(() => rows.value
@@ -124,12 +140,12 @@ async function submit() {
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase text-gray-500">
-                                <th class="border border-gray-300 px-2 py-2 text-center" style="width: 50px;">Add</th>
                                 <th class="border border-gray-300 px-2 py-2">Payment</th>
                                 <th class="border border-gray-300 px-2 py-2">Customer</th>
+                                <th class="border border-gray-300 px-2 py-2">Payment Method</th>
                                 <th class="border border-gray-300 px-2 py-2" style="width: 100px;">Date</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Open</th>
-                                <th class="border border-gray-300 px-2 py-2 text-right" style="width: 150px;">Deposit</th>
+                                <th class="border border-gray-300 px-2 py-2" style="width: 190px;">Deposit</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -137,20 +153,35 @@ async function submit() {
                                 <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No undeposited cash payments.</td>
                             </tr>
                             <tr v-for="row in rows" :key="row.id" class="hover:bg-gray-50" :class="row.included ? 'bg-green-50' : ''">
-                                <td class="border border-gray-300 px-2 py-2 text-center">
-                                    <input v-model="row.included" type="checkbox">
-                                </td>
                                 <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ row.gen_id ?? row.id }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.customer }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ row.payment_method ?? '—' }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.on_date }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.open_amount) }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right">
-                                    <InputNumber
-                                        v-model="row.amount"
-                                        :disabled="! row.included"
-                                        class="!w-28 text-right text-sm"
-                                        @input="clampAmount(row)"
-                                    />
+                                <td class="border border-gray-300 px-2 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors"
+                                            :class="row.included
+                                                ? 'border-green-600 bg-green-600 text-white hover:border-red-600 hover:bg-red-600'
+                                                : 'border-gray-300 text-gray-500 hover:border-green-600 hover:text-green-600'"
+                                            :title="row.included ? 'Remove from deposit' : 'Add to deposit'"
+                                            @click="toggle(row)"
+                                        >
+                                            <svg v-if="row.included" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                            </svg>
+                                            <svg v-else class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                            </svg>
+                                        </button>
+                                        <InputNumber
+                                            class="!w-32 text-right"
+                                            :model-value="row.amount"
+                                            @update:model-value="(value) => setAmount(row, value)"
+                                        />
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
