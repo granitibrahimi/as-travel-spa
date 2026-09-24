@@ -4,20 +4,20 @@ import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { money } from '../../../helpers/money.js';
 import { routeUrl } from '../../../helpers/route.js';
-import { castPaginated } from '../../../types/responses.js';
+import { castResource } from '../../../types/responses.js';
 import { useListFilters } from '../../../composables/useListFilters.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Select from '../../../components/Form/Select.vue';
-import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
 
 const formOptions = useFormOptionsStore();
 
-const { filters, response: apiResponse, loading, apply, goToPage } = useListFilters(
+// The API returns the whole chart of accounts (no pagination).
+const { filters, response: apiResponse, loading, apply } = useListFilters(
     { q: '' },
-    async (params, { signal }) => castPaginated((await api.get('/finance/accounts', { params, signal })).data),
+    async (params, { signal }) => castResource((await api.get('/finance/accounts', { params, signal })).data)?.accounts ?? [],
 );
 const classification = ref('');
 
@@ -27,9 +27,7 @@ const classifications = computed(() => toOptions(formOptions.accountClassificati
 // A row's `classification` is serialized as an object ({ id, name }); the
 // selected option value is the classification id. Match on the id, falling
 // back to the readable name — and tolerate a plain id/label shape too.
-// NOTE: the API has no classification filter, so this only narrows the
-// current page's 100 rows, not the whole dataset — good enough given the
-// page size, but worth knowing if the account list ever grows much larger.
+// The API returns every account at once, so filtering here covers them all.
 function matchesClassification(row) {
     if (! classification.value) {
         return true;
@@ -49,7 +47,7 @@ function matchesClassification(row) {
     return option ? rowName === String(option.label).toLowerCase() : false;
 }
 
-const filtered = computed(() => (apiResponse.value?.data ?? []).filter(matchesClassification));
+const filtered = computed(() => (apiResponse.value ?? []).filter(matchesClassification));
 </script>
 
 <template>
@@ -68,16 +66,17 @@ const filtered = computed(() => (apiResponse.value?.data ?? []).filter(matchesCl
                             <th class="border border-gray-300 px-2 py-2" style="width: 120px;">Number</th>
                             <th class="border border-gray-300 px-2 py-2">Name</th>
                             <th class="border border-gray-300 px-2 py-2">Type</th>
+                            <th class="border border-gray-300 px-2 py-2" style="width: 130px;">Classification</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 140px;">Balance</th>
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 90px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="6" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="filtered.length === 0">
-                            <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No accounts found.</td>
+                            <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No accounts found.</td>
                         </tr>
                         <tr v-for="account in (loading ? [] : filtered)" :key="account.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-mono text-xs">{{ account.id }}</td>
@@ -86,6 +85,7 @@ const filtered = computed(() => (apiResponse.value?.data ?? []).filter(matchesCl
                                 <RouterLink :to="routeUrl('accounts.history', account.id)" class="hover:text-red-700 hover:underline">{{ account.name }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ account.type }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ account.classification?.name ?? account.classification }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(account.balance) }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <RouterLink :to="routeUrl('accounts.history', account.id)" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-xs hover:bg-gray-50">History</RouterLink>
@@ -94,8 +94,6 @@ const filtered = computed(() => (apiResponse.value?.data ?? []).filter(matchesCl
                     </tbody>
                 </table>
             </div>
-
-            <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
     </AppLayout>
 </template>

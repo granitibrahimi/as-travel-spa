@@ -20,6 +20,9 @@ const reports = [
     { label: 'Sales Book (Libri i Shitjes)', to: routeUrl('financeReports.salesBook'), can: 'financeReports.salesBook' },
     { label: 'Purchases Book (Libri i Blerjeve)', to: routeUrl('financeReports.purchasesBook'), can: 'financeReports.purchasesBook' },
     { label: 'Balance Sheet', to: routeUrl('financeReports.balanceSheet'), can: 'financeReports.balanceSheet' },
+    { label: 'Trial Balance', to: routeUrl('financeReports.trialBalance'), can: 'financeReports.trialBalance' },
+    { label: 'Financial Statements', to: routeUrl('financeReports.financialStatements'), can: 'financeReports.financialStatements' },
+    { label: 'Fiscal Years', to: routeUrl('fiscalYears.list'), can: 'fiscalYears.list' },
 ];
 
 const visibleReports = computed(() => reports.filter((report) => auth.can(report.can)));
