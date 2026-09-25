@@ -39,6 +39,11 @@ const actions = computed(() => (bill.value ? [
     ...(auth.can('suppliers.reconcile') && bill.value.supplier?.id
         ? [{ label: 'Reconcile', to: routeUrl('suppliers.reconcile', bill.value.supplier.id) }]
         : []),
+    // Copy opens the new-bill form pre-filled from this bill (GET
+    // suppliers/bills/{id}/copy); bills from a customer invoice can't be copied.
+    ...(auth.can('supplierBills.create') && bill.value.supplier?.id && !bill.value.customer_invoice
+        ? [{ label: 'Copy Bill', to: routeUrl('supplierBills.create', { supplierId: bill.value.supplier.id, copy: bill.value.id }) }]
+        : []),
     ...(auth.can('supplierBills.delete') && !bill.value.customer_invoice
         ? [{ label: 'Delete', danger: true, action: () => (showDelete.value = true) }]
         : []),

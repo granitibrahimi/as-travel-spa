@@ -23,6 +23,8 @@ const route = useRoute();
 const router = useRouter();
 
 const supplierId = route.params.supplierId;
+// ?copy=<bill id>: pre-fill the form from that bill (Copy Bill on the bill page).
+const copyFrom = route.query.copy;
 
 // A blank line-item row. The bill total is the sum of its entries.
 const newEntry = () => ({account_id: null, amount: null, description: '', tax_type_id: null});
@@ -43,6 +45,7 @@ const supplier = ref(null);
 const errors = ref({});
 const processing = ref(false);
 const loaded = ref(false);
+const copiedFrom = ref(null);
 
 const total = computed(() =>
     form.entries.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0),
@@ -64,8 +67,24 @@ function removeRow(index) {
 }
 
 onMounted(async () => {
-    const {data} = await api.get(`/suppliers/suppliers/${supplierId}`);
+    const [{data}, copy] = await Promise.all([
+        api.get(`/suppliers/suppliers/${supplierId}`),
+        copyFrom ? api.get(`/suppliers/bills/${copyFrom}/copy`) : null,
+    ]);
     supplier.value = castResource(data);
+
+    if (copy) {
+        const bill = castResource(copy.data);
+        Object.assign(form, {
+            gen_id: bill.gen_id ?? '',
+            on_date: bill.on_date ?? form.on_date,
+            due_date: bill.due_date ?? '',
+            notes: bill.notes ?? '',
+            entries: bill.entries.length ? bill.entries.map((entry) => ({...newEntry(), ...entry})) : [newEntry()],
+        });
+        copiedFrom.value = copyFrom;
+    }
+
     loaded.value = true;
 });
 
@@ -102,6 +121,11 @@ const cancelTo = routeUrl('suppliers.show', supplierId);
     <AppLayout :title="'New Bill for ' + supplier?.full_name" fluid>
         <Loader v-if="! loaded"/>
         <form v-else class="space-y-6" @submit.prevent="submit">
+            <p v-if="copiedFrom" class="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                Copied from
+                <RouterLink :to="routeUrl('supplierBills.show', copiedFrom)" class="font-medium underline">bill #{{ copiedFrom }}</RouterLink>
+                — review the details, then create the bill. Payments and reconciliation aren't copied.
+            </p>
             <FullWidthBox title="Bill details" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <InputText v-model="form.gen_id" label="Identifier *" :error="errors.gen_id"/>
