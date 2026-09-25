@@ -86,6 +86,7 @@ const rowActions = (employee) => [
                 <table class="w-full border-collapse border border-gray-300 text-sm">
                     <thead>
                         <tr class="text-left text-xs uppercase text-gray-500">
+                            <th class="border border-gray-300 px-2 py-2 text-center" style="width: 60px;">Nr</th>
                             <th class="border border-gray-300 px-2 py-2">Name</th>
                             <th class="border border-gray-300 px-2 py-2">Personal Nr.</th>
                             <th class="border border-gray-300 px-2 py-2">User</th>
@@ -98,12 +99,13 @@ const rowActions = (employee) => [
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="9" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No employees found.</td>
+                            <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No employees found.</td>
                         </tr>
-                        <tr v-for="employee in (loading ? [] : apiResponse?.data ?? [])" :key="employee.id" class="hover:bg-gray-50">
+                        <tr v-for="(employee, index) in (loading ? [] : apiResponse?.data ?? [])" :key="employee.id" class="hover:bg-gray-50">
+                            <td class="border border-gray-300 px-2 py-2 text-center tabular-nums">{{ (apiResponse.pagination.from || 1) + index }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
                                 <RouterLink v-if="auth.can('employees.show')" :to="routeUrl('employees.edit', employee.id)" class="hover:underline">{{ employee.name }}</RouterLink>
                                 <span v-else>{{ employee.name }}</span>
