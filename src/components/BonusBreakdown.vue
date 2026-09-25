@@ -129,7 +129,7 @@ const persons = computed(() => lines.value.reduce((sum, line) => sum + line.pers
 
             <p class="text-xs text-gray-500">
                 Every person on the agent's invoices in the period earns the rate of its category: BILETË invoices by the customer's type,
-                ARANZHMAN invoices (with a hotel order) by the invoice's parent destination. Ghost invoices, invoices with SVC of 0 or less, ignored persons and credit notes don't count.
+                ARANZHMAN invoices (with a hotel order) by the invoice's parent destination. Ghost invoices, ignored persons, persons whose SVC is 0 or less and credit notes don't count.
                 <template v-if="canLink">Click a person count to list those persons in the Customer Invoices Report.</template>
             </p>
         </div>

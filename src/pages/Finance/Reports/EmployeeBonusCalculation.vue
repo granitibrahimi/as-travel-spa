@@ -96,7 +96,7 @@ onMounted(calculate);
                     </div>
                     <p class="mt-3 text-xs text-gray-500">
                         Employees whose contract in the period is with bonuses: every person on their user's invoices dated in the period earns the rate of its category.
-                        Ghost invoices, invoices with SVC of 0 or less, ignored persons and credit notes don't count. Approved paid vacation days add total / {{ data?.working_days ?? 22 }} × days.
+                        Ghost invoices, ignored persons, persons whose SVC is 0 or less and credit notes don't count. Approved paid vacation days add total / {{ data?.working_days ?? 22 }} × days.
                         Net salary = the contract's base salary + bonus (both net); gross salary is the Kosovo gross that pays it ({{ summary }}).
                     </p>
                 </FullWidthBox>
