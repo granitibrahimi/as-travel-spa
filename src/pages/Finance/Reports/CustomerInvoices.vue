@@ -142,7 +142,7 @@ onMounted(apply);
 
                 <p class="mt-3 text-xs text-gray-500">
                     Biletë = invoices without a hotel order, Aranzhman = invoices with one. Parent destinations filter on the invoice's parent destination.
-                    Counted for bonuses = not ghost, no credit notes, no ignored persons.
+                    Counted for bonuses = not ghost, SVC above 0, no credit notes, no ignored persons.
                 </p>
             </FullWidthBox>
 
