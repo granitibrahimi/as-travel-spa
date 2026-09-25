@@ -12,7 +12,11 @@ import Button from './Button.vue';
  * Vacation balance table, shared by the user show page and the vacation request
  * edit page so both render the balance the same way. Expects a user object
  * shaped by ShowUserAction — it reads `user.id` and `user.balance`
- * ({ leftover_days, this_year_days, days_used, days_left }).
+ * ({ leftover_days, this_year_days, accumulated_days, accrual: { months,
+ * days_per_month, manually_adjusted }, days_used, days_left }).
+ *
+ * This year's allowance accrues monthly: every month that has ended adds
+ * allowance / 12 (18 / 12 = 1.5), rounded to whole days.
  *
  * Emits `recalculated` after a successful "RE-Calculate all vacation Balances"
  * so the parent can refetch the user.
@@ -29,6 +33,32 @@ const notifications = useNotificationsStore();
 const thisYear = new Date().getFullYear();
 const lastYear = thisYear - 1;
 
+const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const number = (value) => String(Math.round(value * 100) / 100);
+
+// "8 months × 1.5 = 12 (January – August)", or why the full allowance applies.
+function accrualNote(b) {
+    const accrual = b.accrual;
+
+    if (! accrual) {
+        return '';
+    }
+
+    if (accrual.months === null) {
+        return accrual.manually_adjusted ? 'Set by hand — the full allowance applies.' : 'Full allowance for the year.';
+    }
+
+    if (accrual.months === 0) {
+        return `No month has ended yet — ${number(accrual.days_per_month)} days are added at the end of each month.`;
+    }
+
+    const exact = accrual.days_per_month * accrual.months;
+    const rounded = Math.abs(exact - b.accumulated_days) > 0.001 ? `, rounded to ${b.accumulated_days}` : '';
+    const period = accrual.months === 1 ? monthNames[0] : `${monthNames[0]} – ${monthNames[accrual.months - 1]}`;
+
+    return `${accrual.months} ${accrual.months === 1 ? 'month' : 'months'} × ${number(accrual.days_per_month)} = ${number(exact)}${rounded} (${period})`;
+}
+
 const rows = computed(() => {
     const b = props.user?.balance;
     if (! b) {
@@ -38,8 +68,9 @@ const rows = computed(() => {
     return [
         [`Leftover days from ${lastYear}`, b.leftover_days],
         [`Days for this year ${thisYear}`, b.this_year_days],
+        [`Accumulated days in ${thisYear} up to date`, b.accumulated_days, accrualNote(b)],
         ['Days used', b.days_used],
-        ['Days left', b.days_left],
+        ['Days left', b.days_left, `Leftover + accumulated − used`],
     ];
 });
 
@@ -68,8 +99,11 @@ async function recalculate() {
     <FullWidthBox title="Vacation details" :collapsible="false">
         <table v-if="rows.length" class="w-full border-collapse border border-gray-300 text-sm">
             <tbody>
-                <tr v-for="[label, value] in rows" :key="label">
-                    <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">{{ label }}</th>
+                <tr v-for="[label, value, note] in rows" :key="label">
+                    <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium text-gray-600">
+                        {{ label }}
+                        <span v-if="note" class="block text-xs font-normal text-gray-500">{{ note }}</span>
+                    </th>
                     <td class="w-24 border border-gray-300 px-2 py-2 tabular-nums">{{ value ?? '-' }}</td>
                 </tr>
             </tbody>
