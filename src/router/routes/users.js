@@ -24,6 +24,10 @@ const WorkScheduleCalendar = () => import('../../pages/Users/WorkSchedule/Calend
 const WorkScheduleIndex = () => import('../../pages/Users/WorkSchedule/Index.vue');
 const OfficialHolidaysIndex = () => import('../../pages/Users/OfficialHolidays/Index.vue');
 const OfficialHolidaysManage = () => import('../../pages/Users/OfficialHolidays/Manage.vue');
+const EmployeesIndex = () => import('../../pages/Users/Employees/Index.vue');
+const EmployeesManage = () => import('../../pages/Users/Employees/Manage.vue');
+const PayrollIndex = () => import('../../pages/Users/Payroll/Index.vue');
+const PayrollMonth = () => import('../../pages/Users/Payroll/Month.vue');
 
 export default [
     // Permissions
@@ -60,6 +64,13 @@ export default [
     { path: '/users/vacations/:userId/balance', name: 'vacations.balance', component: VacationsEditBalance },
     { path: '/users/vacations/:id/edit', name: 'vacations.edit', component: VacationsEdit },
     { path: '/users/vacations/:id', name: 'vacations.show', component: VacationsShow },
+
+    // Employees & payroll
+    { path: '/users/employees', name: 'employees.list', component: EmployeesIndex },
+    { path: '/users/employees/create', name: 'employees.create', component: EmployeesManage },
+    { path: '/users/employees/:id/edit', name: 'employees.edit', component: EmployeesManage },
+    { path: '/users/payroll', name: 'payrolls.list', component: PayrollIndex },
+    { path: '/users/payroll/:year/:month', name: 'payrolls.show', component: PayrollMonth },
 
     // Moved to Finance → Reports; keep old links working.
     { path: '/users/bonuses', redirect: '/finance/reports/employee-bonus-calculation' },

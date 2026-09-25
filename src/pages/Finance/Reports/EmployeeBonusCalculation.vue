@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import api from '../../../helpers/api.js';
 import { money } from '../../../helpers/money.js';
+import { payrollSummary } from '../../../helpers/payroll.js';
 import { castResource } from '../../../types/responses.js';
 import { useReport } from '../../../composables/useReport.js';
 import { downloadFile } from '../../../helpers/download.js';
@@ -14,13 +15,12 @@ import DateInput from '../../../components/Form/DateInput.vue';
 import Loader from '../../../components/Loader.vue';
 
 // GET /users/bonuses?date_from=d.m.Y&date_to=d.m.Y
-//   { working_days: 22, customer_types: [{ id, name, factor }],
-//     agents: [{ user: { id, name }, base_salary, persons: { typeId: n }, amounts, total_amount, … }] }
-// Per agent (Agent, Super Agent and HR Agent roles only): persons on their invoices and
-// credit notes per customer type × the type's factor = total amount.
-// Weekend days are typed here and never saved: extra = total / 22 × days and
-// bonus = total + extra are recalculated as you type (same formula as the API,
-// which applies the days passed in `weekend_days` to the Excel download).
+//   { working_days: 22, customer_types: [{ id, name, factor }], payroll: { rates },
+//     employees: [{ employee: { id, name }, user, base_salary, persons: { typeId: n }, amounts, total_amount, … }] }
+// Every employee whose contract in the period is "with bonuses": persons on their
+// user's invoices and credit notes per customer type × the type's factor = total amount.
+// Vacation days are the approved paid vacation days in the period (from the
+// vacation requests): extra = total / 22 × days, bonus = total + extra.
 // GET/PUT /users/bonus-factors[/:customerType] — the factor per customer type.
 const auth = useAuthStore();
 const notifications = useNotificationsStore();
@@ -35,7 +35,6 @@ const format = (date) => `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${d
 
 const dateFrom = ref(format(firstOfPrevious));
 const dateTo = ref(format(lastOfPrevious));
-const weekendDays = reactive({});
 const downloading = ref(false);
 
 const factors = ref([]);
@@ -44,97 +43,13 @@ const savingFactors = ref(false);
 const canEditFactors = computed(() => auth.can('bonusFactors.edit'));
 const factorsChanged = computed(() => factors.value.some((f) => Number(factorDrafts[f.customer_type.id]) !== Number(f.factor)));
 
-const round = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
+const summary = computed(() => payrollSummary(data.value?.payroll));
 
-// "5% pension, income tax 0% to 80 €, 4% to 250 €, 8% to 450 €, 10% above".
-const payrollSummary = computed(() => {
-    const payroll = data.value?.payroll;
-
-    if (! payroll) {
-        return '5% pension, income tax by band';
-    }
-
-    const percent = (rate) => `${Math.round(rate * 1000) / 10}%`;
-    const bands = payroll.income_tax_bands
-        .map(([upper, rate]) => (upper === null ? `${percent(rate)} above` : `${percent(rate)} to ${upper} €`))
-        .join(', ');
-
-    return `${percent(payroll.pension_rate)} pension, income tax ${bands}`;
-});
-
-// Kosovo gross that pays a net salary — the same calculation as the API's
-// KosovoPayrollService::grossFromNet, with the rates it returns in `payroll`:
-// pension off the gross, then income tax by band on gross − pension.
-function grossFromNet(net, payroll) {
-    if (! payroll || net <= 0) {
-        return 0;
-    }
-
-    let lower = 0;
-    let taxBelow = 0;
-    let taxable = net;
-
-    for (const [upper, rate] of payroll.income_tax_bands) {
-        const netAtUpper = upper === null ? Infinity : upper - (taxBelow + rate * (upper - lower));
-
-        if (net <= netAtUpper) {
-            taxable = (net + taxBelow - rate * lower) / (1 - rate);
-            break;
-        }
-
-        taxBelow += rate * (upper - lower);
-        lower = upper;
-    }
-
-    return round(taxable / (1 - payroll.pension_rate));
-}
-
-function days(userId) {
-    const value = Number(weekendDays[userId] ?? 0);
-
-    return Number.isFinite(value) && value > 0 ? value : 0;
-}
-
-const rows = computed(() => (data.value?.agents ?? []).map((agent) => {
-    const extra = round(agent.total_amount / (data.value.working_days || 22) * days(agent.user.id));
-    const bonus = round(agent.total_amount + extra);
-    // Base salary and bonus are both net; without a base salary only the bonus is paid.
-    const net = round(Number(agent.base_salary ?? 0) + bonus);
-
-    return {
-        ...agent,
-        extra_amount: extra,
-        bonus,
-        net_salary: net,
-        gross_salary: grossFromNet(net, data.value.payroll),
-    };
-}));
-
-const totals = computed(() => {
-    const types = data.value?.customer_types ?? [];
-
-    return {
-        base_salary: round(rows.value.reduce((sum, row) => sum + (Number(row.base_salary) || 0), 0)),
-        persons: Object.fromEntries(types.map((type) => [type.id, rows.value.reduce((sum, row) => sum + (row.persons[type.id] ?? 0), 0)])),
-        total_amount: round(rows.value.reduce((sum, row) => sum + row.total_amount, 0)),
-        weekend_days: rows.value.reduce((sum, row) => sum + days(row.user.id), 0),
-        extra_amount: round(rows.value.reduce((sum, row) => sum + row.extra_amount, 0)),
-        bonus: round(rows.value.reduce((sum, row) => sum + row.bonus, 0)),
-        net_salary: round(rows.value.reduce((sum, row) => sum + row.net_salary, 0)),
-        gross_salary: round(rows.value.reduce((sum, row) => sum + row.gross_salary, 0)),
-    };
-});
+const rows = computed(() => data.value?.employees ?? []);
+const totals = computed(() => data.value?.totals ?? {});
 
 function calculate() {
     load({ date_from: dateFrom.value || undefined, date_to: dateTo.value || undefined });
-}
-
-function weekendParams() {
-    return Object.fromEntries(
-        Object.entries(weekendDays)
-            .filter(([, value]) => Number(value) > 0)
-            .map(([userId, value]) => [`weekend_days[${userId}]`, value]),
-    );
 }
 
 async function downloadExcel() {
@@ -147,7 +62,7 @@ async function downloadExcel() {
     try {
         await downloadFile('/users/bonuses/excel', {
             fallbackName: 'bonuses.xlsx',
-            config: { params: { date_from: dateFrom.value, date_to: dateTo.value, ...weekendParams() } },
+            config: { params: { date_from: dateFrom.value, date_to: dateTo.value } },
         });
     } catch (e) {
         notifications.push({ type: 'error', message: e.response?.data?.message ?? 'Could not export the bonuses.' });
@@ -219,10 +134,10 @@ onMounted(() => {
                         </div>
                     </div>
                     <p class="mt-3 text-xs text-gray-500">
-                        Agents, Super Agents and HR Agents: persons on their invoices and credit notes dated in the period, per customer type, × the type's factor. Ghost documents and ignored persons are not counted.
-                        Weekend days add total / {{ data?.working_days ?? 22 }} × days.
-                        Net salary = base salary + bonus (both net; the bonus alone when no base salary is set); gross salary is the Kosovo gross that pays it, as the Tax Administration's calculator
-                        ({{ payrollSummary }}).
+                        Employees whose contract in the period is with bonuses: persons on their user's invoices and credit notes dated in the period, per customer type, × the type's factor. Ghost documents and ignored persons are not counted.
+                        Approved paid vacation days in the period add total / {{ data?.working_days ?? 22 }} × days.
+                        Net salary = the contract's base salary + bonus (both net); gross salary is the Kosovo gross that pays it, as the Tax Administration's calculator
+                        ({{ summary }}).
                     </p>
                 </FullWidthBox>
 
@@ -256,14 +171,14 @@ onMounted(() => {
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase text-gray-500">
-                                <th class="border border-gray-300 px-2 py-2">Agent</th>
+                                <th class="border border-gray-300 px-2 py-2">Employee</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Base salary</th>
                                 <th v-for="type in data.customer_types" :key="type.id" class="border border-gray-300 px-2 py-2 text-right" style="width: 100px;">
                                     {{ type.name }}
                                     <span class="block normal-case text-gray-400">× {{ money(type.factor) }}</span>
                                 </th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Total amount</th>
-                                <th class="border border-gray-300 px-2 py-2 text-center" style="width: 110px;">Weekend days</th>
+                                <th class="border border-gray-300 px-2 py-2 text-center" style="width: 110px;">Vacation days</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Extra amount</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Bonus</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 140px;">Net salary</th>
@@ -272,28 +187,17 @@ onMounted(() => {
                         </thead>
                         <tbody>
                             <tr v-if="rows.length === 0">
-                                <td :colspan="data.customer_types.length + 8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No invoiced persons in this period.</td>
+                                <td :colspan="data.customer_types.length + 8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No employee has a contract with bonuses in this period.</td>
                             </tr>
-                            <tr v-for="row in rows" :key="row.user.id ?? 'unknown'" class="hover:bg-gray-50">
-                                <td class="border border-gray-300 px-2 py-1.5 font-medium">{{ row.user.name }}</td>
-                                <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">
-                                    <span v-if="row.base_salary !== null">{{ money(row.base_salary) }}</span>
-                                    <span v-else class="text-gray-400" title="Not set on the user — net salary is the bonus only">—</span>
+                            <tr v-for="row in rows" :key="row.employee.id" class="hover:bg-gray-50">
+                                <td class="border border-gray-300 px-2 py-1.5 font-medium">
+                                    {{ row.employee.name }}
+                                    <span v-if="! row.user" class="block text-xs font-normal text-amber-600">Not linked to a user</span>
                                 </td>
+                                <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.base_salary) }}</td>
                                 <td v-for="type in data.customer_types" :key="type.id" class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ row.persons[type.id] ?? 0 }}</td>
                                 <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.total_amount) }}</td>
-                                <td class="border border-gray-300 px-2 py-1 text-center">
-                                    <input
-                                        v-model="weekendDays[row.user.id]"
-                                        type="number"
-                                        min="0"
-                                        max="31"
-                                        step="1"
-                                        placeholder="0"
-                                        :aria-label="`Weekend days worked by ${row.user.name}`"
-                                        class="w-20 rounded border border-gray-300 px-2 py-1 text-right text-sm tabular-nums focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                                    >
-                                </td>
+                                <td class="border border-gray-300 px-2 py-1.5 text-center tabular-nums">{{ row.vacation_days || '—' }}</td>
                                 <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.extra_amount) }}</td>
                                 <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.bonus) }}</td>
                                 <td class="border border-gray-300 px-2 py-1.5 text-right font-semibold tabular-nums">{{ money(row.net_salary) }}</td>
@@ -306,7 +210,7 @@ onMounted(() => {
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.base_salary) }}</td>
                                 <td v-for="type in data.customer_types" :key="type.id" class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ totals.persons[type.id] }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.total_amount) }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-center tabular-nums">{{ totals.weekend_days }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-center tabular-nums">{{ totals.vacation_days }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.extra_amount) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.bonus) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.net_salary) }}</td>

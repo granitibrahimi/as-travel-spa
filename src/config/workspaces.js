@@ -204,6 +204,15 @@ export const workspaces = [
                 ],
             },
             {
+                label: 'Payroll',
+                items: [
+                    { label: 'Payroll', to: '/users/payroll', can: 'payrolls.list' },
+                    { label: 'Employees', to: '/users/employees', can: 'employees.list' },
+                    { label: 'New Employee', to: '/users/employees/create', can: 'employees.create' },
+                    { label: 'Employee Bonus Calculation', to: '/finance/reports/employee-bonus-calculation', can: 'bonuses.list' },
+                ],
+            },
+            {
                 label: 'Vacations',
                 items: [
                     { label: 'All Requests', to: '/users/vacations', can: 'vacation.viewAllUsers' },

@@ -4,12 +4,10 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
-import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
-import InputNumber from '../../../components/Form/InputNumber.vue';
 import Select from '../../../components/Form/Select.vue';
 import SearchSelect from '../../../components/Form/SearchSelect.vue';
 import Loader from '../../../components/Loader.vue';
@@ -27,14 +25,10 @@ const form = reactive({
     username: '',
     role_id: null,
     cash_account_id: null,
-    base_salary: null,
     password: '',
     password_confirmation: '',
 });
 const formOptions = useFormOptionsStore();
-// The base salary is only shown and sent with users.salary (the API ignores
-// it otherwise, so the field can't be cleared by someone who can't see it).
-const canEditSalary = useAuthStore().can('users.salary');
 const roles = computed(() => toOptions(formOptions.userRoles));
 const cashAccounts = computed(() => toOptions(formOptions.cashAccounts));
 const errors = ref({});
@@ -55,7 +49,6 @@ onMounted(async () => {
             username: user.username ?? '',
             role_id: user.role_id ?? null,
             cash_account_id: user.cash_account_id ?? null,
-            base_salary: user.base_salary ?? null,
         });
     }
 
@@ -72,10 +65,6 @@ async function submit() {
         // Username is optional; send an explicit null when left blank so the
         // server treats it as "no username" rather than an empty string.
         const payload = { ...form, username: form.username.trim() || null };
-
-        if (! canEditSalary) {
-            delete payload.base_salary;
-        }
         await (isEdit ? api.put(`/users/users/${id}`, payload) : api.post('/users/users', payload));
         router.push(routeUrl('users.list'));
     } catch (error) {
@@ -108,10 +97,6 @@ async function submit() {
                     </div>
                     <Select v-model="form.role_id" :options="roles" label="Role *" :error="errors.role_id" />
                     <SearchSelect v-model="form.cash_account_id" :options="cashAccounts" label="Cash account" placeholder="Search account…" :error="errors.cash_account_id" />
-                    <div v-if="canEditSalary">
-                        <InputNumber v-model="form.base_salary" label="Base salary (monthly)" :error="errors.base_salary" />
-                        <p v-if="! errors.base_salary" class="mt-1 text-xs text-gray-500">Shown next to the employee's bonus. Leave empty if not set.</p>
-                    </div>
                 </div>
             </FullWidthBox>
 
