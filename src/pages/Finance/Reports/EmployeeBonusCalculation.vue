@@ -201,9 +201,9 @@ onMounted(() => {
 </script>
 
 <template>
-    <AppLayout title="Employee bonuses" fluid>
+    <AppLayout title="Employee Bonus Calculation" fluid>
         <div class="space-y-4">
-            <h1 class="text-2xl font-bold">Employee bonuses</h1>
+            <h1 class="text-2xl font-bold">Employee Bonus Calculation</h1>
 
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 <FullWidthBox title="Period" :collapsible="false" class="lg:col-span-2">

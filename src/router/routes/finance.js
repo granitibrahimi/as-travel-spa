@@ -32,6 +32,7 @@ const FiscalYearsIndex = () => import('../../pages/Finance/FiscalYears/Index.vue
 const FiscalYearsTrialBalance = () => import('../../pages/Finance/FiscalYears/TrialBalance.vue');
 const ReportsTrialBalance = () => import('../../pages/Finance/Reports/TrialBalance.vue');
 const ReportsFinancialStatements = () => import('../../pages/Finance/Reports/FinancialStatements.vue');
+const ReportsEmployeeBonusCalculation = () => import('../../pages/Finance/Reports/EmployeeBonusCalculation.vue');
 const AccountsTypes = () => import('../../pages/Finance/Accounts/Types.vue');
 const AccountsMapping = () => import('../../pages/Finance/Accounts/Mapping.vue');
 const AccountsHistory = () => import('../../pages/Finance/Accounts/History.vue');
@@ -91,6 +92,7 @@ export default [
     { path: '/finance/reports/chart-of-accounts', name: 'financeReports.chartOfAccounts', component: ReportsChartOfAccounts },
     { path: '/finance/reports/trial-balance', name: 'financeReports.trialBalance', component: ReportsTrialBalance },
     { path: '/finance/reports/financial-statements', name: 'financeReports.financialStatements', component: ReportsFinancialStatements },
+    { path: '/finance/reports/employee-bonus-calculation', name: 'financeReports.employeeBonusCalculation', component: ReportsEmployeeBonusCalculation },
     { path: '/finance/fiscal-years', name: 'fiscalYears.list', component: FiscalYearsIndex },
     { path: '/finance/fiscal-years/:year/trial-balance', name: 'fiscalYears.trialBalance', component: FiscalYearsTrialBalance },
 ];

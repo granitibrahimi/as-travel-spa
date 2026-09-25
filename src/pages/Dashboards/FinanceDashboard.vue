@@ -23,6 +23,7 @@ const reports = [
     { label: 'Trial Balance', to: routeUrl('financeReports.trialBalance'), can: 'financeReports.trialBalance' },
     { label: 'Financial Statements', to: routeUrl('financeReports.financialStatements'), can: 'financeReports.financialStatements' },
     { label: 'Fiscal Years', to: routeUrl('fiscalYears.list'), can: 'fiscalYears.list' },
+    { label: 'Employee Bonus Calculation', to: routeUrl('financeReports.employeeBonusCalculation'), can: 'bonuses.list' },
 ];
 
 const visibleReports = computed(() => reports.filter((report) => auth.can(report.can)));

@@ -220,12 +220,6 @@ export const workspaces = [
                 ],
             },
             {
-                label: 'Bonuses',
-                items: [
-                    { label: 'Employee Bonuses', to: '/users/bonuses', can: 'bonuses.list' },
-                ],
-            },
-            {
                 label: 'Work Schedule',
                 items: [
                     { label: 'Work Schedule', to: '/users/work-schedule', can: 'workSchedule.calendar' },
@@ -266,6 +260,7 @@ export const workspaces = [
                     { label: 'Trial Balance', to: '/finance/reports/trial-balance', can: 'financeReports.trialBalance' },
                     { label: 'Financial Statements', to: '/finance/reports/financial-statements', can: 'financeReports.financialStatements' },
                     { label: 'Fiscal Years', to: '/finance/fiscal-years', can: 'fiscalYears.list' },
+                    { label: 'Employee Bonus Calculation', to: '/finance/reports/employee-bonus-calculation', can: 'bonuses.list' },
                 ],
             },
             { separator: true },
