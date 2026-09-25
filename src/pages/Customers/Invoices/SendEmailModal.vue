@@ -1,13 +1,16 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import api from '../../../helpers/api';
+import { castResource } from '../../../types/responses.js';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import Select from '../../../components/Form/Select.vue';
 
 // Compose + send an invoice email. Posts to the api send-email endpoint, which
-// queues the mail with the generated PDF attached.
+// queues one mail per recipient with the generated PDF attached. "To" takes
+// several addresses separated by commas; it is prefilled with the addresses the
+// customer's last invoice email went to (falling back to the customer's email).
 const props = defineProps({
     invoice: { type: Object, default: null },
     show: { type: Boolean, default: false },
@@ -42,6 +45,7 @@ AS Travel`;
 }
 
 const form = ref({ to: '', subject: '', body: '', type: 1 });
+const recipients = computed(() => form.value.to.split(/[\s,;]+/).filter(Boolean));
 const sending = ref(false);
 const error = ref('');
 const showPreview = ref(false);
@@ -57,8 +61,25 @@ watch(() => props.show, (open) => {
             body: defaultBody(),
             type: 1,
         };
+        prefillRecipients(props.invoice);
     }
 });
+
+async function prefillRecipients(invoice) {
+    if (!invoice) {
+        return;
+    }
+
+    try {
+        const { data } = await api.get(`/customers/invoices/${invoice.id}/email-recipients`);
+        // Don't overwrite what the user started typing, or a newer invoice's modal.
+        if (props.invoice?.id === invoice.id && form.value.to === '') {
+            form.value.to = (castResource(data).to ?? []).join(', ');
+        }
+    } catch {
+        // Prefill is a convenience — the user can still type the addresses.
+    }
+}
 
 async function send() {
     if (sending.value || !props.invoice) {
@@ -69,11 +90,12 @@ async function send() {
     error.value = '';
 
     try {
-        await api.post(`/customers/invoices/${props.invoice.id}/send-email`, form.value);
+        await api.post(`/customers/invoices/${props.invoice.id}/send-email`, { ...form.value, to: recipients.value });
         emit('sent');
         emit('close');
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Could not send the email.';
+        const errors = Object.values(e.response?.data?.errors ?? {}).flat();
+        error.value = errors.length ? errors.join(' ') : (e.response?.data?.message ?? 'Could not send the email.');
     } finally {
         sending.value = false;
     }
@@ -102,7 +124,10 @@ async function send() {
 
                 <!-- Edit form -->
                 <div v-if="!showPreview" class="mt-4 space-y-3">
-                    <InputText v-model="form.to" label="To" type="email" placeholder="client@example.com" />
+                    <div>
+                        <InputText v-model="form.to" label="To" placeholder="client@example.com, accounting@example.com" />
+                        <p class="mt-1 text-xs text-gray-500">Separate several addresses with commas — each one gets its own email.</p>
+                    </div>
                     <InputText v-model="form.subject" label="Subject" />
                     <Select v-model="form.type" label="Attachment" :options="typeOptions" :placeholder="null" />
                     <Textarea v-model="form.body" label="Message" :rows="8" />
@@ -112,7 +137,7 @@ async function send() {
                 <!-- Preview -->
                 <div v-else class="mt-4 rounded border border-gray-200">
                     <dl class="divide-y divide-gray-100 border-b border-gray-100 text-sm">
-                        <div class="flex gap-2 px-3 py-2"><dt class="w-20 shrink-0 text-gray-400">To</dt><dd class="break-all text-gray-700">{{ form.to || '—' }}</dd></div>
+                        <div class="flex gap-2 px-3 py-2"><dt class="w-20 shrink-0 text-gray-400">To</dt><dd class="break-all text-gray-700">{{ recipients.join(', ') || '—' }}</dd></div>
                         <div class="flex gap-2 px-3 py-2"><dt class="w-20 shrink-0 text-gray-400">Subject</dt><dd class="text-gray-700">{{ form.subject || '—' }}</dd></div>
                         <div class="flex gap-2 px-3 py-2"><dt class="w-20 shrink-0 text-gray-400">Attachment</dt><dd class="text-gray-700">{{ typeOptions.find((o) => o.value === form.type)?.label }} (PDF)</dd></div>
                     </dl>
@@ -121,7 +146,9 @@ async function send() {
 
                 <div class="mt-6 flex justify-end gap-3">
                     <Button :disabled="sending" @click="emit('close')">Cancel</Button>
-                    <Button variant="primary" :loading="sending" @click="send">Send email</Button>
+                    <Button variant="primary" :loading="sending" @click="send">
+                        {{ recipients.length > 1 ? `Send ${recipients.length} emails` : 'Send email' }}
+                    </Button>
                 </div>
             </div>
         </div>
