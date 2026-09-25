@@ -1,4 +1,4 @@
-// "5% pension, income tax 0% to 80 €, 4% to 250 €, 8% to 450 €, 10% above" —
+// "5% pension, income tax 0% to 250 €, 8% to 450 €, 10% above" —
 // from the rates the API returns in `payroll` ({ pension_rate,
 // employer_pension_rate, income_tax_bands: [[upper | null, rate], …],
 // secondary_income_tax_rate }).
