@@ -166,10 +166,10 @@ onMounted(() => {
                                     <th class="border border-gray-300 px-2 py-2 text-right" style="width: 110px;">Extra</th>
                                     <th class="border border-gray-300 px-2 py-2 text-right" style="width: 110px;">Bonus</th>
                                     <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Net salary</th>
-                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Gross salary</th>
-                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 110px;">Pension</th>
-                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 110px;">Income tax</th>
                                     <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Employer pension</th>
+                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Employee pension</th>
+                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 110px;">Income tax</th>
+                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Gross salary</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -193,10 +193,10 @@ onMounted(() => {
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.extra_amount) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.bonus) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right font-semibold tabular-nums">{{ money(row.net_salary) }}</td>
-                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.gross_salary) }}</td>
+                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.employer_pension) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.pension) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.income_tax) }}</td>
-                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.employer_pension) }}</td>
+                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.gross_salary) }}</td>
                                 </tr>
                             </tbody>
                             <tfoot v-if="rows.length">
@@ -208,10 +208,10 @@ onMounted(() => {
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.extra_amount) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.bonus) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.net_salary) }}</td>
-                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.gross_salary) }}</td>
+                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.employer_pension) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.pension) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.income_tax) }}</td>
-                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.employer_pension) }}</td>
+                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.gross_salary) }}</td>
                                 </tr>
                             </tfoot>
                         </table>
