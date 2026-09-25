@@ -1,4 +1,5 @@
 const UsersIndex = () => import('../../pages/Users/Users/Index.vue');
+const BonusesIndex = () => import('../../pages/Users/Bonuses/Index.vue');
 const UsersManage = () => import('../../pages/Users/Users/Manage.vue');
 const UsersShow = () => import('../../pages/Users/Users/Show.vue');
 const UsersActivityLogs = () => import('../../pages/Users/Users/ActivityLogs.vue');
@@ -61,6 +62,7 @@ export default [
     { path: '/users/vacations/:id/edit', name: 'vacations.edit', component: VacationsEdit },
     { path: '/users/vacations/:id', name: 'vacations.show', component: VacationsShow },
 
+    { path: '/users/bonuses', name: 'bonuses.list', component: BonusesIndex },
     { path: '/users/work-schedule', name: 'workSchedule.calendar', component: WorkScheduleCalendar },
     { path: '/users/work-schedule/edit', name: 'workSchedule.list', component: WorkScheduleIndex },
     { path: '/users/official-holidays', name: 'officialHolidays.list', component: OfficialHolidaysIndex },

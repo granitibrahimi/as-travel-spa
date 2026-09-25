@@ -220,6 +220,12 @@ export const workspaces = [
                 ],
             },
             {
+                label: 'Bonuses',
+                items: [
+                    { label: 'Employee Bonuses', to: '/users/bonuses', can: 'bonuses.list' },
+                ],
+            },
+            {
                 label: 'Work Schedule',
                 items: [
                     { label: 'Work Schedule', to: '/users/work-schedule', can: 'workSchedule.calendar' },
