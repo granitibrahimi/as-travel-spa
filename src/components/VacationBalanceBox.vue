@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../helpers/api.js';
 import { routeUrl } from '../helpers/route.js';
+import { accrualNote } from '../helpers/vacation.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useNotificationsStore } from '../stores/notifications.js';
 import FullWidthBox from './FullWidthBox.vue';
@@ -32,32 +33,6 @@ const notifications = useNotificationsStore();
 
 const thisYear = new Date().getFullYear();
 const lastYear = thisYear - 1;
-
-const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const number = (value) => String(Math.round(value * 100) / 100);
-
-// "8 months × 1.5 = 12 (January – August)", or why the full allowance applies.
-function accrualNote(b) {
-    const accrual = b.accrual;
-
-    if (! accrual) {
-        return '';
-    }
-
-    if (accrual.months === null) {
-        return accrual.manually_adjusted ? 'Set by hand — the full allowance applies.' : 'Full allowance for the year.';
-    }
-
-    if (accrual.months === 0) {
-        return `No month has ended yet — ${number(accrual.days_per_month)} days are added at the end of each month.`;
-    }
-
-    const exact = accrual.days_per_month * accrual.months;
-    const rounded = Math.abs(exact - b.accumulated_days) > 0.001 ? `, rounded to ${b.accumulated_days}` : '';
-    const period = accrual.months === 1 ? monthNames[0] : `${monthNames[0]} – ${monthNames[accrual.months - 1]}`;
-
-    return `${accrual.months} ${accrual.months === 1 ? 'month' : 'months'} × ${number(accrual.days_per_month)} = ${number(exact)}${rounded} (${period})`;
-}
 
 const rows = computed(() => {
     const b = props.user?.balance;

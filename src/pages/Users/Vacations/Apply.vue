@@ -14,6 +14,7 @@ import Select from '../../../components/Form/Select.vue';
 import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
 import Loader from '../../../components/Loader.vue';
 import SideOverlay from '../../../components/SideOverlay.vue';
+import { accrualNote } from '../../../helpers/vacation.js';
 
 const auth = useAuthStore();
 const formOptions = useFormOptionsStore();
@@ -119,9 +120,9 @@ async function cancelActive() {
     <AppLayout title="Apply for vacation" fluid>
         <Loader v-if="! ready" />
         <div v-else-if="auth.can('vacations.applyForm')" class="space-y-6">
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <!-- Left (wide): the active request / apply form — unchanged. -->
-                <div class="space-y-6 lg:col-span-2">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <!-- Left (half): the active request / apply form. -->
+                <div class="space-y-6">
                     <FullWidthBox v-if="activeRequest" :title="`Active Request | ID: ${activeRequest.id}`" :collapsible="false">
                         <table class="w-full border-collapse border border-gray-300 text-sm">
                             <tbody>
@@ -197,8 +198,8 @@ async function cancelActive() {
                     </form>
                 </div>
 
-                <!-- Right (narrow): this-year balance. -->
-                <div class="lg:col-span-1">
+                <!-- Right (half): this-year balance. -->
+                <div>
                     <FullWidthBox title="Balance" :collapsible="false">
                         <table v-if="balance" class="w-full border-collapse text-sm">
                             <tbody>
@@ -211,11 +212,21 @@ async function cancelActive() {
                                     <td class="border border-gray-200 px-3 py-2 text-right font-medium">{{ balance.this_year_days }}</td>
                                 </tr>
                                 <tr class="odd:bg-gray-50">
+                                    <td class="border border-gray-200 px-3 py-2 text-gray-600">
+                                        Accumulated days in {{ balance.year }} up to date
+                                        <span v-if="accrualNote(balance)" class="block text-xs text-gray-500">{{ accrualNote(balance) }}</span>
+                                    </td>
+                                    <td class="border border-gray-200 px-3 py-2 text-right font-medium">{{ balance.accumulated_days }}</td>
+                                </tr>
+                                <tr class="odd:bg-gray-50">
                                     <td class="border border-gray-200 px-3 py-2 text-gray-600">Working days used</td>
                                     <td class="border border-gray-200 px-3 py-2 text-right font-medium">{{ balance.days_used }}</td>
                                 </tr>
                                 <tr class="odd:bg-gray-50">
-                                    <td class="border border-gray-200 px-3 py-2 text-gray-600">Working days left</td>
+                                    <td class="border border-gray-200 px-3 py-2 text-gray-600">
+                                        Working days left
+                                        <span class="block text-xs text-gray-500">Leftover + accumulated − used</span>
+                                    </td>
                                     <td class="border border-gray-200 px-3 py-2 text-right font-semibold">{{ balance.days_left }}</td>
                                 </tr>
                                 <tr class="odd:bg-gray-50">
