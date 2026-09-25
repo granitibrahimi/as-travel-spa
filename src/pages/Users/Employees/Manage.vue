@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { money } from '../../../helpers/money.js';
+import { taxationLabels } from '../../../helpers/payroll.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castMutation, castResource } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
@@ -39,7 +40,7 @@ const processing = ref(false);
 const loaded = ref(! isEdit);
 
 const contracts = ref([]);
-const emptyContract = () => ({ id: null, starts_on: '', ends_on: '', base_salary: null, with_bonuses: false });
+const emptyContract = () => ({ id: null, starts_on: '', ends_on: '', base_salary: null, with_bonuses: false, in_pension: false, secondary_job: false });
 const contractForm = reactive(emptyContract());
 const contractErrors = ref({});
 const savingContract = ref(false);
@@ -120,6 +121,8 @@ async function saveContract() {
         ends_on: contractForm.ends_on || null,
         base_salary: contractForm.base_salary,
         with_bonuses: contractForm.with_bonuses,
+        in_pension: contractForm.in_pension,
+        secondary_job: contractForm.secondary_job,
     };
 
     try {
@@ -210,12 +213,13 @@ async function deleteContract() {
                                 <th class="border border-gray-300 px-2 py-2">End date</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right">Base salary (net)</th>
                                 <th class="border border-gray-300 px-2 py-2 text-center">With bonuses</th>
+                                <th class="border border-gray-300 px-2 py-2">Taxation</th>
                                 <th v-if="auth.can('employees.edit')" class="border border-gray-300 px-2 py-2 text-center" style="width: 150px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-if="contracts.length === 0">
-                                <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No contracts yet — without an active contract the employee isn't on the payroll.</td>
+                                <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No contracts yet — without an active contract the employee isn't on the payroll.</td>
                             </tr>
                             <tr v-for="contract in contracts" :key="contract.id" :class="contract.id === contractForm.id ? 'bg-yellow-50' : 'hover:bg-gray-50'">
                                 <td class="border border-gray-300 px-2 py-2">{{ contract.starts_on }}</td>
@@ -225,6 +229,10 @@ async function deleteContract() {
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(contract.base_salary) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">{{ contract.with_bonuses ? 'Yes' : 'No' }}</td>
+                                <td class="border border-gray-300 px-2 py-2">
+                                    <span v-for="label in taxationLabels(contract)" :key="label" class="mr-1 inline-block rounded bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">{{ label }}</span>
+                                    <span v-if="! taxationLabels(contract).length" class="text-gray-500">Primary</span>
+                                </td>
                                 <td v-if="auth.can('employees.edit')" class="border border-gray-300 px-2 py-2 text-center">
                                     <button type="button" class="text-sm text-blue-600 hover:underline" @click="editContract(contract)">Edit</button>
                                     <button type="button" class="ml-3 text-sm text-red-600 hover:underline" @click="contractToDelete = contract">Delete</button>
@@ -240,11 +248,14 @@ async function deleteContract() {
                         <DateInput v-model="contractForm.starts_on" label="Start date *" :error="contractErrors.starts_on" />
                         <DateInput v-model="contractForm.ends_on" label="End date" :error="contractErrors.ends_on" />
                         <InputNumber v-model="contractForm.base_salary" label="Base salary (net) *" :error="contractErrors.base_salary" />
-                        <div class="pt-7">
+                        <div class="space-y-1 pt-7">
                             <NiceCheckbox v-model="contractForm.with_bonuses" label="With bonuses" :error="contractErrors.with_bonuses" />
+                            <NiceCheckbox v-model="contractForm.in_pension" label="In pension" :error="contractErrors.in_pension" />
+                            <NiceCheckbox v-model="contractForm.secondary_job" label="Secondary job" :error="contractErrors.secondary_job" />
                         </div>
                     </div>
-                    <p class="mt-2 text-xs text-gray-500">Leave the end date empty for the active contract. To change the salary, end the current contract and add a new one from the next day.</p>
+                    <p class="mt-2 text-xs text-gray-500">Leave the end date empty for the active contract. To change the salary, end the current contract and add a new one from the next day.
+                        In pension: the employee is retired — no pension contributions, only income tax. Secondary job: we are the secondary employer — income tax is a flat 10% instead of the bands.</p>
                     <div class="mt-3 flex justify-end gap-2">
                         <Button v-if="contractForm.id" type="button" @click="resetContract">Cancel</Button>
                         <Button type="submit" variant="primary" :loading="savingContract">{{ contractForm.id ? 'Save contract' : 'Add contract' }}</Button>

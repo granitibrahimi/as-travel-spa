@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { money } from '../../../helpers/money.js';
-import { payrollSummary } from '../../../helpers/payroll.js';
+import { payrollSummary, taxationLabels } from '../../../helpers/payroll.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castResource } from '../../../types/responses.js';
 import { downloadFile } from '../../../helpers/download.js';
@@ -185,6 +185,7 @@ onMounted(() => {
                                         <span class="block text-xs text-gray-500">
                                             {{ [row.bank, row.bank_account_number].filter(Boolean).join(' · ') || 'No bank details' }}
                                         </span>
+                                        <span v-for="label in taxationLabels(row)" :key="label" class="mr-1 inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-700">{{ label }}</span>
                                     </td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.base_salary) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">
@@ -223,7 +224,7 @@ onMounted(() => {
 
                     <p class="mt-3 text-xs text-gray-500">
                         Employees with a contract in the month (the latest one when it changed mid-month). Bonus amount = every person on the linked user's invoices × the rate of its category (click it for the breakdown; see Employee Bonus Calculation);
-                        approved paid vacation days in the month add bonus amount / {{ data.working_days }} × days. Net salary = base salary + bonus; gross, pension and income tax as the Tax Administration's calculator ({{ summary }}); the employer adds its own pension on top.
+                        approved paid vacation days in the month add bonus amount / {{ data.working_days }} × days. Net salary = base salary + bonus; gross, pension and income tax as the Tax Administration's calculator ({{ summary }}); the employer adds its own pension on top, except for employees in pension.
                     </p>
                 </template>
             </FullWidthBox>

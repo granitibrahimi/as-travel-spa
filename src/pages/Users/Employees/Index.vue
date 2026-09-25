@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { money } from '../../../helpers/money.js';
+import { taxationLabels } from '../../../helpers/payroll.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { castPaginated } from '../../../types/responses.js';
 import { useListFilters } from '../../../composables/useListFilters.js';
@@ -112,7 +113,10 @@ const rowActions = (employee) => [
                             <td class="border border-gray-300 px-2 py-2">{{ employee.bank ?? '—' }}</td>
                             <template v-if="employee.active_contract">
                                 <td class="border border-gray-300 px-2 py-2">{{ employee.active_contract.starts_on }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(employee.active_contract.base_salary) }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
+                                    {{ money(employee.active_contract.base_salary) }}
+                                    <span v-for="label in taxationLabels(employee.active_contract)" :key="label" class="ml-1 inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-700">{{ label }}</span>
+                                </td>
                                 <td class="border border-gray-300 px-2 py-2 text-center">
                                     <span class="inline-block rounded px-2 py-0.5 text-xs font-medium" :class="employee.active_contract.with_bonuses ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'">
                                         {{ employee.active_contract.with_bonuses ? 'Yes' : 'No' }}

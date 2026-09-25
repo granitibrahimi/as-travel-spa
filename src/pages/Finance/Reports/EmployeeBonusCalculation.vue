@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { money } from '../../../helpers/money.js';
-import { payrollSummary } from '../../../helpers/payroll.js';
+import { payrollSummary, taxationLabels } from '../../../helpers/payroll.js';
 import { useReport } from '../../../composables/useReport.js';
 import { downloadFile } from '../../../helpers/download.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
@@ -136,6 +136,7 @@ onMounted(calculate);
                                 <td class="border border-gray-300 px-2 py-1.5 font-medium">
                                     {{ row.employee.name }}
                                     <span v-if="! row.user" class="block text-xs font-normal text-amber-600">Not linked to a user</span>
+                                    <span v-for="label in taxationLabels(row)" :key="label" class="mr-1 inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-700">{{ label }}</span>
                                 </td>
                                 <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.base_salary) }}</td>
                                 <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">
