@@ -12,6 +12,7 @@ import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
+import BonusBreakdown from '../../../components/BonusBreakdown.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 
@@ -33,6 +34,7 @@ const error = ref('');
 const loading = ref(false);
 const busy = ref('');
 const confirming = ref(null);
+const breakdown = ref(null);
 
 const saved = computed(() => data.value?.saved ?? null);
 const finalized = computed(() => saved.value?.status.id === 1);
@@ -186,7 +188,7 @@ onMounted(() => {
                                     </td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.base_salary) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">
-                                        <span v-if="row.with_bonuses">{{ money(row.total_amount) }}</span>
+                                        <button v-if="row.with_bonuses" type="button" class="text-blue-600 hover:underline" :title="`${row.employee.name}: bonus per category`" @click="breakdown = { row, title: row.employee.name }">{{ money(row.total_amount) }}</button>
                                         <span v-else class="text-xs text-gray-400">No bonuses</span>
                                     </td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-center tabular-nums">{{ row.vacation_days || '—' }}</td>
@@ -203,7 +205,9 @@ onMounted(() => {
                                 <tr class="bg-gray-50 font-semibold">
                                     <td class="border border-gray-300 px-2 py-2">Total ({{ rows.length }})</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.base_salary) }}</td>
-                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.total_amount) }}</td>
+                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
+                                        <button type="button" class="text-blue-600 hover:underline" @click="breakdown = { row: totals, title: 'All employees' }">{{ money(totals.total_amount) }}</button>
+                                    </td>
                                     <td class="border border-gray-300 px-2 py-2 text-center tabular-nums">{{ totals.vacation_days }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.extra_amount) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.bonus) }}</td>
@@ -218,12 +222,22 @@ onMounted(() => {
                     </div>
 
                     <p class="mt-3 text-xs text-gray-500">
-                        Employees with a contract in the month (the latest one when it changed mid-month). Bonus amount = persons on the linked user's invoices and credit notes × the factor per customer type (see Employee Bonus Calculation);
+                        Employees with a contract in the month (the latest one when it changed mid-month). Bonus amount = every person on the linked user's invoices × the rate of its category (click it for the breakdown; see Employee Bonus Calculation);
                         approved paid vacation days in the month add bonus amount / {{ data.working_days }} × days. Net salary = base salary + bonus; gross, pension and income tax as the Tax Administration's calculator ({{ summary }}); the employer adds its own pension on top.
                     </p>
                 </template>
             </FullWidthBox>
         </div>
+
+        <BonusBreakdown
+            :show="Boolean(breakdown)"
+            :title="breakdown ? `Bonus — ${breakdown.title}` : ''"
+            :subtitle="data?.period ?? ''"
+            :row="breakdown?.row ?? null"
+            :categories="data?.categories ?? []"
+            :working-days="data?.working_days ?? 22"
+            @close="breakdown = null"
+        />
 
         <ConfirmDialog
             :show="Boolean(confirming)"
