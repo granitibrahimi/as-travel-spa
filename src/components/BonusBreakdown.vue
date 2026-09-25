@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from 'vue';
+import { RouterLink } from 'vue-router';
 import { money } from '../helpers/money.js';
+import { useAuthStore } from '../stores/auth';
 import SideOverlay from './SideOverlay.vue';
 
 /**
@@ -9,6 +11,11 @@ import SideOverlay from './SideOverlay.vue';
  * row (or the totals) of the Employee Bonus Calculation / payroll — it reads
  * `persons` and `amounts` keyed by category key, `total_amount`,
  * `vacation_days`, `extra_amount` and `bonus`.
+ *
+ * With the period and the agents' user ids, each person count links to the
+ * Customer Invoices Report (new tab) listing exactly those persons: the
+ * agents, the period and the bonus category (plus its type, customer types
+ * and parent destinations as editable filters).
  */
 const props = defineProps({
     show: { type: Boolean, required: true },
@@ -18,9 +25,37 @@ const props = defineProps({
     // [{ key, label, rate }] as the API returns them.
     categories: { type: Array, default: () => [] },
     workingDays: { type: Number, default: 22 },
+    // Period (d.m.Y) and user ids of the agents behind `row`, for the links.
+    dateFrom: { type: String, default: '' },
+    dateTo: { type: String, default: '' },
+    userIds: { type: Array, default: () => [] },
 });
 
 defineEmits(['close']);
+
+const auth = useAuthStore();
+
+const canLink = computed(() => auth.can('customerInvoices.reports') && props.dateFrom && props.dateTo && props.userIds.length > 0);
+
+// The report's query for one category's persons, or all of them (no category).
+function reportLink(category = null) {
+    return {
+        name: 'financeReports.customerInvoices',
+        query: {
+            from: props.dateFrom,
+            to: props.dateTo,
+            agents: props.userIds,
+            bonus_only: 1,
+            ...(category ? {
+                bonus_category: category.key,
+                bonus_label: category.label,
+                ticket_arrangement: category.invoice_type || undefined,
+                customer_types: category.customer_types?.length ? category.customer_types : undefined,
+                parent_destinations: category.parent_destinations?.length ? category.parent_destinations : undefined,
+            } : {}),
+        },
+    };
+}
 
 // Every rated category (zeros greyed out); "not rated" only when it has persons.
 const lines = computed(() => props.categories
@@ -50,14 +85,32 @@ const persons = computed(() => lines.value.reduce((sum, line) => sum + line.pers
                     <tr v-for="line in lines" :key="line.key" :class="line.persons ? '' : 'text-gray-400'">
                         <td class="border border-gray-300 px-2 py-1.5">{{ line.label }}</td>
                         <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(line.rate) }}</td>
-                        <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ line.persons }}</td>
+                        <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">
+                            <RouterLink
+                                v-if="canLink && line.persons"
+                                :to="reportLink(line)"
+                                target="_blank"
+                                class="text-blue-600 hover:underline"
+                                :title="`List the ${line.persons} persons in the Customer Invoices Report`"
+                            >{{ line.persons }}</RouterLink>
+                            <template v-else>{{ line.persons }}</template>
+                        </td>
                         <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums" :class="line.persons ? 'font-medium' : ''">{{ money(line.amount) }}</td>
                     </tr>
                 </tbody>
                 <tfoot>
                     <tr class="bg-gray-50 font-semibold">
                         <td class="border border-gray-300 px-2 py-2" colspan="2">Total</td>
-                        <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ persons }}</td>
+                        <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
+                            <RouterLink
+                                v-if="canLink && persons"
+                                :to="reportLink()"
+                                target="_blank"
+                                class="text-blue-600 hover:underline"
+                                :title="`List all ${persons} persons in the Customer Invoices Report`"
+                            >{{ persons }}</RouterLink>
+                            <template v-else>{{ persons }}</template>
+                        </td>
                         <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.total_amount) }}</td>
                     </tr>
                     <tr>
@@ -77,6 +130,7 @@ const persons = computed(() => lines.value.reduce((sum, line) => sum + line.pers
             <p class="text-xs text-gray-500">
                 Every person on the agent's invoices in the period earns the rate of its category: BILETË invoices by the customer's type,
                 ARANZHMAN invoices (with a hotel order) by the invoice's parent destination. Ghost invoices, ignored persons and credit notes don't count.
+                <template v-if="canLink">Click a person count to list those persons in the Customer Invoices Report.</template>
             </p>
         </div>
     </SideOverlay>

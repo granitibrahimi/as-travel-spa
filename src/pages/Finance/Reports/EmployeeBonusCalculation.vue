@@ -44,8 +44,14 @@ function calculate() {
     load({ date_from: dateFrom.value || undefined, date_to: dateTo.value || undefined });
 }
 
+// The agents behind a row (the totals: every employee linked to a user), for
+// the breakdown's links to the Customer Invoices Report.
 function showBreakdown(row, title) {
-    breakdown.value = { row, title, subtitle: `${data.value.date_from} – ${data.value.date_to}` };
+    const userIds = row === totals.value
+        ? rows.value.filter((employee) => employee.user).map((employee) => employee.user.id)
+        : [row.user?.id].filter(Boolean);
+
+    breakdown.value = { row, title, userIds, subtitle: `${data.value.date_from} – ${data.value.date_to}` };
 }
 
 async function downloadExcel() {
@@ -183,6 +189,9 @@ onMounted(calculate);
             :row="breakdown?.row ?? null"
             :categories="data?.categories ?? []"
             :working-days="data?.working_days ?? 22"
+            :date-from="data?.date_from ?? ''"
+            :date-to="data?.date_to ?? ''"
+            :user-ids="breakdown?.userIds ?? []"
             @close="breakdown = null"
         />
     </AppLayout>

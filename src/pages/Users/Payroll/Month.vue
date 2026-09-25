@@ -189,7 +189,7 @@ onMounted(() => {
                                     </td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.base_salary) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">
-                                        <button v-if="row.with_bonuses" type="button" class="text-blue-600 hover:underline" :title="`${row.employee.name}: bonus per category`" @click="breakdown = { row, title: row.employee.name }">{{ money(row.total_amount) }}</button>
+                                        <button v-if="row.with_bonuses" type="button" class="text-blue-600 hover:underline" :title="`${row.employee.name}: bonus per category`" @click="breakdown = { row, title: row.employee.name, userIds: [row.user?.id].filter(Boolean) }">{{ money(row.total_amount) }}</button>
                                         <span v-else class="text-xs text-gray-400">No bonuses</span>
                                     </td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-center tabular-nums">{{ row.vacation_days || '—' }}</td>
@@ -207,7 +207,7 @@ onMounted(() => {
                                     <td class="border border-gray-300 px-2 py-2">Total ({{ rows.length }})</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.base_salary) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
-                                        <button type="button" class="text-blue-600 hover:underline" @click="breakdown = { row: totals, title: 'All employees' }">{{ money(totals.total_amount) }}</button>
+                                        <button type="button" class="text-blue-600 hover:underline" @click="breakdown = { row: totals, title: 'All employees', userIds: rows.filter((employee) => employee.user && employee.with_bonuses).map((employee) => employee.user.id) }">{{ money(totals.total_amount) }}</button>
                                     </td>
                                     <td class="border border-gray-300 px-2 py-2 text-center tabular-nums">{{ totals.vacation_days }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.extra_amount) }}</td>
@@ -237,6 +237,9 @@ onMounted(() => {
             :row="breakdown?.row ?? null"
             :categories="data?.categories ?? []"
             :working-days="data?.working_days ?? 22"
+            :date-from="data?.date_from ?? ''"
+            :date-to="data?.date_to ?? ''"
+            :user-ids="breakdown?.userIds ?? []"
             @close="breakdown = null"
         />
 
