@@ -17,6 +17,7 @@ const CustomerInvoiceChangeCustomer = () => import('../../pages/Customers/Invoic
 const CustomerInvoiceChangeAgent = () => import('../../pages/Customers/Invoices/ChangeAgent.vue');
 const CustomerInvoiceChangeDate = () => import('../../pages/Customers/Invoices/ChangeDate.vue');
 const CustomerInvoiceChangeDueDate = () => import('../../pages/Customers/Invoices/ChangeDueDate.vue');
+const CustomerInvoiceChangePersons = () => import('../../pages/Customers/Invoices/ChangePersons.vue');
 const CustomerCreditNoteShow = () => import('../../pages/Customers/CreditNotes/Show.vue');
 const CustomerCreditNoteCreate = () => import('../../pages/Customers/CreditNotes/Create.vue');
 const CustomerCreditNoteEdit = () => import('../../pages/Customers/CreditNotes/Edit.vue');
@@ -90,6 +91,7 @@ export default [
     { path: '/customers/invoices/:id/change-agent', name: 'customerInvoices.changeAgent', component: CustomerInvoiceChangeAgent },
     { path: '/customers/invoices/:id/change-date', name: 'customerInvoices.changeDate', component: CustomerInvoiceChangeDate },
     { path: '/customers/invoices/:id/change-due-date', name: 'customerInvoices.changeDueDate', component: CustomerInvoiceChangeDueDate },
+    { path: '/customers/invoices/:id/change-persons', name: 'customerInvoices.changePersons', component: CustomerInvoiceChangePersons },
     { path: '/customers/invoices/:id', name: 'customerInvoices.show', component: CustomerInvoiceShow },
     { path: '/customers/credit-notes/:id/edit', name: 'customerCreditNotes.edit', component: CustomerCreditNoteEdit },
     { path: '/customers/credit-notes/:id/change-customer', name: 'customerCreditNotes.changeCustomer', component: CustomerCreditNoteChangeCustomer },

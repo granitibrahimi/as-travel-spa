@@ -103,6 +103,7 @@ const groups = computed(() => {
         { label: 'Change Agent', to: routeUrl('customerInvoices.changeAgent', invoice.id), can: 'customerInvoices.changeAgent' },
         { label: 'Change Date', to: routeUrl('customerInvoices.changeDate', invoice.id), can: 'customerInvoices.changeDate' },
         { label: 'Change Due Date', to: routeUrl('customerInvoices.changeDueDate', invoice.id), can: 'customerInvoices.changeDueDate' },
+        { label: 'Change Persons', to: routeUrl('customerInvoices.changePersons', invoice.id), can: 'customerInvoices.changePersons' },
     ].filter(allowed);
 
     if (changes.length) {

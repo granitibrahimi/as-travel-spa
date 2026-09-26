@@ -111,7 +111,7 @@ onMounted(calculate);
                         </tbody>
                     </table>
                     <Loader v-else-if="loading" />
-                    <p class="mt-2 text-xs text-gray-500">BILETË = invoices without a hotel order (by customer type); ARANZHMAN = invoices with a hotel order (by parent destination).</p>
+                    <p class="mt-2 text-xs text-gray-500">BILETË = invoices with a ticket order and no hotel/package (by customer type); ARANZHMAN = invoices with a hotel or package order (by parent destination); TJERA invoices earn no bonus.</p>
                 </FullWidthBox>
             </div>
 

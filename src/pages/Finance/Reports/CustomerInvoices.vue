@@ -53,6 +53,7 @@ const parentDestinationOptions = computed(() => toOptions(formOptions.parentDest
 const ticketArrangementOptions = [
     { value: 'bilete', label: 'Biletë' },
     { value: 'aranzhman', label: 'Aranzhman' },
+    { value: 'tjera', label: 'Tjera' },
 ];
 
 function filters() {
@@ -141,8 +142,8 @@ onMounted(apply);
                 </div>
 
                 <p class="mt-3 text-xs text-gray-500">
-                    Biletë = invoices without a hotel order, Aranzhman = invoices with one. Parent destinations filter on the invoice's parent destination.
-                    Counted for bonuses = not ghost, no credit notes, no ignored persons, only persons with SVC above 0.
+                    Biletë = invoices with a ticket order and no hotel/package, Aranzhman = invoices with a hotel or package order, Tjera = everything else. Parent destinations filter on the invoice's parent destination.
+                    Counted for bonuses = on Biletë and Aranzhman invoices that aren't ghost, the ticket travellers (or hotel persons when there's no ticket), each name once, with SVC above 0 and not ignored; no credit notes.
                 </p>
             </FullWidthBox>
 

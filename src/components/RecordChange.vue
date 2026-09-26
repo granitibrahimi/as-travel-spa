@@ -21,7 +21,7 @@ import Textarea from './Form/Textarea.vue';
  * success, navigates to the record's show page.
  */
 const props = defineProps({
-    // One of: customer | agent | date | dueDate
+    // One of: customer | agent | date | dueDate | persons
     field: { type: String, required: true },
     title: { type: String, required: true },
     recordLabel: { type: String, default: '' },
@@ -54,6 +54,7 @@ const form = reactive({
     agent_id: props.current.agent?.id ?? null,
     new_date: props.field === 'dueDate' ? props.current.due_date : props.current.on_date,
     note: '',
+    persons: props.current.persons ?? 0,
 });
 
 const errors = ref({});
@@ -76,6 +77,7 @@ async function submit() {
         agent: { agent_id: form.agent_id },
         date: { new_date: form.new_date },
         dueDate: { new_date: form.new_date, note: form.note },
+        persons: { persons: form.persons },
     }[props.field];
 
     try {
@@ -129,6 +131,13 @@ async function submit() {
                     <template v-else-if="field === 'dueDate'">
                         <InputText label="New Due Date" v-model="form.new_date" placeholder="dd.mm.yyyy" :error="fieldError('new_date')" />
                         <Textarea label="Note" v-model="form.note" :rows="3" :error="fieldError('note')" />
+                    </template>
+
+                    <template v-else-if="field === 'persons'">
+                        <InputText label="Persons" type="number" v-model="form.persons" :error="fieldError('persons')" />
+                        <p class="text-xs text-gray-500">
+                            The persons counted for the employee bonus. A value set here is kept until the invoice's orders are edited, which recounts it.
+                        </p>
                     </template>
 
                     <div class="flex items-center gap-2">

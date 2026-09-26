@@ -21,6 +21,8 @@ import CustomerDetails from "../../../components/CustomerDetails.vue";
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+// Type, Persons and SVC are only shown with this permission (the API still returns them).
+const canSeeDetails = auth.can('customerInvoices.showWithDetails');
 const notifications = useNotificationsStore();
 const formOptions = useFormOptionsStore();
 const invoice = ref(null);
@@ -157,6 +159,13 @@ async function confirmUnlink() {
                                     <th class="border border-gray-300 bg-gray-50 px-3 py-2 text-center font-medium text-gray-600">
                                         Due Date
                                     </th>
+                                    <th v-if="canSeeDetails" class="border border-gray-300 bg-gray-50 px-3 py-2 text-center font-medium text-gray-600">
+                                        Type
+                                    </th>
+                                    <th v-if="canSeeDetails" class="border border-gray-300 bg-gray-50 px-3 py-2 text-center font-medium text-gray-600"
+                                        title="Travellers counted for the employee bonus: ticket travellers (or hotel persons when there is no ticket), SVC above 0, each name once">
+                                        Persons
+                                    </th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -209,6 +218,24 @@ async function confirmUnlink() {
                                         <span v-else>{{ invoice.due_date }}</span>
                                     </td>
 
+                                    <td v-if="canSeeDetails" class="border border-gray-300 px-3 py-2 text-center">{{ invoice.type }}</td>
+                                    <td v-if="canSeeDetails" class="border border-gray-300 px-3 py-2 text-center">
+                                        <RouterLink
+                                            v-if="auth.can('customerInvoices.changePersons')"
+                                            :to="routeUrl('customerInvoices.changePersons', invoice.id)"
+                                            class="inline-flex items-center gap-1 rounded border border-gray-300 bg-gray-100 px-3 py-1 text-gray-700 hover:bg-gray-200"
+                                        >
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2"
+                                                 viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+                                            </svg>
+                                            {{ invoice.bonus_persons }}
+                                        </RouterLink>
+                                        <span v-else>{{ invoice.bonus_persons }}</span>
+                                        <span v-if="invoice.bonus_persons_manual" class="ml-1 text-xs text-gray-500" title="Set by hand; editing the invoice's orders recounts it">(manual)</span>
+                                    </td>
+
                                 </tr>
                                 </tbody>
                             </table>
@@ -219,7 +246,7 @@ async function confirmUnlink() {
                                     <th class="border border-gray-300 bg-gray-50 px-3 py-2 text-left font-medium text-gray-600">
                                         Invoice Total
                                     </th>
-                                    <th class="border border-gray-300 bg-gray-50 px-3 py-2 text-left font-medium text-gray-600">
+                                    <th v-if="canSeeDetails" class="border border-gray-300 bg-gray-50 px-3 py-2 text-left font-medium text-gray-600">
                                         SVC
                                     </th>
                                     <th class="border border-gray-300 bg-gray-50 px-3 py-2 text-left font-medium text-gray-600">
@@ -233,7 +260,7 @@ async function confirmUnlink() {
                                 <tbody>
                                 <tr class="tabular-nums">
                                     <td class="border border-gray-300 px-3 py-2">{{ money(invoice.amount) }}</td>
-                                    <td class="border border-gray-300 px-3 py-2">{{ money(invoice.total_svc) }}</td>
+                                    <td v-if="canSeeDetails" class="border border-gray-300 px-3 py-2">{{ money(invoice.total_svc) }}</td>
                                     <td class="border border-gray-300 px-3 py-2">{{ money(invoice.paid_amount) }}</td>
                                     <td class="border border-gray-300 px-3 py-2 font-bold"
                                         :class="invoice.has_debt ? 'text-amber-600' : 'text-green-600'">

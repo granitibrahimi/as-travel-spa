@@ -74,6 +74,7 @@ function onInvoiceDeleted() {
                         <tr class="text-left text-xs uppercase text-gray-500">
                             <th class="border border-gray-300 px-2 py-2" style="width: 140px;">Invoice</th>
                             <th class="border border-gray-300 px-2 py-2" style="width: 110px;">Date</th>
+                            <th class="border border-gray-300 px-2 py-2" style="width: 110px;">Type</th>
                             <th class="border border-gray-300 px-2 py-2">Customer</th>
                             <th class="border border-gray-300 px-2 py-2">Destination</th>
                             <th class="border border-gray-300 px-2 py-2" style="width: 160px;">Agent</th>
@@ -84,16 +85,17 @@ function onInvoiceDeleted() {
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="9" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No invoices found.</td>
+                            <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No invoices found.</td>
                         </tr>
                         <tr v-for="invoice in (loading ? [] : apiResponse?.data ?? [])" :key="invoice.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-medium">
                                 <RouterLink :to="routeUrl('customerInvoices.show', invoice.id)" class="text-red-700 hover:underline">{{ invoice.gen_id }}</RouterLink>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ invoice.on_date }}</td>
+                            <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ invoice.type }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ invoice.customer.name }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ invoice.destination ?? '-' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ invoice.user.name }}</td>
