@@ -15,6 +15,7 @@ import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 //   DELETE /suppliers/credit-notes/{id}                       perm supplierCreditNotes.delete
 //   GET    /suppliers/{id}/reconcile ... (supplier-level page) perm suppliers.reconcile
 //   PUT    /suppliers/credit-notes/{id}                        perm supplierCreditNotes.edit
+//   PUT    /suppliers/credit-notes/{id}/supplier               perm supplierCreditNotes.changeSupplier — body { supplier_id } (422 while linked)
 // QB needs no endpoint — SupplierCreditNoteDetailResource exposes `qb_link`
 // (https://qbo.intuit.com/app/vendorcredit?txnId={qb_id}).
 const props = defineProps({
@@ -69,6 +70,17 @@ const groups = computed(() => {
 
     if (pages.length) {
         result.push({ label: 'Pages', items: pages });
+    }
+
+    // The API refuses the change while the credit note is linked (fully unused only).
+    const changes = [
+        ...(Number(cn.open_amount) === Number(cn.amount)
+            ? [{ label: 'Change Supplier', can: 'supplierCreditNotes.changeSupplier', to: routeUrl('supplierCreditNotes.changeSupplier', cn.id) }]
+            : []),
+    ].filter((action) => auth.can(action.can));
+
+    if (changes.length) {
+        result.push({ label: 'Change', items: changes });
     }
 
     const other = [];

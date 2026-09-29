@@ -7,6 +7,7 @@ import { useFormOptionsStore, toOptions } from '../stores/formOptions.js';
 import AppLayout from '../layouts/AppLayout.vue';
 import FullWidthBox from './FullWidthBox.vue';
 import CustomerDetails from './CustomerDetails.vue';
+import SupplierDetails from './SupplierDetails.vue';
 import AsyncSelect from './Form/AsyncSelect.vue';
 import SearchSelect from './Form/SearchSelect.vue';
 import InputText from './Form/InputText.vue';
@@ -17,17 +18,19 @@ import Textarea from './Form/Textarea.vue';
  * a field-specific form on the right. The customer is passed in as-is from
  * the record's own endpoint (e.g. the invoice's embedded `customer`) rather
  * than fetched separately — the invoice/record endpoint already returns it in
- * full. The form submits over the API to the existing update endpoint and, on
- * success, navigates to the record's show page.
+ * full. Supplier records (field `supplier`) pass `supplier` instead and show
+ * the current supplier. The form submits over the API to the existing update
+ * endpoint and, on success, navigates to the record's show page.
  */
 const props = defineProps({
-    // One of: customer | agent | date | dueDate | persons
+    // One of: customer | supplier | agent | date | dueDate | persons
     field: { type: String, required: true },
     title: { type: String, required: true },
     recordLabel: { type: String, default: '' },
     endpoints: { type: Object, required: true },
     current: { type: Object, default: () => ({}) },
-    customer: { type: Object, required: true },
+    customer: { type: Object, default: null },
+    supplier: { type: Object, default: null },
 });
 
 const router = useRouter();
@@ -51,6 +54,7 @@ const agentOptions = computed(() => {
 
 const form = reactive({
     customer_id: null,
+    supplier_id: null,
     agent_id: props.current.agent?.id ?? null,
     new_date: props.field === 'dueDate' ? props.current.due_date : props.current.on_date,
     note: '',
@@ -74,6 +78,7 @@ async function submit() {
 
     const payload = {
         customer: { customer_id: form.customer_id },
+        supplier: { supplier_id: form.supplier_id },
         agent: { agent_id: form.agent_id },
         date: { new_date: form.new_date },
         dueDate: { new_date: form.new_date, note: form.note },
@@ -100,7 +105,10 @@ async function submit() {
 <template>
     <AppLayout :title="title">
         <div class="grid gap-4 md:grid-cols-2">
-            <FullWidthBox title="Current customer" :collapsible="false">
+            <FullWidthBox v-if="supplier" title="Current supplier" :collapsible="false">
+                <SupplierDetails :supplier="supplier" :boxed="false" />
+            </FullWidthBox>
+            <FullWidthBox v-else title="Current customer" :collapsible="false">
                 <CustomerDetails :customer="customer" :boxed="false" />
             </FullWidthBox>
 
@@ -113,6 +121,15 @@ async function submit() {
                         label="New Customer"
                         placeholder="Search customers…"
                         :error="fieldError('customer_id')"
+                    />
+
+                    <AsyncSelect
+                        v-else-if="field === 'supplier'"
+                        v-model="form.supplier_id"
+                        :url="endpoints.suppliersSearch"
+                        label="New Supplier"
+                        placeholder="Search suppliers…"
+                        :error="fieldError('supplier_id')"
                     />
 
                     <SearchSelect

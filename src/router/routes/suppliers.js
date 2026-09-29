@@ -10,6 +10,7 @@ const SuppliersStatements = () => import('../../pages/Suppliers/Suppliers/Statem
 const SupplierBillsCreate = () => import('../../pages/Suppliers/Bills/Create.vue');
 const SupplierCreditNotesIndex = () => import('../../pages/Suppliers/CreditNotes/Index.vue');
 const SupplierCreditNotesManage = () => import('../../pages/Suppliers/CreditNotes/Manage.vue');
+const SupplierCreditNoteChangeSupplier = () => import('../../pages/Suppliers/CreditNotes/ChangeSupplier.vue');
 const SupplierDepositsIndex = () => import('../../pages/Suppliers/Deposits/Index.vue');
 const SupplierDepositsCreate = () => import('../../pages/Suppliers/Deposits/Create.vue');
 const SupplierDepositsEdit = () => import('../../pages/Suppliers/Deposits/Edit.vue');
@@ -20,6 +21,7 @@ const SupplierPaymentsReconcileUnused = () => import('../../pages/Suppliers/Paym
 const SupplierPaymentsCreate = () => import('../../pages/Suppliers/Payments/Create.vue');
 const SupplierPaymentsEdit = () => import('../../pages/Suppliers/Payments/Edit.vue');
 const SupplierPaymentsShow = () => import('../../pages/Suppliers/Payments/Show.vue');
+const SupplierPaymentsChangeSupplier = () => import('../../pages/Suppliers/Payments/ChangeSupplier.vue');
 const SupplierGiftCardsIndex = () => import('../../pages/Suppliers/GiftCards/Index.vue');
 const SupplierGiftCardsCreate = () => import('../../pages/Suppliers/GiftCards/Create.vue');
 const SupplierGiftCardsEdit = () => import('../../pages/Suppliers/GiftCards/Edit.vue');
@@ -52,6 +54,7 @@ export default [
     { path: '/suppliers/credit-notes/:id', name: 'supplierCreditNotes.show', component: SupplierCreditNoteShow },
     { path: '/suppliers/credit-notes/:supplierId/create', name: 'supplierCreditNotes.create', component: SupplierCreditNotesManage },
     { path: '/suppliers/credit-notes/:id/edit', name: 'supplierCreditNotes.edit', component: SupplierCreditNotesManage },
+    { path: '/suppliers/credit-notes/:id/change-supplier', name: 'supplierCreditNotes.changeSupplier', component: SupplierCreditNoteChangeSupplier },
 
     // Deposits
     { path: '/suppliers/deposits', name: 'supplierDeposits.list', component: SupplierDepositsIndex },
@@ -66,6 +69,7 @@ export default [
     { path: '/suppliers/payments/reconcile-unused', name: 'supplierPayments.reconcileUnused', component: SupplierPaymentsReconcileUnused },
     { path: '/suppliers/payments/:supplierId/create', name: 'supplierPayments.create', component: SupplierPaymentsCreate },
     { path: '/suppliers/payments/:id/edit', name: 'supplierPayments.edit', component: SupplierPaymentsEdit },
+    { path: '/suppliers/payments/:id/change-supplier', name: 'supplierPayments.changeSupplier', component: SupplierPaymentsChangeSupplier },
     { path: '/suppliers/payments/:id', name: 'supplierPayments.show', component: SupplierPaymentsShow },
 
     // GiftCards

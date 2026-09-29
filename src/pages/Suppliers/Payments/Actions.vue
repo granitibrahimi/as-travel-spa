@@ -21,6 +21,8 @@ import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 //     GetSupplierPayments) as https://qbo.intuit.com/app/billpayment?txnId=…,
 //     matching the legacy payments aside.
 //   - Journal slug is `supplier-payment` (AccountTransactionType::SUPPLIER_PAYMENT->slug()).
+//   - Change supplier: PUT /suppliers/payments/{id}/supplier { supplier_id },
+//     perm supplierPayments.changeSupplier (422 while the payment is linked).
 const props = defineProps({
     payment: { type: Object, default: null },
     show: { type: Boolean, default: false },
@@ -54,6 +56,10 @@ const groups = computed(() => {
             ? [{ label: 'Reconcile', to: routeUrl('suppliers.reconcile', supplierId), can: 'suppliers.reconcile' }]
             : []),
         { label: 'Edit', to: routeUrl('supplierPayments.edit', payment.id), can: 'supplierPayments.edit' },
+        // The API refuses the change while the payment is linked (fully unused only).
+        ...(payment.open_amount === payment.amount
+            ? [{ label: 'Change supplier', to: routeUrl('supplierPayments.changeSupplier', payment.id), can: 'supplierPayments.changeSupplier' }]
+            : []),
         ...(props.showAddDocument
             ? [{ label: 'Add document', action: () => emit('addDocument'), can: 'supplierPayments.edit' }]
             : []),
