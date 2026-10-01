@@ -21,6 +21,8 @@ import Loader from '../../../components/Loader.vue';
 // days in the month, counted by the API.
 // POST …/:year/:month saves the draft; POST …/finalize, …/reopen and DELETE …
 // change its state; GET …/excel and (finalized only) …/pcb-csv download it.
+// POST …/journal posts a finalized month as a journal (`saved.journal` once it
+// has one; deleting the journal disconnects it).
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
@@ -41,6 +43,8 @@ const finalized = computed(() => saved.value?.status.id === 1);
 const rows = computed(() => data.value?.employees ?? []);
 const totals = computed(() => data.value?.totals ?? {});
 const summary = computed(() => payrollSummary(data.value?.payroll));
+// The PCB payment CSV leaves out employees without a bank account number.
+const withoutBankAccount = computed(() => rows.value.filter((row) => ! String(row.bank_account_number ?? '').trim()));
 
 async function load() {
     loading.value = true;
@@ -80,6 +84,7 @@ const saveDraft = () => run('save', () => api.post(base), `Payroll for ${data.va
 const finalize = () => run('finalize', () => api.post(`${base}/finalize`), `Payroll for ${data.value.period} finalized.`);
 const reopen = () => run('reopen', () => api.post(`${base}/reopen`), `Payroll for ${data.value.period} reopened as a draft.`);
 const deleteDraft = () => run('delete', () => api.delete(base), `Draft for ${data.value.period} deleted.`);
+const createJournal = () => run('journal', () => api.post(`${base}/journal`), `Journal for ${data.value.period} created.`);
 
 async function download(action, path, fallbackName) {
     if (busy.value) {
@@ -100,6 +105,7 @@ async function download(action, path, fallbackName) {
 const dialogs = {
     finalize: { title: 'Finalize payroll?', message: () => `${data.value.period} becomes read-only: its figures no longer change with contracts, vacations or factors. Only the last finalized month can be reopened.`, confirm: finalize },
     reopen: { title: 'Reopen payroll?', message: () => `${data.value.period} goes back to a draft and is recalculated from the current contracts, vacations and factors.`, confirm: reopen },
+    journal: { title: 'Create journal?', message: () => `Posts ${data.value.period} on its last day: debit gross salaries and the employer's pension contribution, credit the bank their sum.`, confirm: createJournal },
     delete: { title: 'Delete draft?', message: () => `The saved draft for ${data.value.period} will be deleted.`, confirm: deleteDraft },
 };
 
@@ -133,6 +139,8 @@ onMounted(() => {
                 <div v-if="data" class="flex flex-wrap gap-2">
                     <Button type="button" :loading="busy === 'excel'" @click="download('excel', 'excel', 'payroll.xlsx')">Download Excel</Button>
                     <Button v-if="finalized && auth.can('payrolls.paymentFile')" type="button" :loading="busy === 'pcb'" @click="download('pcb', 'pcb-csv', 'pagat_pcb.csv')">PCB Payment CSV</Button>
+                    <Button v-if="saved?.journal" :href="routeUrl('journals.show', saved.journal.id)" @click.prevent="router.push(routeUrl('journals.show', saved.journal.id))">View Journal {{ saved.journal.gen_id }}</Button>
+                    <Button v-else-if="saved?.can_create_journal && auth.can('payrolls.finalize') && auth.can('journals.create')" type="button" @click="confirming = 'journal'">Create Journal</Button>
                     <Button v-if="saved?.can_delete && auth.can('payrolls.delete')" type="button" @click="confirming = 'delete'">Delete draft</Button>
                     <Button v-if="saved?.can_reopen && auth.can('payrolls.reopen')" type="button" @click="confirming = 'reopen'">Reopen</Button>
                     <Button v-if="! finalized && auth.can('payrolls.create')" type="button" :variant="saved ? 'secondary' : 'primary'" :loading="busy === 'save'" @click="saveDraft">
@@ -156,6 +164,11 @@ onMounted(() => {
 
                 <template v-else>
                     <p v-if="saved && ! finalized" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">A draft shows the figures as they are now; save it again after changing contracts, vacations or factors, then finalize.</p>
+
+                    <div v-if="withoutBankAccount.length" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                        {{ withoutBankAccount.length === 1 ? '1 employee has' : `${withoutBankAccount.length} employees have` }} no bank account number and will not be included in the PCB Payment CSV:
+                        <span class="font-medium">{{ withoutBankAccount.map((row) => row.employee.name).join(', ') }}</span>.
+                    </div>
 
                     <div class="overflow-x-auto">
                         <table class="w-full border-collapse border border-gray-300 text-sm">
