@@ -25,6 +25,11 @@ const isEdit = Boolean(id);
 // (?clone=<id>). `isEdit` stays false, so submit still POSTs a brand-new
 // journal — only the field values carry over, not the identity/number.
 const cloneId = ! isEdit ? (route.query.clone ?? null) : null;
+// "Add payment journal" on a finalized payroll opens this form with
+// ?payroll=<year>-<month>: pre-filled from the payroll's `payment_journal`
+// and, once saved, linked to it as a payment journal (`payroll_id`).
+const payrollKey = ! isEdit && ! cloneId ? (route.query.payroll ?? null) : null;
+const payroll = ref(null);
 
 const formOptions = useFormOptionsStore();
 const accounts = computed(() => toOptions(formOptions.accounts));
@@ -56,6 +61,23 @@ onMounted(async () => {
     const journal = sourceId
         ? await api.get(`/finance/journals/${sourceId}`).then((r) => castResource(r.data))
         : null;
+
+    if (payrollKey) {
+        const [payrollYear, payrollMonth] = String(payrollKey).split('-');
+        const data = castResource((await api.get(`/users/payrolls/${payrollYear}/${payrollMonth}`)).data);
+        const draft = data.payment_journal;
+
+        if (draft) {
+            payroll.value = { id: draft.payroll_id, year: payrollYear, month: payrollMonth, period: data.period };
+            form.date = draft.date;
+            form.reference = draft.reference;
+            form.notes = draft.notes;
+            form.entries = [
+                { ...blankLine(), account: draft.debit_account_id, debit: draft.amount || null, description: draft.notes },
+                { ...blankLine(), account: draft.credit_account_id, credit: draft.amount || null, description: draft.notes },
+            ];
+        }
+    }
 
     if (journal) {
         // A clone copies the field values but not the journal number.
@@ -144,13 +166,16 @@ async function submit() {
         reference: form.reference,
         notes: form.notes,
         entries,
+        ...(payroll.value ? { payroll_id: payroll.value.id } : {}),
     };
 
     try {
         const { data } = await (isEdit
             ? api.put(`/finance/journals/${id}`, payload)
             : api.post('/finance/journals', payload));
-        router.push(routeUrl('journals.show', castMutation(data).id));
+        router.push(payroll.value
+            ? routeUrl('payrolls.show', payroll.value.year, payroll.value.month)
+            : routeUrl('journals.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {
             errors.value = Object.fromEntries(
@@ -178,6 +203,10 @@ async function submit() {
         <form v-else class="space-y-6" @submit.prevent="submit">
             <p v-if="cloneId" class="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
                 Pre-filled from journal #{{ cloneId }}. Saving will create a new journal.
+            </p>
+
+            <p v-if="payroll" class="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                Payment journal for the {{ payroll.period }} payroll. Saving links it to the payroll.
             </p>
 
             <FullWidthBox title="Journal" :collapsible="false">

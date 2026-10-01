@@ -21,8 +21,10 @@ import Loader from '../../../components/Loader.vue';
 // days in the month, counted by the API.
 // POST …/:year/:month saves the draft; POST …/finalize, …/reopen and DELETE …
 // change its state; GET …/excel and (finalized only) …/pcb-csv download it.
-// POST …/journal posts a finalized month as a journal (`saved.journal` once it
-// has one; deleting the journal disconnects it).
+// A finalized month's journals (`saved.journals`): POST …/obligation-journal
+// books the one obligation journal; payment journals are made on the journal
+// form (?payroll=<year>-<month>, pre-filled from `payment_journal`). Deleting
+// a journal disconnects it. PUT …/items/:item/paid marks a salary paid or not.
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
@@ -84,7 +86,27 @@ const saveDraft = () => run('save', () => api.post(base), `Payroll for ${data.va
 const finalize = () => run('finalize', () => api.post(`${base}/finalize`), `Payroll for ${data.value.period} finalized.`);
 const reopen = () => run('reopen', () => api.post(`${base}/reopen`), `Payroll for ${data.value.period} reopened as a draft.`);
 const deleteDraft = () => run('delete', () => api.delete(base), `Draft for ${data.value.period} deleted.`);
-const createJournal = () => run('journal', () => api.post(`${base}/journal`), `Journal for ${data.value.period} created.`);
+const createObligationJournal = () => run('journal', () => api.post(`${base}/obligation-journal`), `Obligation journal for ${data.value.period} created.`);
+const journals = computed(() => saved.value?.journals ?? []);
+const canPostJournals = computed(() => auth.can('payrolls.finalize') && auth.can('journals.create'));
+const unpaid = computed(() => rows.value.filter((row) => row.paid === false).length);
+
+async function togglePaid(row) {
+    if (busy.value) {
+        return;
+    }
+
+    busy.value = `paid-${row.item_id}`;
+
+    try {
+        await api.put(`${base}/items/${row.item_id}/paid`, { paid: ! row.paid });
+        row.paid = ! row.paid;
+    } catch (e) {
+        notifications.push({ type: 'error', message: e.response?.data?.message ?? 'Could not update the salary.' });
+    } finally {
+        busy.value = '';
+    }
+}
 
 async function download(action, path, fallbackName) {
     if (busy.value) {
@@ -105,7 +127,7 @@ async function download(action, path, fallbackName) {
 const dialogs = {
     finalize: { title: 'Finalize payroll?', message: () => `${data.value.period} becomes read-only: its figures no longer change with contracts, vacations or factors. Only the last finalized month can be reopened.`, confirm: finalize },
     reopen: { title: 'Reopen payroll?', message: () => `${data.value.period} goes back to a draft and is recalculated from the current contracts, vacations and factors.`, confirm: reopen },
-    journal: { title: 'Create journal?', message: () => `Posts ${data.value.period} on its last day: debit gross salaries and the employer's pension contribution, credit the bank their sum.`, confirm: createJournal },
+    journal: { title: 'Create obligation journal?', message: () => `Books ${data.value.period} on its last day: debit gross salaries and the employer's pension contribution; credit pension contributions, tax on personal income and net salaries.`, confirm: createObligationJournal },
     delete: { title: 'Delete draft?', message: () => `The saved draft for ${data.value.period} will be deleted.`, confirm: deleteDraft },
 };
 
@@ -139,8 +161,8 @@ onMounted(() => {
                 <div v-if="data" class="flex flex-wrap gap-2">
                     <Button type="button" :loading="busy === 'excel'" @click="download('excel', 'excel', 'payroll.xlsx')">Download Excel</Button>
                     <Button v-if="finalized && auth.can('payrolls.paymentFile')" type="button" :loading="busy === 'pcb'" @click="download('pcb', 'pcb-csv', 'pagat_pcb.csv')">PCB Payment CSV</Button>
-                    <Button v-if="saved?.journal" :href="routeUrl('journals.show', saved.journal.id)" @click.prevent="router.push(routeUrl('journals.show', saved.journal.id))">View Journal {{ saved.journal.gen_id }}</Button>
-                    <Button v-else-if="saved?.can_create_journal && auth.can('payrolls.finalize') && auth.can('journals.create')" type="button" @click="confirming = 'journal'">Create Journal</Button>
+                    <Button v-if="saved?.can_create_obligation_journal && canPostJournals" type="button" :loading="busy === 'journal'" @click="confirming = 'journal'">Create Obligation Journal</Button>
+                    <Button v-if="saved?.can_add_payment_journal && canPostJournals" :href="routeUrl('journals.create', { payroll: `${year}-${month}` })" @click.prevent="router.push(routeUrl('journals.create', { payroll: `${year}-${month}` }))">Add Payment Journal</Button>
                     <Button v-if="saved?.can_delete && auth.can('payrolls.delete')" type="button" @click="confirming = 'delete'">Delete draft</Button>
                     <Button v-if="saved?.can_reopen && auth.can('payrolls.reopen')" type="button" @click="confirming = 'reopen'">Reopen</Button>
                     <Button v-if="! finalized && auth.can('payrolls.create')" type="button" :variant="saved ? 'secondary' : 'primary'" :loading="busy === 'save'" @click="saveDraft">
@@ -170,6 +192,33 @@ onMounted(() => {
                         <span class="font-medium">{{ withoutBankAccount.map((row) => row.employee.name).join(', ') }}</span>.
                     </div>
 
+                    <div v-if="journals.length" class="mb-3 overflow-x-auto">
+                        <table class="w-full border-collapse border border-gray-300 text-sm">
+                            <thead>
+                                <tr class="text-left text-xs uppercase text-gray-500">
+                                    <th class="border border-gray-300 px-2 py-2" style="width: 140px;">Journal</th>
+                                    <th class="border border-gray-300 px-2 py-2">Number</th>
+                                    <th class="border border-gray-300 px-2 py-2" style="width: 120px;">Date</th>
+                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="journal in journals" :key="journal.id" class="hover:bg-gray-50">
+                                    <td class="border border-gray-300 px-2 py-1.5">{{ journal.type.name }}</td>
+                                    <td class="border border-gray-300 px-2 py-1.5">
+                                        <RouterLink :to="routeUrl('journals.show', journal.id)" class="text-blue-600 hover:underline">{{ journal.gen_id }}</RouterLink>
+                                    </td>
+                                    <td class="border border-gray-300 px-2 py-1.5">{{ journal.on_date }}</td>
+                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(journal.amount) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p v-if="finalized && unpaid" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                        {{ unpaid === 1 ? '1 salary is' : `${unpaid} salaries are` }} marked not paid.
+                    </p>
+
                     <div class="overflow-x-auto">
                         <table class="w-full border-collapse border border-gray-300 text-sm">
                             <thead>
@@ -185,11 +234,12 @@ onMounted(() => {
                                     <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Employee pension</th>
                                     <th class="border border-gray-300 px-2 py-2 text-right" style="width: 110px;">Income tax</th>
                                     <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Gross salary</th>
+                                    <th v-if="finalized" class="border border-gray-300 px-2 py-2 text-center" style="width: 110px;">Paid</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-if="rows.length === 0">
-                                    <td colspan="11" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No employee has a contract in this month.</td>
+                                    <td :colspan="finalized ? 12 : 11" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No employee has a contract in this month.</td>
                                 </tr>
                                 <tr v-for="row in rows" :key="row.employee.id" class="hover:bg-gray-50">
                                     <td class="border border-gray-300 px-2 py-1.5">
@@ -213,6 +263,20 @@ onMounted(() => {
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.pension) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.income_tax) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.gross_salary) }}</td>
+                                    <td v-if="finalized" class="border border-gray-300 px-2 py-1.5 text-center">
+                                        <button
+                                            v-if="auth.can('payrolls.finalize')"
+                                            type="button"
+                                            class="rounded px-2 py-0.5 text-xs font-medium"
+                                            :class="row.paid ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'"
+                                            :disabled="busy === `paid-${row.item_id}`"
+                                            :title="row.paid ? 'Mark as not paid' : 'Mark as paid'"
+                                            @click="togglePaid(row)"
+                                        >
+                                            {{ row.paid ? 'Paid' : 'Not paid' }}
+                                        </button>
+                                        <span v-else class="rounded px-2 py-0.5 text-xs font-medium" :class="row.paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">{{ row.paid ? 'Paid' : 'Not paid' }}</span>
+                                    </td>
                                 </tr>
                             </tbody>
                             <tfoot v-if="rows.length">
@@ -230,6 +294,7 @@ onMounted(() => {
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.pension) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.income_tax) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.gross_salary) }}</td>
+                                    <td v-if="finalized" class="border border-gray-300 px-2 py-2 text-center tabular-nums">{{ rows.length - unpaid }} / {{ rows.length }}</td>
                                 </tr>
                             </tfoot>
                         </table>
