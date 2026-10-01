@@ -161,8 +161,6 @@ onMounted(() => {
                 <div v-if="data" class="flex flex-wrap gap-2">
                     <Button type="button" :loading="busy === 'excel'" @click="download('excel', 'excel', 'payroll.xlsx')">Download Excel</Button>
                     <Button v-if="finalized && auth.can('payrolls.paymentFile')" type="button" :loading="busy === 'pcb'" @click="download('pcb', 'pcb-csv', 'pagat_pcb.csv')">PCB Payment CSV</Button>
-                    <Button v-if="saved?.can_create_obligation_journal && canPostJournals" type="button" :loading="busy === 'journal'" @click="confirming = 'journal'">Create Obligation Journal</Button>
-                    <Button v-if="saved?.can_add_payment_journal && canPostJournals" :href="routeUrl('journals.create', { payroll: `${year}-${month}` })" @click.prevent="router.push(routeUrl('journals.create', { payroll: `${year}-${month}` }))">Add Payment Journal</Button>
                     <Button v-if="saved?.can_delete && auth.can('payrolls.delete')" type="button" @click="confirming = 'delete'">Delete draft</Button>
                     <Button v-if="saved?.can_reopen && auth.can('payrolls.reopen')" type="button" @click="confirming = 'reopen'">Reopen</Button>
                     <Button v-if="! finalized && auth.can('payrolls.create')" type="button" :variant="saved ? 'secondary' : 'primary'" :loading="busy === 'save'" @click="saveDraft">
@@ -181,7 +179,43 @@ onMounted(() => {
 
             <p v-if="error" class="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">{{ error }}</p>
 
-            <FullWidthBox v-else :title="data ? `${data.date_from} – ${data.date_to}` : 'Payroll'" :collapsible="false">
+            <FullWidthBox v-if="! error && finalized" title="Journals" :collapsible="false">
+                <template v-if="canPostJournals && (saved.can_create_obligation_journal || saved.can_add_payment_journal)" #actions>
+                    <div class="flex gap-2">
+                        <Button v-if="saved.can_create_obligation_journal" type="button" size="sm" :loading="busy === 'journal'" @click="confirming = 'journal'">Create Obligation Journal</Button>
+                        <Button v-if="saved.can_add_payment_journal" size="sm" :href="routeUrl('journals.create', { payroll: `${year}-${month}` })" @click.prevent="router.push(routeUrl('journals.create', { payroll: `${year}-${month}` }))">Add Payment Journal</Button>
+                    </div>
+                </template>
+
+                <p v-if="! journals.length" class="text-sm text-gray-500">No journals yet. Create the obligation journal, then add a payment journal for each salary payment.</p>
+
+                <div v-else class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="text-left text-xs uppercase text-gray-500">
+                                <th class="border border-gray-300 px-2 py-2" style="width: 130px;">Type</th>
+                                <th class="border border-gray-300 px-2 py-2">Journal</th>
+                                <th class="border border-gray-300 px-2 py-2" style="width: 120px;">Date</th>
+                                <th class="border border-gray-300 px-2 py-2 text-right" style="width: 140px;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="journal in journals" :key="journal.id" class="hover:bg-gray-50">
+                                <td class="border border-gray-300 px-2 py-1.5">
+                                    <span class="inline-block rounded px-2 py-0.5 text-xs font-medium" :class="journal.type.id === 1 ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700'">{{ journal.type.name }}</span>
+                                </td>
+                                <td class="border border-gray-300 px-2 py-1.5">
+                                    <RouterLink :to="routeUrl('journals.show', journal.id)" class="font-medium text-blue-600 hover:underline">{{ journal.gen_id }}</RouterLink>
+                                </td>
+                                <td class="border border-gray-300 px-2 py-1.5 tabular-nums">{{ journal.on_date }}</td>
+                                <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(journal.amount) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </FullWidthBox>
+
+            <FullWidthBox v-if="! error" :title="data ? `${data.date_from} – ${data.date_to}` : 'Payroll'" :collapsible="false">
                 <Loader v-if="loading || ! data" />
 
                 <template v-else>
@@ -190,29 +224,6 @@ onMounted(() => {
                     <div v-if="withoutBankAccount.length" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                         {{ withoutBankAccount.length === 1 ? '1 employee has' : `${withoutBankAccount.length} employees have` }} no bank account number and will not be included in the PCB Payment CSV:
                         <span class="font-medium">{{ withoutBankAccount.map((row) => row.employee.name).join(', ') }}</span>.
-                    </div>
-
-                    <div v-if="journals.length" class="mb-3 overflow-x-auto">
-                        <table class="w-full border-collapse border border-gray-300 text-sm">
-                            <thead>
-                                <tr class="text-left text-xs uppercase text-gray-500">
-                                    <th class="border border-gray-300 px-2 py-2" style="width: 140px;">Journal</th>
-                                    <th class="border border-gray-300 px-2 py-2">Number</th>
-                                    <th class="border border-gray-300 px-2 py-2" style="width: 120px;">Date</th>
-                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="journal in journals" :key="journal.id" class="hover:bg-gray-50">
-                                    <td class="border border-gray-300 px-2 py-1.5">{{ journal.type.name }}</td>
-                                    <td class="border border-gray-300 px-2 py-1.5">
-                                        <RouterLink :to="routeUrl('journals.show', journal.id)" class="text-blue-600 hover:underline">{{ journal.gen_id }}</RouterLink>
-                                    </td>
-                                    <td class="border border-gray-300 px-2 py-1.5">{{ journal.on_date }}</td>
-                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(journal.amount) }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
 
                     <p v-if="finalized && unpaid" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
