@@ -24,7 +24,8 @@ import Loader from '../../../components/Loader.vue';
 // A finalized month's journals (`saved.journals`): POST …/obligation-journal
 // books the one obligation journal; payment journals are made on the journal
 // form (?payroll=<year>-<month>, pre-filled from `payment_journal`). Deleting
-// a journal disconnects it. PUT …/items/:item/paid marks a salary paid or not.
+// a journal disconnects it. A salary is paid once a payment journal covers it
+// (`row.paid`, `row.payment_journal`) — chosen on the journal form.
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
@@ -90,23 +91,6 @@ const createObligationJournal = () => run('journal', () => api.post(`${base}/obl
 const journals = computed(() => saved.value?.journals ?? []);
 const canPostJournals = computed(() => auth.can('payrolls.finalize') && auth.can('journals.create'));
 const unpaid = computed(() => rows.value.filter((row) => row.paid === false).length);
-
-async function togglePaid(row) {
-    if (busy.value) {
-        return;
-    }
-
-    busy.value = `paid-${row.item_id}`;
-
-    try {
-        await api.put(`${base}/items/${row.item_id}/paid`, { paid: ! row.paid });
-        row.paid = ! row.paid;
-    } catch (e) {
-        notifications.push({ type: 'error', message: e.response?.data?.message ?? 'Could not update the salary.' });
-    } finally {
-        busy.value = '';
-    }
-}
 
 async function download(action, path, fallbackName) {
     if (busy.value) {
@@ -179,7 +163,7 @@ onMounted(() => {
 
             <p v-if="error" class="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">{{ error }}</p>
 
-            <FullWidthBox v-if="! error && finalized" title="Journals" :collapsible="false">
+            <FullWidthBox v-if="! error && saved" title="Journals" :collapsible="false">
                 <template v-if="canPostJournals && (saved.can_create_obligation_journal || saved.can_add_payment_journal)" #actions>
                     <div class="flex gap-2">
                         <Button v-if="saved.can_create_obligation_journal" type="button" size="sm" :loading="busy === 'journal'" @click="confirming = 'journal'">Create Obligation Journal</Button>
@@ -187,7 +171,7 @@ onMounted(() => {
                     </div>
                 </template>
 
-                <p v-if="! journals.length" class="text-sm text-gray-500">No journals yet. Create the obligation journal, then add a payment journal for each salary payment.</p>
+                <p v-if="! journals.length" class="text-sm text-gray-500">No journals. The obligation journal is created when the payroll is saved; once finalized, add a payment journal for each salary payment.</p>
 
                 <div v-else class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -219,7 +203,7 @@ onMounted(() => {
                 <Loader v-if="loading || ! data" />
 
                 <template v-else>
-                    <p v-if="saved && ! finalized" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">A draft shows the figures as they are now; save it again after changing contracts, vacations or factors, then finalize.</p>
+                    <p v-if="saved && ! finalized" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">A draft shows the figures as they are now; save it again after changing contracts, vacations or factors (that also updates its obligation journal), then finalize.</p>
 
                     <div v-if="withoutBankAccount.length" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                         {{ withoutBankAccount.length === 1 ? '1 employee has' : `${withoutBankAccount.length} employees have` }} no bank account number and will not be included in the PCB Payment CSV:
@@ -227,7 +211,7 @@ onMounted(() => {
                     </div>
 
                     <p v-if="finalized && unpaid" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                        {{ unpaid === 1 ? '1 salary is' : `${unpaid} salaries are` }} marked not paid.
+                        {{ unpaid === 1 ? '1 salary is' : `${unpaid} salaries are` }} not paid yet — add a payment journal to pay them.
                     </p>
 
                     <div class="overflow-x-auto">
@@ -245,12 +229,15 @@ onMounted(() => {
                                     <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Employee pension</th>
                                     <th class="border border-gray-300 px-2 py-2 text-right" style="width: 110px;">Income tax</th>
                                     <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;">Gross salary</th>
+                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;" title="Taken off the net salary">Health ins. employee</th>
+                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;" title="Paid by the company on top">Health ins. company</th>
+                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 130px;" title="Net salary less the employee's health insurance">To pay</th>
                                     <th v-if="finalized" class="border border-gray-300 px-2 py-2 text-center" style="width: 110px;">Paid</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-if="rows.length === 0">
-                                    <td :colspan="finalized ? 12 : 11" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No employee has a contract in this month.</td>
+                                    <td :colspan="finalized ? 15 : 14" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No employee has a contract in this month.</td>
                                 </tr>
                                 <tr v-for="row in rows" :key="row.employee.id" class="hover:bg-gray-50">
                                     <td class="border border-gray-300 px-2 py-1.5">
@@ -274,19 +261,17 @@ onMounted(() => {
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.pension) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.income_tax) }}</td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.gross_salary) }}</td>
+                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.health_insurance) }}</td>
+                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.employer_health_insurance) }}</td>
+                                    <td class="border border-gray-300 px-2 py-1.5 text-right font-semibold tabular-nums">{{ money(row.net_pay) }}</td>
                                     <td v-if="finalized" class="border border-gray-300 px-2 py-1.5 text-center">
-                                        <button
-                                            v-if="auth.can('payrolls.finalize')"
-                                            type="button"
-                                            class="rounded px-2 py-0.5 text-xs font-medium"
-                                            :class="row.paid ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'"
-                                            :disabled="busy === `paid-${row.item_id}`"
-                                            :title="row.paid ? 'Mark as not paid' : 'Mark as paid'"
-                                            @click="togglePaid(row)"
-                                        >
-                                            {{ row.paid ? 'Paid' : 'Not paid' }}
-                                        </button>
-                                        <span v-else class="rounded px-2 py-0.5 text-xs font-medium" :class="row.paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">{{ row.paid ? 'Paid' : 'Not paid' }}</span>
+                                        <RouterLink
+                                            v-if="row.payment_journal"
+                                            :to="routeUrl('journals.show', row.payment_journal.id)"
+                                            class="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 hover:bg-green-200"
+                                            :title="`Paid by ${row.payment_journal.gen_id}`"
+                                        >Paid</RouterLink>
+                                        <span v-else class="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Not paid</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -305,6 +290,9 @@ onMounted(() => {
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.pension) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.income_tax) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.gross_salary) }}</td>
+                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.health_insurance) }}</td>
+                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.employer_health_insurance) }}</td>
+                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.net_pay) }}</td>
                                     <td v-if="finalized" class="border border-gray-300 px-2 py-2 text-center tabular-nums">{{ rows.length - unpaid }} / {{ rows.length }}</td>
                                 </tr>
                             </tfoot>
@@ -314,6 +302,7 @@ onMounted(() => {
                     <p class="mt-3 text-xs text-gray-500">
                         Employees with a contract in the month (the latest one when it changed mid-month). Bonus amount = every person on the linked user's invoices × the rate of its category (click it for the breakdown; see Employee Bonus Calculation);
                         approved paid vacation days in the month add bonus amount / {{ data.working_days }} × days. Net salary = base salary + bonus; gross, pension and income tax as the Tax Administration's calculator ({{ summary }}); the employer adds its own pension on top, except for employees in pension.
+                        Health insurance comes from the contract: the employee's share is taken off the net salary (To pay = net salary − employee health insurance, what the PCB CSV pays); the company's is paid on top.
                     </p>
                 </template>
             </FullWidthBox>

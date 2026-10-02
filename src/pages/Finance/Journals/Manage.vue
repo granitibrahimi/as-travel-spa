@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
@@ -26,10 +26,34 @@ const isEdit = Boolean(id);
 // journal — only the field values carry over, not the identity/number.
 const cloneId = ! isEdit ? (route.query.clone ?? null) : null;
 // "Add payment journal" on a finalized payroll opens this form with
-// ?payroll=<year>-<month>: pre-filled from the payroll's `payment_journal`
-// and, once saved, linked to it as a payment journal (`payroll_id`).
+// ?payroll=<year>-<month>: pre-filled from the payroll's `payment_journal`,
+// listing the employees not paid yet. The checked ones are paid by it
+// (`payroll_item_ids`) and the two pre-filled lines follow their total; once
+// saved it's linked to the payroll as a payment journal (`payroll_id`).
 const payrollKey = ! isEdit && ! cloneId ? (route.query.payroll ?? null) : null;
 const payroll = ref(null);
+const payrollItems = ref([]);
+const selectedItems = ref([]);
+const selectedTotal = computed(() => Math.round(payrollItems.value
+    .filter((item) => selectedItems.value.includes(item.id))
+    .reduce((sum, item) => sum + item.net_pay, 0) * 100) / 100);
+const allSelected = computed({
+    get: () => payrollItems.value.length > 0 && selectedItems.value.length === payrollItems.value.length,
+    set: (value) => { selectedItems.value = value ? payrollItems.value.map((item) => item.id) : []; },
+});
+// The pre-filled lines (debit, credit) carry the checked employees' total.
+let paymentLines = [];
+
+watch(selectedTotal, (total) => {
+    const [debit, credit] = paymentLines;
+
+    if (debit && form.entries.includes(debit)) {
+        debit.debit = total || null;
+    }
+    if (credit && form.entries.includes(credit)) {
+        credit.credit = total || null;
+    }
+});
 
 const formOptions = useFormOptionsStore();
 const accounts = computed(() => toOptions(formOptions.accounts));
@@ -76,6 +100,9 @@ onMounted(async () => {
                 { ...blankLine(), account: draft.debit_account_id, debit: draft.amount || null, description: draft.notes },
                 { ...blankLine(), account: draft.credit_account_id, credit: draft.amount || null, description: draft.notes },
             ];
+            paymentLines = form.entries;
+            payrollItems.value = draft.items;
+            selectedItems.value = draft.items.map((item) => item.id);
         }
     }
 
@@ -142,7 +169,7 @@ const totalCredit = computed(() => form.entries.reduce((sum, e) => sum + (parseF
 const balanced = computed(() => Math.round(totalDebit.value * 100) === Math.round(totalCredit.value * 100));
 
 async function submit() {
-    if (processing.value || ! balanced.value) {
+    if (processing.value || ! balanced.value || (payroll.value && ! selectedItems.value.length)) {
         return;
     }
 
@@ -166,7 +193,7 @@ async function submit() {
         reference: form.reference,
         notes: form.notes,
         entries,
-        ...(payroll.value ? { payroll_id: payroll.value.id } : {}),
+        ...(payroll.value ? { payroll_id: payroll.value.id, payroll_item_ids: selectedItems.value } : {}),
     };
 
     try {
@@ -208,6 +235,43 @@ async function submit() {
             <p v-if="payroll" class="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
                 Payment journal for the {{ payroll.period }} payroll. Saving links it to the payroll.
             </p>
+
+            <FullWidthBox v-if="payroll" title="Employees paid" :collapsible="false">
+                <p v-if="! payrollItems.length" class="text-sm text-gray-500">Every salary of this payroll is already paid.</p>
+                <template v-else>
+                    <p v-if="errors.payroll_item_ids" class="mb-3 text-sm text-red-600">{{ errors.payroll_item_ids }}</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse border border-gray-300 text-sm">
+                            <thead>
+                                <tr class="text-left text-xs uppercase text-gray-500">
+                                    <th class="border border-gray-300 px-2 py-2 text-center" style="width: 48px;">
+                                        <input v-model="allSelected" type="checkbox" class="h-4 w-4 cursor-pointer" title="Select all">
+                                    </th>
+                                    <th class="border border-gray-300 px-2 py-2">Employee</th>
+                                    <th class="border border-gray-300 px-2 py-2 text-right" style="width: 140px;">To pay</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in payrollItems" :key="item.id" class="cursor-pointer hover:bg-gray-50" @click="selectedItems = selectedItems.includes(item.id) ? selectedItems.filter((id) => id !== item.id) : [...selectedItems, item.id]">
+                                    <td class="border border-gray-300 px-2 py-1.5 text-center">
+                                        <input :checked="selectedItems.includes(item.id)" type="checkbox" class="pointer-events-none h-4 w-4">
+                                    </td>
+                                    <td class="border border-gray-300 px-2 py-1.5">{{ item.name }}</td>
+                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(item.net_pay) }}</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr class="bg-gray-50 font-semibold">
+                                    <td class="border border-gray-300 px-2 py-2"></td>
+                                    <td class="border border-gray-300 px-2 py-2">{{ selectedItems.length }} of {{ payrollItems.length }} selected</td>
+                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(selectedTotal) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">The checked employees are marked paid by this journal; the next payment journal only offers the rest.</p>
+                </template>
+            </FullWidthBox>
 
             <FullWidthBox title="Journal" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -279,7 +343,7 @@ async function submit() {
                 <RouterLink :to="routeUrl('journals.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
-                <Button type="submit" variant="primary" :disabled="processing || ! balanced">
+                <Button type="submit" variant="primary" :disabled="processing || ! balanced || (payroll && ! selectedItems.length)">
                     {{ processing ? 'Saving…' : (isEdit ? 'Update journal' : 'Create journal') }}
                 </Button>
             </footer>

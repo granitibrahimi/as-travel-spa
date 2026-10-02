@@ -40,7 +40,7 @@ const processing = ref(false);
 const loaded = ref(! isEdit);
 
 const contracts = ref([]);
-const emptyContract = () => ({ id: null, starts_on: '', ends_on: '', base_salary: null, with_bonuses: false, in_pension: false, secondary_job: false });
+const emptyContract = () => ({ id: null, starts_on: '', ends_on: '', base_salary: null, with_bonuses: false, in_pension: false, secondary_job: false, health_insurance: null, employer_health_insurance: null });
 const contractForm = reactive(emptyContract());
 const contractErrors = ref({});
 const savingContract = ref(false);
@@ -123,6 +123,8 @@ async function saveContract() {
         with_bonuses: contractForm.with_bonuses,
         in_pension: contractForm.in_pension,
         secondary_job: contractForm.secondary_job,
+        health_insurance: contractForm.health_insurance || 0,
+        employer_health_insurance: contractForm.employer_health_insurance || 0,
     };
 
     try {
@@ -214,12 +216,14 @@ async function deleteContract() {
                                 <th class="border border-gray-300 px-2 py-2 text-right">Base salary (net)</th>
                                 <th class="border border-gray-300 px-2 py-2 text-center">With bonuses</th>
                                 <th class="border border-gray-300 px-2 py-2">Taxation</th>
+                                <th class="border border-gray-300 px-2 py-2 text-right">Health insurance (employee)</th>
+                                <th class="border border-gray-300 px-2 py-2 text-right">Health insurance (company)</th>
                                 <th v-if="auth.can('employees.edit')" class="border border-gray-300 px-2 py-2 text-center" style="width: 150px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-if="contracts.length === 0">
-                                <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No contracts yet — without an active contract the employee isn't on the payroll.</td>
+                                <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No contracts yet — without an active contract the employee isn't on the payroll.</td>
                             </tr>
                             <tr v-for="contract in contracts" :key="contract.id" :class="contract.id === contractForm.id ? 'bg-yellow-50' : 'hover:bg-gray-50'">
                                 <td class="border border-gray-300 px-2 py-2">{{ contract.starts_on }}</td>
@@ -233,6 +237,8 @@ async function deleteContract() {
                                     <span v-for="label in taxationLabels(contract)" :key="label" class="mr-1 inline-block rounded bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">{{ label }}</span>
                                     <span v-if="! taxationLabels(contract).length" class="text-gray-500">Primary</span>
                                 </td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ contract.health_insurance ? money(contract.health_insurance) : '—' }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ contract.employer_health_insurance ? money(contract.employer_health_insurance) : '—' }}</td>
                                 <td v-if="auth.can('employees.edit')" class="border border-gray-300 px-2 py-2 text-center">
                                     <button type="button" class="text-sm text-blue-600 hover:underline" @click="editContract(contract)">Edit</button>
                                     <button type="button" class="ml-3 text-sm text-red-600 hover:underline" @click="contractToDelete = contract">Delete</button>
@@ -253,9 +259,12 @@ async function deleteContract() {
                             <NiceCheckbox v-model="contractForm.in_pension" label="In pension" :error="contractErrors.in_pension" />
                             <NiceCheckbox v-model="contractForm.secondary_job" label="Secondary job" :error="contractErrors.secondary_job" />
                         </div>
+                        <InputNumber v-model="contractForm.health_insurance" label="Health insurance — employee (monthly)" :error="contractErrors.health_insurance" />
+                        <InputNumber v-model="contractForm.employer_health_insurance" label="Health insurance — company (monthly)" :error="contractErrors.employer_health_insurance" />
                     </div>
                     <p class="mt-2 text-xs text-gray-500">Leave the end date empty for the active contract. To change the salary, end the current contract and add a new one from the next day.
-                        In pension: the employee is retired — no pension contributions, only income tax. Secondary job: we are the secondary employer — income tax is a flat 10% instead of the bands.</p>
+                        In pension: the employee is retired — no pension contributions, only income tax. Secondary job: we are the secondary employer — income tax is a flat 10% instead of the bands.
+                        Health insurance: the employee's share is taken off the net salary they're paid; the company's is paid on top.</p>
                     <div class="mt-3 flex justify-end gap-2">
                         <Button v-if="contractForm.id" type="button" @click="resetContract">Cancel</Button>
                         <Button type="submit" variant="primary" :loading="savingContract">{{ contractForm.id ? 'Save contract' : 'Add contract' }}</Button>

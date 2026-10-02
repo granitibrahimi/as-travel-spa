@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth';
+import { useNotificationsStore } from '../../../stores/notifications.js';
 import ActionsOverlay from '../../../components/ActionsOverlay.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 
@@ -75,6 +76,10 @@ async function confirmDelete() {
         toDelete.value = null;
         emit('deleted', removed);
         emit('close');
+    } catch (error) {
+        // e.g. 424: a payroll's journal can't be deleted.
+        toDelete.value = null;
+        useNotificationsStore().push({ type: 'error', message: error.response?.data?.message ?? 'Could not delete the journal.' });
     } finally {
         deleting.value = false;
     }

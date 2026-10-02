@@ -6,6 +6,7 @@ import api from '../../../helpers/api.js';
 import { castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
+import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
@@ -44,7 +45,8 @@ const actions = computed(() => (journal.value ? [
     ...(auth.can('journals.edit') ? [{ label: 'Edit', to: routeUrl('journals.edit', journal.value.id) }] : []),
     ...(auth.can('journals.create') ? [{ label: 'Clone', to: routeUrl('journals.create', { clone: journal.value.id }) }] : []),
     ...(journal.value.qb_link ? [{ label: 'QB', href: journal.value.qb_link }] : []),
-    ...(auth.can('journals.delete') ? [{ label: 'Delete', danger: true, action: () => (showDelete.value = true) }] : []),
+    // A payroll's journals (`payroll` set) can't be deleted.
+    ...(auth.can('journals.delete') && ! journal.value.payroll ? [{ label: 'Delete', danger: true, action: () => (showDelete.value = true) }] : []),
 ] : []));
 
 onMounted(async () => {
@@ -62,6 +64,9 @@ async function confirmDelete() {
     try {
         await api.delete(`/finance/journals/${id}`);
         router.push(routeUrl('journals.list'));
+    } catch (error) {
+        showDelete.value = false;
+        useNotificationsStore().push({ type: 'error', message: error.response?.data?.message ?? 'Could not delete the journal.' });
     } finally {
         deleting.value = false;
     }
@@ -77,6 +82,11 @@ async function confirmDelete() {
 
             <Loader v-if="! journal" />
             <template v-else>
+                <p v-if="journal.payroll" class="mb-4 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                    {{ journal.payroll.type.name }} journal of the
+                    <RouterLink :to="routeUrl('payrolls.show', journal.payroll.year, journal.payroll.month)" class="font-medium underline">{{ journal.payroll.period }} payroll</RouterLink>.
+                    It can't be deleted.
+                </p>
                 <dl class="mb-4 grid grid-cols-1 gap-x-8 gap-y-1 text-sm md:grid-cols-2">
                     <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">Date</dt><dd>{{ journal.on_date }}</dd></div>
                     <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">Reference</dt><dd>{{ journal.reference || '—' }}</dd></div>
