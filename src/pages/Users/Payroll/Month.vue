@@ -21,10 +21,13 @@ import Loader from '../../../components/Loader.vue';
 // days in the month, counted by the API.
 // POST …/:year/:month saves the draft; POST …/finalize, …/reopen and DELETE …
 // change its state; GET …/excel and (finalized only) …/pcb-csv download it.
-// A finalized month's journals (`saved.journals`): POST …/obligation-journal
-// books the one obligation journal; payment journals are made on the journal
+// A finalized month's journals (`saved.journals`): finalizing books the one
+// obligation journal (reopening deletes it; POST …/obligation-journal rebooks
+// it in place, or brings it back if it was deleted — the way to correct it
+// once payment journals keep the month from being reopened); payment journals are made on the journal
 // form (?payroll=<year>-<month>, pre-filled from `payment_journal`). Deleting
-// a journal disconnects it. A salary is paid once a payment journal covers it
+// a payment journal (DELETE /finance/journals/:id) marks its salaries unpaid;
+// a month can only be reopened once it has none. A salary is paid once a payment journal covers it
 // (`row.paid`, `row.payment_journal`) — chosen on the journal form.
 const route = useRoute();
 const router = useRouter();
@@ -87,8 +90,16 @@ const saveDraft = () => run('save', () => api.post(base), `Payroll for ${data.va
 const finalize = () => run('finalize', () => api.post(`${base}/finalize`), `Payroll for ${data.value.period} finalized.`);
 const reopen = () => run('reopen', () => api.post(`${base}/reopen`), `Payroll for ${data.value.period} reopened as a draft.`);
 const deleteDraft = () => run('delete', () => api.delete(base), `Draft for ${data.value.period} deleted.`);
-const createObligationJournal = () => run('journal', () => api.post(`${base}/obligation-journal`), `Obligation journal for ${data.value.period} created.`);
+const createObligationJournal = () => run('journal', () => api.post(`${base}/obligation-journal`), `Obligation journal for ${data.value.period} booked.`);
 const journals = computed(() => saved.value?.journals ?? []);
+const hasObligationJournal = computed(() => journals.value.some((journal) => journal.type.id === 1));
+const paymentToDelete = ref(null);
+const deletePaymentJournal = () => run('deletePayment', () => api.delete(`/finance/journals/${paymentToDelete.value.id}`), `Payment journal ${paymentToDelete.value.gen_id} deleted.`);
+
+function askDeletePayment(journal) {
+    paymentToDelete.value = journal;
+    confirming.value = 'deletePayment';
+}
 const canPostJournals = computed(() => auth.can('payrolls.finalize') && auth.can('journals.create'));
 const unpaid = computed(() => rows.value.filter((row) => row.paid === false).length);
 
@@ -109,10 +120,17 @@ async function download(action, path, fallbackName) {
 }
 
 const dialogs = {
-    finalize: { title: 'Finalize payroll?', message: () => `${data.value.period} becomes read-only: its figures no longer change with contracts, vacations or factors. Only the last finalized month can be reopened.`, confirm: finalize },
-    reopen: { title: 'Reopen payroll?', message: () => `${data.value.period} goes back to a draft and is recalculated from the current contracts, vacations and factors.`, confirm: reopen },
-    journal: { title: 'Create obligation journal?', message: () => `Books ${data.value.period} on its last day: debit gross salaries and the employer's pension contribution; credit pension contributions, tax on personal income and net salaries.`, confirm: createObligationJournal },
+    finalize: { title: 'Finalize payroll?', message: () => `${data.value.period} becomes read-only: its figures no longer change with contracts, vacations or factors, and its obligation journal is booked. Only the last finalized month can be reopened.`, confirm: finalize },
+    reopen: { title: 'Reopen payroll?', message: () => `${data.value.period} goes back to a draft and is recalculated from the current contracts, vacations and factors. Its obligation journal is deleted and booked again when it's finalized.`, confirm: reopen },
+    journal: {
+        get title() {
+            return hasObligationJournal.value ? 'Rebook obligation journal?' : 'Create obligation journal?';
+        },
+        message: () => `${hasObligationJournal.value ? 'Replaces the lines of the obligation journal (it keeps its number) and b' : 'B'}ooks ${data.value.period} on its last day: debit gross salaries and the employer's pension contribution; credit pension contributions, tax on personal income and net salaries. The employees' health insurance is debited to net salaries and credited to insurance expenses.`,
+        confirm: createObligationJournal,
+    },
     delete: { title: 'Delete draft?', message: () => `The saved draft for ${data.value.period} will be deleted.`, confirm: deleteDraft },
+    deletePayment: { title: 'Delete payment journal?', message: () => `${paymentToDelete.value?.gen_id} will be permanently deleted and its salaries marked as not paid.`, confirm: deletePaymentJournal },
 };
 
 onMounted(() => {
@@ -146,7 +164,11 @@ onMounted(() => {
                     <Button type="button" :loading="busy === 'excel'" @click="download('excel', 'excel', 'payroll.xlsx')">Download Excel</Button>
                     <Button v-if="finalized && auth.can('payrolls.paymentFile')" type="button" :loading="busy === 'pcb'" @click="download('pcb', 'pcb-csv', 'pagat_pcb.csv')">PCB Payment CSV</Button>
                     <Button v-if="saved?.can_delete && auth.can('payrolls.delete')" type="button" @click="confirming = 'delete'">Delete draft</Button>
-                    <Button v-if="saved?.can_reopen && auth.can('payrolls.reopen')" type="button" @click="confirming = 'reopen'">Reopen</Button>
+                    <template v-if="finalized && auth.can('payrolls.reopen')">
+                        <Button v-if="saved.can_reopen" type="button" @click="confirming = 'reopen'">Reopen</Button>
+                        <!-- Disabled buttons swallow hover, so the reason sits on a wrapper. -->
+                        <span v-else :title="saved.reopen_blocker"><Button type="button" disabled>Reopen</Button></span>
+                    </template>
                     <Button v-if="! finalized && auth.can('payrolls.create')" type="button" :variant="saved ? 'secondary' : 'primary'" :loading="busy === 'save'" @click="saveDraft">
                         {{ saved ? 'Save draft again' : 'Save draft' }}
                     </Button>
@@ -166,12 +188,12 @@ onMounted(() => {
             <FullWidthBox v-if="! error && saved" title="Journals" :collapsible="false">
                 <template v-if="canPostJournals && (saved.can_create_obligation_journal || saved.can_add_payment_journal)" #actions>
                     <div class="flex gap-2">
-                        <Button v-if="saved.can_create_obligation_journal" type="button" size="sm" :loading="busy === 'journal'" @click="confirming = 'journal'">Create Obligation Journal</Button>
+                        <Button v-if="saved.can_create_obligation_journal" type="button" size="sm" :loading="busy === 'journal'" @click="confirming = 'journal'">{{ hasObligationJournal ? 'Rebook Obligation Journal' : 'Create Obligation Journal' }}</Button>
                         <Button v-if="saved.can_add_payment_journal" size="sm" :href="routeUrl('journals.create', { payroll: `${year}-${month}` })" @click.prevent="router.push(routeUrl('journals.create', { payroll: `${year}-${month}` }))">Add Payment Journal</Button>
                     </div>
                 </template>
 
-                <p v-if="! journals.length" class="text-sm text-gray-500">No journals. The obligation journal is created when the payroll is saved; once finalized, add a payment journal for each salary payment.</p>
+                <p v-if="! journals.length" class="text-sm text-gray-500">No journals. The obligation journal is created when the payroll is finalized; then add a payment journal for each salary payment.</p>
 
                 <div v-else class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -181,6 +203,7 @@ onMounted(() => {
                                 <th class="border border-gray-300 px-2 py-2">Journal</th>
                                 <th class="border border-gray-300 px-2 py-2" style="width: 120px;">Date</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 140px;">Amount</th>
+                                <th v-if="auth.can('journals.delete')" class="border border-gray-300 px-2 py-2" style="width: 80px;"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -193,6 +216,9 @@ onMounted(() => {
                                 </td>
                                 <td class="border border-gray-300 px-2 py-1.5 tabular-nums">{{ journal.on_date }}</td>
                                 <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(journal.amount) }}</td>
+                                <td v-if="auth.can('journals.delete')" class="border border-gray-300 px-2 py-1.5 text-center">
+                                    <button v-if="journal.type.id === 2" type="button" class="text-xs text-red-600 hover:underline" @click="askDeletePayment(journal)">Delete</button>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -203,7 +229,7 @@ onMounted(() => {
                 <Loader v-if="loading || ! data" />
 
                 <template v-else>
-                    <p v-if="saved && ! finalized" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">A draft shows the figures as they are now; save it again after changing contracts, vacations or factors (that also updates its obligation journal), then finalize.</p>
+                    <p v-if="saved && ! finalized" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">A draft shows the figures as they are now; save it again after changing contracts, vacations or factors, then finalize (that books its obligation journal).</p>
 
                     <div v-if="withoutBankAccount.length" class="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                         {{ withoutBankAccount.length === 1 ? '1 employee has' : `${withoutBankAccount.length} employees have` }} no bank account number and will not be included in the PCB Payment CSV:

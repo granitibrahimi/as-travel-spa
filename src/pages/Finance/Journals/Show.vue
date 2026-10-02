@@ -45,8 +45,9 @@ const actions = computed(() => (journal.value ? [
     ...(auth.can('journals.edit') ? [{ label: 'Edit', to: routeUrl('journals.edit', journal.value.id) }] : []),
     ...(auth.can('journals.create') ? [{ label: 'Clone', to: routeUrl('journals.create', { clone: journal.value.id }) }] : []),
     ...(journal.value.qb_link ? [{ label: 'QB', href: journal.value.qb_link }] : []),
-    // A payroll's journals (`payroll` set) can't be deleted.
-    ...(auth.can('journals.delete') && ! journal.value.payroll ? [{ label: 'Delete', danger: true, action: () => (showDelete.value = true) }] : []),
+    // A payroll's obligation journal can't be deleted; its payment journals
+    // can (their salaries are unpaid again).
+    ...(auth.can('journals.delete') && journal.value.payroll?.type.id !== 1 ? [{ label: 'Delete', danger: true, action: () => (showDelete.value = true) }] : []),
 ] : []));
 
 onMounted(async () => {
@@ -85,7 +86,7 @@ async function confirmDelete() {
                 <p v-if="journal.payroll" class="mb-4 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
                     {{ journal.payroll.type.name }} journal of the
                     <RouterLink :to="routeUrl('payrolls.show', journal.payroll.year, journal.payroll.month)" class="font-medium underline">{{ journal.payroll.period }} payroll</RouterLink>.
-                    It can't be deleted.
+                    {{ journal.payroll.type.id === 1 ? "It can't be deleted." : 'Deleting it marks its salaries as not paid.' }}
                 </p>
                 <dl class="mb-4 grid grid-cols-1 gap-x-8 gap-y-1 text-sm md:grid-cols-2">
                     <div class="flex justify-between border-b border-gray-100 py-1"><dt class="text-gray-500">Date</dt><dd>{{ journal.on_date }}</dd></div>
@@ -167,7 +168,7 @@ async function confirmDelete() {
         <ConfirmDialog
             :show="showDelete"
             title="Delete journal?"
-            :message="journal ? `${journal.gen_id} will be permanently deleted.` : ''"
+            :message="journal ? `${journal.gen_id} will be permanently deleted.${journal.payroll ? ` Its salaries in the ${journal.payroll.period} payroll will be marked as not paid.` : ''}` : ''"
             confirm-label="Yes, delete"
             confirm-variant="danger"
             :processing="deleting"

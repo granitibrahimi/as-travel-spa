@@ -77,7 +77,7 @@ async function confirmDelete() {
         emit('deleted', removed);
         emit('close');
     } catch (error) {
-        // e.g. 424: a payroll's journal can't be deleted.
+        // e.g. 424: a payroll's obligation journal can't be deleted.
         toDelete.value = null;
         useNotificationsStore().push({ type: 'error', message: error.response?.data?.message ?? 'Could not delete the journal.' });
     } finally {
