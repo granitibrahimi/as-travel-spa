@@ -55,7 +55,7 @@ const creditRows = computed(() => Object.entries(preview.value?.credits ?? {})
 
 onMounted(async () => {
     try {
-        const { data } = await api.get(`/finance/bsp-sync/preview/${hash}`);
+        const { data } = await api.get(`/finance/bsp-sync/preview/${hash}`, { notFoundRedirect: false });
         preview.value = castResource(data);
 
         if (! preview.value?.fullMatch) {

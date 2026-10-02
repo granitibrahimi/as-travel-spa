@@ -84,7 +84,7 @@ async function refresh() {
     error.value = '';
 
     try {
-        const { data } = await api.get(`/finance/bsp-sync/preview/${preview.value.hash}`);
+        const { data } = await api.get(`/finance/bsp-sync/preview/${preview.value.hash}`, { notFoundRedirect: false });
         preview.value = castResource(data);
     } catch (e) {
         error.value = e.response?.status === 404

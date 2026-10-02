@@ -4,7 +4,7 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import { initTheme } from './helpers/theme';
-import { setUnauthenticatedHandler, setForbiddenHandler } from './helpers/api';
+import { setUnauthenticatedHandler, setForbiddenHandler, setNotFoundHandler } from './helpers/api';
 import { useAuthStore } from './stores/auth';
 import { usePresenceStore } from './stores/presence';
 import { useIdleStore } from './stores/idle';
@@ -36,6 +36,21 @@ setUnauthenticatedHandler(() => {
 setForbiddenHandler(() => {
     if (router.currentRoute.value.name !== 'forbidden') {
         router.push({ name: 'forbidden' });
+    }
+});
+
+// A 404 while loading a record means it doesn't exist; render the 404 page in
+// place, keeping the URL so the user can see what wasn't found.
+setNotFoundHandler(() => {
+    const current = router.currentRoute.value;
+
+    if (current.name !== 'not-found') {
+        router.replace({
+            name: 'not-found',
+            params: { pathMatch: current.path.substring(1).split('/') },
+            query: current.query,
+            hash: current.hash,
+        });
     }
 });
 

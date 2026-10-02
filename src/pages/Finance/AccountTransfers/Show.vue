@@ -18,17 +18,10 @@ const router = useRouter();
 const id = route.params.id;
 
 const transfer = ref(null);
-const notFound = ref(false);
 const showDelete = ref(false);
 const deleting = ref(false);
 
-const title = computed(() => {
-    if (notFound.value) {
-        return 'Transfer not found';
-    }
-
-    return transfer.value ? `Transfer ${transfer.value.gen_id}` : `Transfer #${id}`;
-});
+const title = computed(() => (transfer.value ? `Transfer ${transfer.value.gen_id}` : `Transfer #${id}`));
 
 // Edit/Delete/QB/Journal — the ⋯ dropdown, per the row-actions convention
 // (see AccountTransfers/Index.vue, whose rowActions this mirrors minus "View").
@@ -48,16 +41,8 @@ const actions = computed(() => (transfer.value ? [
 ] : []));
 
 onMounted(async () => {
-    try {
-        const { data } = await api.get(`/finance/account-transfers/${id}`);
-        transfer.value = castResource(data);
-    } catch (error) {
-        if (error.response?.status === 404) {
-            notFound.value = true;
-        } else {
-            throw error;
-        }
-    }
+    const { data } = await api.get(`/finance/account-transfers/${id}`);
+    transfer.value = castResource(data);
 });
 
 async function confirmDelete() {
@@ -83,12 +68,7 @@ async function confirmDelete() {
                 <DropdownMenu :items="actions" />
             </template>
 
-            <div v-if="notFound" class="py-16 text-center">
-                <p class="text-5xl font-bold text-gray-300">404</p>
-                <p class="mt-3 text-gray-600">Transfer #{{ id }} doesn't exist — it may have been deleted.</p>
-            </div>
-
-            <Loader v-else-if="! transfer" />
+            <Loader v-if="! transfer" />
             <template v-else>
                 <table class="w-full border-collapse border border-gray-300 text-sm">
                     <tbody>

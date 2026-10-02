@@ -55,6 +55,17 @@ export function setForbiddenHandler(handler) {
     onForbidden = handler;
 }
 
+// A 404 on a GET means the record the page is loading doesn't exist (bad id,
+// or it was deleted) — show the "not found" page instead of a stuck loader.
+// Only GETs: a failed mutation shouldn't navigate away. A request where a 404
+// is an expected state handles it itself by passing `notFoundRedirect: false`.
+// Set by main.js once the router exists.
+let onNotFound = () => {};
+
+export function setNotFoundHandler(handler) {
+    onNotFound = handler;
+}
+
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -65,6 +76,10 @@ api.interceptors.response.use(
 
         if (error.response?.status === 403) {
             onForbidden();
+        }
+
+        if (error.response?.status === 404 && error.config?.method === 'get' && error.config.notFoundRedirect !== false) {
+            onNotFound();
         }
 
         return Promise.reject(error);
