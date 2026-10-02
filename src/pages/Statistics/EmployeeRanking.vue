@@ -28,7 +28,7 @@ function apiMonthsAgo(months) {
     return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
 }
 
-const from = ref(apiMonthsAgo(1));
+const from = ref(apiMonthsAgo(0));
 const to = ref(todayApiDate());
 // Roles come from the shared form-options store (user_roles category).
 const roles = computed(() => formOptions.userRoles.map((role) => ({
