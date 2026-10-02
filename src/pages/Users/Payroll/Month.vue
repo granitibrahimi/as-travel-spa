@@ -126,7 +126,7 @@ const dialogs = {
         get title() {
             return hasObligationJournal.value ? 'Rebook obligation journal?' : 'Create obligation journal?';
         },
-        message: () => `${hasObligationJournal.value ? 'Replaces the lines of the obligation journal (it keeps its number) and b' : 'B'}ooks ${data.value.period} on its last day: debit gross salaries and the employer's pension contribution; credit pension contributions, tax on personal income and net salaries. The employees' health insurance is debited to net salaries and credited to insurance expenses.`,
+        message: () => `${hasObligationJournal.value ? 'Replaces the lines of the obligation journal (it keeps its number) and b' : 'B'}ooks ${data.value.period} on its last day: debit gross salaries and the employer's pension contribution; credit pension contributions, tax on personal income and net salaries. The company's health insurance (in the gross) and the employees' (debited to net salaries) are credited to insurance expenses.`,
         confirm: createObligationJournal,
     },
     delete: { title: 'Delete draft?', message: () => `The saved draft for ${data.value.period} will be deleted.`, confirm: deleteDraft },
@@ -328,7 +328,7 @@ onMounted(() => {
                     <p class="mt-3 text-xs text-gray-500">
                         Employees with a contract in the month (the latest one when it changed mid-month). Bonus amount = every person on the linked user's invoices × the rate of its category (click it for the breakdown; see Employee Bonus Calculation);
                         approved paid vacation days in the month add bonus amount / {{ data.working_days }} × days. Net salary = base salary + bonus; gross, pension and income tax as the Tax Administration's calculator ({{ summary }}); the employer adds its own pension on top, except for employees in pension.
-                        Health insurance comes from the contract: the employee's share is taken off the net salary (To pay = net salary − employee health insurance, what the PCB CSV pays); the company's is paid on top.
+                        Health insurance comes from the contract: the employee's share is taken off the net salary (To pay = net salary − employee health insurance, what the PCB CSV pays); the company's is a taxable benefit added to the gross salary, which is grossed up so the company bears its pension and tax.
                     </p>
                 </template>
             </FullWidthBox>

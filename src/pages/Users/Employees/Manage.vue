@@ -264,7 +264,7 @@ async function deleteContract() {
                     </div>
                     <p class="mt-2 text-xs text-gray-500">Leave the end date empty for the active contract. To change the salary, end the current contract and add a new one from the next day.
                         In pension: the employee is retired — no pension contributions, only income tax. Secondary job: we are the secondary employer — income tax is a flat 10% instead of the bands.
-                        Health insurance: the employee's share is taken off the net salary they're paid; the company's is paid on top.</p>
+                        Health insurance: the employee's share is taken off the net salary they're paid; the company's is a taxable benefit added to the gross salary (the company bears its pension and tax).</p>
                     <div class="mt-3 flex justify-end gap-2">
                         <Button v-if="contractForm.id" type="button" @click="resetContract">Cancel</Button>
                         <Button type="submit" variant="primary" :loading="savingContract">{{ contractForm.id ? 'Save contract' : 'Add contract' }}</Button>
