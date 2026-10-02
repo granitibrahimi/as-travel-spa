@@ -6,6 +6,7 @@ import api from '../../../helpers/api.js';
 import { castResource, castMutation } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
+import { useNotificationsStore } from '../../../stores/notifications.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -31,6 +32,13 @@ const cloneId = ! isEdit ? (route.query.clone ?? null) : null;
 // (`payroll_item_ids`) and the two pre-filled lines follow their total; once
 // saved it's linked to the payroll as a payment journal (`payroll_id`).
 const payrollKey = ! isEdit && ! cloneId ? (route.query.payroll ?? null) : null;
+// "Add pension & tax journal" adds &type=taxes: pre-filled from the payroll's
+// `taxes_journal` — a DEBIT line per tax account for what the obligation
+// journal owes and the CREDIT bank line for the total. Only the bank account
+// (and date/reference/notes) can change; the API refuses anything else. An
+// existing pension & tax journal is edited under the same lock.
+const taxesMode = Boolean(payrollKey) && route.query.type === 'taxes';
+const taxesLocked = ref(false);
 const payroll = ref(null);
 const payrollItems = ref([]);
 const selectedItems = ref([]);
@@ -86,7 +94,28 @@ onMounted(async () => {
         ? await api.get(`/finance/journals/${sourceId}`).then((r) => castResource(r.data))
         : null;
 
-    if (payrollKey) {
+    if (taxesMode) {
+        const [payrollYear, payrollMonth] = String(payrollKey).split('-');
+        const data = castResource((await api.get(`/users/payrolls/${payrollYear}/${payrollMonth}`)).data);
+        const draft = data.taxes_journal;
+
+        if (! draft) {
+            useNotificationsStore().push({ type: 'error', message: `The pension and tax of the ${data.period} payroll are already paid.` });
+            router.replace(routeUrl('payrolls.show', payrollYear, payrollMonth));
+
+            return;
+        }
+
+        payroll.value = { id: draft.payroll_id, year: payrollYear, month: payrollMonth, period: data.period };
+        taxesLocked.value = true;
+        form.date = draft.date;
+        form.reference = draft.reference;
+        form.notes = draft.notes;
+        form.entries = [
+            ...draft.lines.map((line) => ({ ...blankLine(), account: line.account_id, debit: line.amount, description: line.description, customer_supplier: line.customer_supplier, relation_label: line.relation })),
+            { ...blankLine(), account: draft.credit_account_id, credit: draft.amount, description: draft.notes },
+        ];
+    } else if (payrollKey) {
         const [payrollYear, payrollMonth] = String(payrollKey).split('-');
         const data = castResource((await api.get(`/users/payrolls/${payrollYear}/${payrollMonth}`)).data);
         const draft = data.payment_journal;
@@ -110,6 +139,7 @@ onMounted(async () => {
         // A clone copies the field values but not the journal number.
         if (isEdit) {
             genId.value = journal.gen_id;
+            taxesLocked.value = journal.payroll?.type.id === 3;
         }
         form.date = journal.on_date;
         form.reference = journal.reference ?? '';
@@ -129,6 +159,9 @@ onMounted(async () => {
 
     ready.value = true;
 });
+
+// In a pension & tax journal only the credit (bank) line's account can change.
+const editable = (entry, field) => ! taxesLocked.value || (field === 'account' && Boolean(entry.credit));
 
 // Only lines with at least one input filled are sent — blank rows (the
 // default 4, or ones the user never got to) shouldn't trigger validation.
@@ -169,7 +202,7 @@ const totalCredit = computed(() => form.entries.reduce((sum, e) => sum + (parseF
 const balanced = computed(() => Math.round(totalDebit.value * 100) === Math.round(totalCredit.value * 100));
 
 async function submit() {
-    if (processing.value || ! balanced.value || (payroll.value && ! selectedItems.value.length)) {
+    if (processing.value || ! balanced.value || (payroll.value && ! taxesMode && ! selectedItems.value.length)) {
         return;
     }
 
@@ -193,7 +226,8 @@ async function submit() {
         reference: form.reference,
         notes: form.notes,
         entries,
-        ...(payroll.value ? { payroll_id: payroll.value.id, payroll_item_ids: selectedItems.value } : {}),
+        ...(payroll.value && taxesMode ? { payroll_id: payroll.value.id, payroll_journal_type: 'taxes' } : {}),
+        ...(payroll.value && ! taxesMode ? { payroll_id: payroll.value.id, payroll_item_ids: selectedItems.value } : {}),
     };
 
     try {
@@ -233,10 +267,14 @@ async function submit() {
             </p>
 
             <p v-if="payroll" class="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-                Payment journal for the {{ payroll.period }} payroll. Saving links it to the payroll.
+                {{ taxesMode ? 'Pension & tax' : 'Payment' }} journal for the {{ payroll.period }} payroll. Saving links it to the payroll.
             </p>
 
-            <FullWidthBox v-if="payroll" title="Employees paid" :collapsible="false">
+            <p v-if="taxesLocked" class="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                Pays the pension contribution and the tax on personal income in full, as booked by the obligation journal. Only the bank account can be changed.
+            </p>
+
+            <FullWidthBox v-if="payroll && ! taxesMode" title="Employees paid" :collapsible="false">
                 <p v-if="! payrollItems.length" class="text-sm text-gray-500">Every salary of this payroll is already paid.</p>
                 <template v-else>
                     <p v-if="errors.payroll_item_ids" class="mb-3 text-sm text-red-600">{{ errors.payroll_item_ids }}</p>
@@ -291,28 +329,30 @@ async function submit() {
                         class="grid grid-cols-1 gap-2 rounded border border-gray-100 p-2 lg:grid-cols-12"
                     >
                         <div class="lg:col-span-3">
-                            <SearchSelect v-model="entry.account" :options="accounts" placeholder="Account…" :error="errors[`entries.${i}.account`]" />
+                            <SearchSelect v-model="entry.account" :options="accounts" placeholder="Account…" :disabled="! editable(entry, 'account')" :error="errors[`entries.${i}.account`]" />
                         </div>
                         <div class="lg:col-span-3">
-                            <InputText v-model="entry.description" placeholder="Description" :error="errors[`entries.${i}.description`]" />
+                            <InputText v-model="entry.description" placeholder="Description" :disabled="! editable(entry)" :error="errors[`entries.${i}.description`]" />
                         </div>
                         <div class="lg:col-span-2">
                             <AsyncSelect
                                 v-model="entry.customer_supplier"
                                 url="/finance/journals/relations"
                                 placeholder="Customer / supplier"
+                                :disabled="! editable(entry)"
                                 :initial-option="entry.customer_supplier ? { id: entry.customer_supplier, name: entry.relation_label } : null"
                             />
                         </div>
                         <div class="lg:col-span-2">
-                            <SearchSelect v-model="entry.tax_type" :options="taxTypes" placeholder="Tax" />
+                            <SearchSelect v-model="entry.tax_type" :options="taxTypes" placeholder="Tax" :disabled="! editable(entry)" />
                         </div>
                         <div>
-                            <InputNumber v-model="entry.debit" placeholder="Debit" :disabled="Boolean(entry.credit)" @input="onDebit(entry)" />
+                            <InputNumber v-model="entry.debit" placeholder="Debit" :disabled="! editable(entry) || Boolean(entry.credit)" @input="onDebit(entry)" />
                         </div>
                         <div class="flex items-start gap-1">
-                            <InputNumber v-model="entry.credit" placeholder="Credit" :disabled="Boolean(entry.debit)" @input="onCredit(entry)" />
+                            <InputNumber v-model="entry.credit" placeholder="Credit" :disabled="! editable(entry) || Boolean(entry.debit)" @input="onCredit(entry)" />
                             <button
+                                v-if="! taxesLocked"
                                 type="button"
                                 class="mt-1 shrink-0 rounded px-1.5 text-gray-400 hover:text-red-600"
                                 title="Remove line"
@@ -325,7 +365,8 @@ async function submit() {
                 </div>
 
                 <div class="mt-3 flex items-center justify-between">
-                    <Button type="button" size="sm" @click="addRow">+ Add line</Button>
+                    <Button v-if="! taxesLocked" type="button" size="sm" @click="addRow">+ Add line</Button>
+                    <span v-else></span>
                     <div class="flex items-center gap-4 text-sm">
                         <span class="text-gray-500">Debit <span class="font-semibold tabular-nums text-gray-800">{{ money(totalDebit) }}</span></span>
                         <span class="text-gray-500">Credit <span class="font-semibold tabular-nums text-gray-800">{{ money(totalCredit) }}</span></span>
@@ -343,7 +384,7 @@ async function submit() {
                 <RouterLink :to="routeUrl('journals.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
-                <Button type="submit" variant="primary" :disabled="processing || ! balanced || (payroll && ! selectedItems.length)">
+                <Button type="submit" variant="primary" :disabled="processing || ! balanced || (payroll && ! taxesMode && ! selectedItems.length)">
                     {{ processing ? 'Saving…' : (isEdit ? 'Update journal' : 'Create journal') }}
                 </Button>
             </footer>

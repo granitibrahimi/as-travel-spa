@@ -27,7 +27,9 @@ import Loader from '../../../components/Loader.vue';
 // once payment journals keep the month from being reopened); payment journals are made on the journal
 // form (?payroll=<year>-<month>, pre-filled from `payment_journal`). Deleting
 // a payment journal (DELETE /finance/journals/:id) marks its salaries unpaid;
-// a month can only be reopened once it has none. A salary is paid once a payment journal covers it
+// a month can only be reopened once it has none. The one pension & tax
+// journal (?payroll=…&type=taxes, pre-filled from `taxes_journal`) pays the
+// obligation's pension and income tax in full. A salary is paid once a payment journal covers it
 // (`row.paid`, `row.payment_journal`) — chosen on the journal form.
 const route = useRoute();
 const router = useRouter();
@@ -94,7 +96,7 @@ const createObligationJournal = () => run('journal', () => api.post(`${base}/obl
 const journals = computed(() => saved.value?.journals ?? []);
 const hasObligationJournal = computed(() => journals.value.some((journal) => journal.type.id === 1));
 const paymentToDelete = ref(null);
-const deletePaymentJournal = () => run('deletePayment', () => api.delete(`/finance/journals/${paymentToDelete.value.id}`), `Payment journal ${paymentToDelete.value.gen_id} deleted.`);
+const deletePaymentJournal = () => run('deletePayment', () => api.delete(`/finance/journals/${paymentToDelete.value.id}`), `Journal ${paymentToDelete.value.gen_id} deleted.`);
 
 function askDeletePayment(journal) {
     paymentToDelete.value = journal;
@@ -130,7 +132,13 @@ const dialogs = {
         confirm: createObligationJournal,
     },
     delete: { title: 'Delete draft?', message: () => `The saved draft for ${data.value.period} will be deleted.`, confirm: deleteDraft },
-    deletePayment: { title: 'Delete payment journal?', message: () => `${paymentToDelete.value?.gen_id} will be permanently deleted and its salaries marked as not paid.`, confirm: deletePaymentJournal },
+    deletePayment: {
+        get title() {
+            return `Delete ${paymentToDelete.value?.type.id === 3 ? 'pension & tax' : 'payment'} journal?`;
+        },
+        message: () => `${paymentToDelete.value?.gen_id} will be permanently deleted and ${paymentToDelete.value?.type.id === 3 ? 'the pension and tax marked as not paid' : 'its salaries marked as not paid'}.`,
+        confirm: deletePaymentJournal,
+    },
 };
 
 onMounted(() => {
@@ -186,14 +194,15 @@ onMounted(() => {
             <p v-if="error" class="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">{{ error }}</p>
 
             <FullWidthBox v-if="! error && saved" title="Journals" :collapsible="false">
-                <template v-if="canPostJournals && (saved.can_create_obligation_journal || saved.can_add_payment_journal)" #actions>
+                <template v-if="canPostJournals && (saved.can_create_obligation_journal || saved.can_add_payment_journal || saved.can_add_taxes_journal)" #actions>
                     <div class="flex gap-2">
                         <Button v-if="saved.can_create_obligation_journal" type="button" size="sm" :loading="busy === 'journal'" @click="confirming = 'journal'">{{ hasObligationJournal ? 'Rebook Obligation Journal' : 'Create Obligation Journal' }}</Button>
+                        <Button v-if="saved.can_add_taxes_journal" size="sm" :href="routeUrl('journals.create', { payroll: `${year}-${month}`, type: 'taxes' })" @click.prevent="router.push(routeUrl('journals.create', { payroll: `${year}-${month}`, type: 'taxes' }))">Add Pension &amp; Tax Journal</Button>
                         <Button v-if="saved.can_add_payment_journal" size="sm" :href="routeUrl('journals.create', { payroll: `${year}-${month}` })" @click.prevent="router.push(routeUrl('journals.create', { payroll: `${year}-${month}` }))">Add Payment Journal</Button>
                     </div>
                 </template>
 
-                <p v-if="! journals.length" class="text-sm text-gray-500">No journals. The obligation journal is created when the payroll is finalized; then add a payment journal for each salary payment.</p>
+                <p v-if="! journals.length" class="text-sm text-gray-500">No journals. The obligation journal is created when the payroll is finalized; then add a payment journal for each salary payment and a pension &amp; tax journal.</p>
 
                 <div v-else class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
@@ -209,7 +218,7 @@ onMounted(() => {
                         <tbody>
                             <tr v-for="journal in journals" :key="journal.id" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-1.5">
-                                    <span class="inline-block rounded px-2 py-0.5 text-xs font-medium" :class="journal.type.id === 1 ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700'">{{ journal.type.name }}</span>
+                                    <span class="inline-block rounded px-2 py-0.5 text-xs font-medium" :class="{ 1: 'bg-indigo-100 text-indigo-700', 2: 'bg-green-100 text-green-700', 3: 'bg-amber-100 text-amber-700' }[journal.type.id]">{{ journal.type.name }}</span>
                                 </td>
                                 <td class="border border-gray-300 px-2 py-1.5">
                                     <RouterLink :to="routeUrl('journals.show', journal.id)" class="font-medium text-blue-600 hover:underline">{{ journal.gen_id }}</RouterLink>
@@ -217,7 +226,7 @@ onMounted(() => {
                                 <td class="border border-gray-300 px-2 py-1.5 tabular-nums">{{ journal.on_date }}</td>
                                 <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(journal.amount) }}</td>
                                 <td v-if="auth.can('journals.delete')" class="border border-gray-300 px-2 py-1.5 text-center">
-                                    <button v-if="journal.type.id === 2" type="button" class="text-xs text-red-600 hover:underline" @click="askDeletePayment(journal)">Delete</button>
+                                    <button v-if="journal.type.id !== 1" type="button" class="text-xs text-red-600 hover:underline" @click="askDeletePayment(journal)">Delete</button>
                                 </td>
                             </tr>
                         </tbody>
