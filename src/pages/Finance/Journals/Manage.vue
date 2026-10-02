@@ -108,7 +108,8 @@ onMounted(async () => {
 
         payroll.value = { id: draft.payroll_id, year: payrollYear, month: payrollMonth, period: data.period };
         taxesLocked.value = true;
-        form.date = draft.date;
+        // No date pre-filled: it's entered as the day they're actually paid.
+        form.date = draft.date ?? '';
         form.reference = draft.reference;
         form.notes = draft.notes;
         form.entries = [
@@ -122,7 +123,8 @@ onMounted(async () => {
 
         if (draft) {
             payroll.value = { id: draft.payroll_id, year: payrollYear, month: payrollMonth, period: data.period };
-            form.date = draft.date;
+            // No date pre-filled: it's entered as the day they're actually paid.
+            form.date = draft.date ?? '';
             form.reference = draft.reference;
             form.notes = draft.notes;
             form.entries = [
@@ -202,7 +204,7 @@ const totalCredit = computed(() => form.entries.reduce((sum, e) => sum + (parseF
 const balanced = computed(() => Math.round(totalDebit.value * 100) === Math.round(totalCredit.value * 100));
 
 async function submit() {
-    if (processing.value || ! balanced.value || (payroll.value && ! taxesMode && ! selectedItems.value.length)) {
+    if (processing.value || ! form.date || ! balanced.value || (payroll.value && ! taxesMode && ! selectedItems.value.length)) {
         return;
     }
 
@@ -267,7 +269,7 @@ async function submit() {
             </p>
 
             <p v-if="payroll" class="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-                {{ taxesMode ? 'Pension & tax' : 'Payment' }} journal for the {{ payroll.period }} payroll. Saving links it to the payroll.
+                {{ taxesMode ? 'Pension & tax' : 'Salaries payment' }} journal for the {{ payroll.period }} payroll. Saving links it to the payroll.
             </p>
 
             <p v-if="taxesLocked" class="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -313,7 +315,7 @@ async function submit() {
 
             <FullWidthBox title="Journal" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <DateInput v-model="form.date" label="Date *" :error="errors.date" />
+                    <DateInput v-model="form.date" label="Date *" :error="errors.date || (! form.date ? 'Enter a date.' : '')" />
                     <InputText v-model="form.reference" label="Reference" maxlength="21" :error="errors.reference" />
                     <InputText v-model="form.notes" label="Notes" :error="errors.notes" />
                 </div>
@@ -384,7 +386,7 @@ async function submit() {
                 <RouterLink :to="routeUrl('journals.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
-                <Button type="submit" variant="primary" :disabled="processing || ! balanced || (payroll && ! taxesMode && ! selectedItems.length)">
+                <Button type="submit" variant="primary" :disabled="processing || ! form.date || ! balanced || (payroll && ! taxesMode && ! selectedItems.length)">
                     {{ processing ? 'Saving…' : (isEdit ? 'Update journal' : 'Create journal') }}
                 </Button>
             </footer>

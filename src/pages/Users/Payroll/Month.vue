@@ -22,10 +22,9 @@ import Loader from '../../../components/Loader.vue';
 // POST …/:year/:month saves the draft; POST …/finalize, …/reopen and DELETE …
 // change its state; GET …/excel and (finalized only) …/pcb-csv download it.
 // A finalized month's journals (`saved.journals`): finalizing books the one
-// obligation journal (reopening deletes it; POST …/obligation-journal rebooks
-// it in place, or brings it back if it was deleted — the way to correct it
-// once payment journals keep the month from being reopened); payment journals are made on the journal
-// form (?payroll=<year>-<month>, pre-filled from `payment_journal`). Deleting
+// obligation journal (reopening deletes it); salaries payment journals are
+// made on the journal form (?payroll=<year>-<month>, pre-filled from
+// `payment_journal`). Deleting
 // a payment journal (DELETE /finance/journals/:id) marks its salaries unpaid;
 // a month can only be reopened once it has none. The one pension & tax
 // journal (?payroll=…&type=taxes, pre-filled from `taxes_journal`) pays the
@@ -92,9 +91,7 @@ const saveDraft = () => run('save', () => api.post(base), `Payroll for ${data.va
 const finalize = () => run('finalize', () => api.post(`${base}/finalize`), `Payroll for ${data.value.period} finalized.`);
 const reopen = () => run('reopen', () => api.post(`${base}/reopen`), `Payroll for ${data.value.period} reopened as a draft.`);
 const deleteDraft = () => run('delete', () => api.delete(base), `Draft for ${data.value.period} deleted.`);
-const createObligationJournal = () => run('journal', () => api.post(`${base}/obligation-journal`), `Obligation journal for ${data.value.period} booked.`);
 const journals = computed(() => saved.value?.journals ?? []);
-const hasObligationJournal = computed(() => journals.value.some((journal) => journal.type.id === 1));
 const paymentToDelete = ref(null);
 const deletePaymentJournal = () => run('deletePayment', () => api.delete(`/finance/journals/${paymentToDelete.value.id}`), `Journal ${paymentToDelete.value.gen_id} deleted.`);
 
@@ -124,13 +121,6 @@ async function download(action, path, fallbackName) {
 const dialogs = {
     finalize: { title: 'Finalize payroll?', message: () => `${data.value.period} becomes read-only: its figures no longer change with contracts, vacations or factors, and its obligation journal is booked. Only the last finalized month can be reopened.`, confirm: finalize },
     reopen: { title: 'Reopen payroll?', message: () => `${data.value.period} goes back to a draft and is recalculated from the current contracts, vacations and factors. Its obligation journal is deleted and booked again when it's finalized.`, confirm: reopen },
-    journal: {
-        get title() {
-            return hasObligationJournal.value ? 'Rebook obligation journal?' : 'Create obligation journal?';
-        },
-        message: () => `${hasObligationJournal.value ? 'Replaces the lines of the obligation journal (it keeps its number) and b' : 'B'}ooks ${data.value.period} on its last day: debit gross salaries and the employer's pension contribution; credit pension contributions, tax on personal income and net salaries. The company's health insurance (in the gross) and the employees' (debited to net salaries) are credited to insurance expenses.`,
-        confirm: createObligationJournal,
-    },
     delete: { title: 'Delete draft?', message: () => `The saved draft for ${data.value.period} will be deleted.`, confirm: deleteDraft },
     deletePayment: {
         get title() {
@@ -194,15 +184,14 @@ onMounted(() => {
             <p v-if="error" class="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">{{ error }}</p>
 
             <FullWidthBox v-if="! error && saved" title="Journals" :collapsible="false">
-                <template v-if="canPostJournals && (saved.can_create_obligation_journal || saved.can_add_payment_journal || saved.can_add_taxes_journal)" #actions>
+                <template v-if="canPostJournals && (saved.can_add_payment_journal || saved.can_add_taxes_journal)" #actions>
                     <div class="flex gap-2">
-                        <Button v-if="saved.can_create_obligation_journal" type="button" size="sm" :loading="busy === 'journal'" @click="confirming = 'journal'">{{ hasObligationJournal ? 'Rebook Obligation Journal' : 'Create Obligation Journal' }}</Button>
                         <Button v-if="saved.can_add_taxes_journal" size="sm" :href="routeUrl('journals.create', { payroll: `${year}-${month}`, type: 'taxes' })" @click.prevent="router.push(routeUrl('journals.create', { payroll: `${year}-${month}`, type: 'taxes' }))">Add Pension &amp; Tax Journal</Button>
-                        <Button v-if="saved.can_add_payment_journal" size="sm" :href="routeUrl('journals.create', { payroll: `${year}-${month}` })" @click.prevent="router.push(routeUrl('journals.create', { payroll: `${year}-${month}` }))">Add Payment Journal</Button>
+                        <Button v-if="saved.can_add_payment_journal" size="sm" :href="routeUrl('journals.create', { payroll: `${year}-${month}` })" @click.prevent="router.push(routeUrl('journals.create', { payroll: `${year}-${month}` }))">Add Salaries Payment Journal</Button>
                     </div>
                 </template>
 
-                <p v-if="! journals.length" class="text-sm text-gray-500">No journals. The obligation journal is created when the payroll is finalized; then add a payment journal for each salary payment and a pension &amp; tax journal.</p>
+                <p v-if="! journals.length" class="text-sm text-gray-500">No journals. The obligation journal is created when the payroll is finalized; then add a salaries payment journal for each salary payment and a pension &amp; tax journal.</p>
 
                 <div v-else class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
