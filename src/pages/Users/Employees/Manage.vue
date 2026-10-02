@@ -70,6 +70,20 @@ onMounted(() => {
     }
 });
 
+// Feedback after a save: a toast, plus "Saved at …" by the employee's Save
+// button and a brief highlight on the contract row that was saved.
+const savedAt = ref('');
+const savedContractId = ref(null);
+let savedContractTimer = null;
+
+const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+function flashContract(contractId) {
+    savedContractId.value = contractId;
+    clearTimeout(savedContractTimer);
+    savedContractTimer = setTimeout(() => (savedContractId.value = null), 3000);
+}
+
 async function submit() {
     if (processing.value) {
         return;
@@ -81,9 +95,11 @@ async function submit() {
     try {
         if (isEdit) {
             await api.put(`/users/employees/${id}`, form);
-            notifications.push({ type: 'success', message: 'Employee saved.' });
+            notifications.push({ type: 'success', message: `${form.first_name} ${form.last_name} saved.` });
+            savedAt.value = now();
         } else {
             const { id: newId } = castMutation((await api.post('/users/employees', form)).data);
+            notifications.push({ type: 'success', message: `${form.first_name} ${form.last_name} created. Add their first contract below.` });
             // Straight to the edit page so the first contract can be added.
             router.push(routeUrl('employees.edit', newId));
         }
@@ -128,11 +144,14 @@ async function saveContract() {
     };
 
     try {
-        await (contractForm.id
-            ? api.put(`/users/employees/${id}/contracts/${contractForm.id}`, payload)
+        const editing = contractForm.id;
+        const { data } = await (editing
+            ? api.put(`/users/employees/${id}/contracts/${editing}`, payload)
             : api.post(`/users/employees/${id}/contracts`, payload));
         resetContract();
         await fetchEmployee();
+        notifications.push({ type: 'success', message: editing ? `Contract from ${payload.starts_on} updated.` : `Contract from ${payload.starts_on} added.` });
+        flashContract(editing ?? castMutation(data).id);
     } catch (error) {
         if (error.response?.status === 422) {
             contractErrors.value = firstError(error);
@@ -153,6 +172,7 @@ async function deleteContract() {
 
     try {
         await api.delete(`/users/employees/${id}/contracts/${contractToDelete.value.id}`);
+        notifications.push({ type: 'success', message: `Contract from ${contractToDelete.value.starts_on} deleted.` });
         contractToDelete.value = null;
         resetContract();
         await fetchEmployee();
@@ -200,6 +220,7 @@ async function deleteContract() {
                     <RouterLink :to="routeUrl('employees.list')" class="inline-block rounded border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-50">
                         Back
                     </RouterLink>
+                    <span v-if="savedAt && ! processing" class="text-sm text-green-700">✓ Saved at {{ savedAt }}</span>
                     <Button v-if="canEdit" type="submit" variant="primary" :disabled="processing">
                         {{ processing ? 'Saving…' : (isEdit ? 'Save employee' : 'Create employee') }}
                     </Button>
@@ -225,7 +246,7 @@ async function deleteContract() {
                             <tr v-if="contracts.length === 0">
                                 <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No contracts yet — without an active contract the employee isn't on the payroll.</td>
                             </tr>
-                            <tr v-for="contract in contracts" :key="contract.id" :class="contract.id === contractForm.id ? 'bg-yellow-50' : 'hover:bg-gray-50'">
+                            <tr v-for="contract in contracts" :key="contract.id" :class="contract.id === contractForm.id ? 'bg-yellow-50' : contract.id === savedContractId ? 'bg-green-50 transition-colors' : 'hover:bg-gray-50 transition-colors'">
                                 <td class="border border-gray-300 px-2 py-2">{{ contract.starts_on }}</td>
                                 <td class="border border-gray-300 px-2 py-2">
                                     <span v-if="contract.ends_on">{{ contract.ends_on }}</span>
