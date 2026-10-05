@@ -1,6 +1,6 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
@@ -19,7 +19,10 @@ import Loader from '../../../components/Loader.vue';
  * and the old customer is deleted. PUT /customers/customers/{new}/merge with
  * { old_customer_id }. The merge-preview endpoint supplies the record counts
  * shown before confirming.
+ *
+ * `?old=<id>` (the customer actions overlay's "Merge") preselects the old customer.
  */
+const route = useRoute();
 const router = useRouter();
 const notifications = useNotificationsStore();
 
@@ -30,6 +33,24 @@ const newCustomer = ref(null);
 const preview = ref(null);
 const loadingOld = ref(false);
 const loadingNew = ref(false);
+
+// Label for the preselected old customer; the picker renders once it is known.
+const oldInitialOption = ref(null);
+const ready = ref(!route.query.old);
+
+onMounted(async () => {
+    if (!route.query.old) {
+        return;
+    }
+
+    try {
+        const customer = await loadCustomer(route.query.old);
+        oldInitialOption.value = { id: customer.id, name: customer.full_name };
+        form.old_customer_id = customer.id;
+    } finally {
+        ready.value = true;
+    }
+});
 
 const errors = ref({});
 const confirming = ref(false);
@@ -151,8 +172,11 @@ async function merge() {
 
             <div class="grid gap-4 md:grid-cols-2">
                 <FullWidthBox title="Old customer (will be deleted)" :collapsible="false">
+                    <Loader v-if="!ready" />
                     <AsyncSelect
+                        v-else
                         v-model="form.old_customer_id"
+                        :initial-option="oldInitialOption"
                         url="customers/customers/autosuggest"
                         label="Old customer"
                         placeholder="Search customers…"
