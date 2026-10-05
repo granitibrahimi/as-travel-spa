@@ -24,6 +24,9 @@ import Loader from '../../../components/Loader.vue';
 // start/end (no end = the active one), monthly net base salary, with bonuses.
 // Contracts never overlap; "with bonuses" needs a linked user (bonuses are
 // counted from that user's invoices).
+// POST/PUT/DELETE /users/employees/:id/maternity-leaves[/:leaveId] — her
+// maternity leaves: start/end (no end = still on leave), never overlapping;
+// the payroll pays 70% of the base salary until `paid_until` (6 months).
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
@@ -47,6 +50,14 @@ const savingContract = ref(false);
 const contractToDelete = ref(null);
 const deletingContract = ref(false);
 
+const maternityLeaves = ref([]);
+const emptyLeave = () => ({ id: null, starts_on: '', ends_on: '' });
+const leaveForm = reactive(emptyLeave());
+const leaveErrors = ref({});
+const savingLeave = ref(false);
+const leaveToDelete = ref(null);
+const deletingLeave = ref(false);
+
 const firstError = (error) => Object.fromEntries(
     Object.entries(error.response?.data?.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
 );
@@ -61,6 +72,7 @@ async function fetchEmployee() {
     form.user_id = employee.user?.id ?? null;
     linkedUser.value = employee.user;
     contracts.value = employee.contracts;
+    maternityLeaves.value = employee.maternity_leaves ?? [];
     loaded.value = true;
 }
 
@@ -180,6 +192,63 @@ async function deleteContract() {
         deletingContract.value = false;
     }
 }
+
+function editLeave(leave) {
+    Object.assign(leaveForm, { id: leave.id, starts_on: leave.starts_on, ends_on: leave.ends_on ?? '' });
+    leaveErrors.value = {};
+}
+
+function resetLeave() {
+    Object.assign(leaveForm, emptyLeave());
+    leaveErrors.value = {};
+}
+
+async function saveLeave() {
+    if (savingLeave.value) {
+        return;
+    }
+
+    savingLeave.value = true;
+    leaveErrors.value = {};
+
+    const payload = { starts_on: leaveForm.starts_on, ends_on: leaveForm.ends_on || null };
+
+    try {
+        const editing = leaveForm.id;
+        await (editing
+            ? api.put(`/users/employees/${id}/maternity-leaves/${editing}`, payload)
+            : api.post(`/users/employees/${id}/maternity-leaves`, payload));
+        resetLeave();
+        await fetchEmployee();
+        notifications.push({ type: 'success', message: editing ? `Maternity leave from ${payload.starts_on} updated.` : `Maternity leave from ${payload.starts_on} added.` });
+    } catch (error) {
+        if (error.response?.status === 422) {
+            leaveErrors.value = firstError(error);
+        } else {
+            throw error;
+        }
+    } finally {
+        savingLeave.value = false;
+    }
+}
+
+async function deleteLeave() {
+    if (deletingLeave.value) {
+        return;
+    }
+
+    deletingLeave.value = true;
+
+    try {
+        await api.delete(`/users/employees/${id}/maternity-leaves/${leaveToDelete.value.id}`);
+        notifications.push({ type: 'success', message: `Maternity leave from ${leaveToDelete.value.starts_on} deleted.` });
+        leaveToDelete.value = null;
+        resetLeave();
+        await fetchEmployee();
+    } finally {
+        deletingLeave.value = false;
+    }
+}
 </script>
 
 <template>
@@ -292,7 +361,62 @@ async function deleteContract() {
                     </div>
                 </form>
             </FullWidthBox>
+
+            <FullWidthBox v-if="isEdit" title="Maternity leave" :collapsible="false">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="text-left text-xs uppercase text-gray-500">
+                                <th class="border border-gray-300 px-2 py-2">Start date</th>
+                                <th class="border border-gray-300 px-2 py-2">End date</th>
+                                <th class="border border-gray-300 px-2 py-2" title="70% of the base salary until this day; nothing after">Paid (70%) until</th>
+                                <th v-if="auth.can('employees.edit')" class="border border-gray-300 px-2 py-2 text-center" style="width: 150px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="maternityLeaves.length === 0">
+                                <td colspan="4" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No maternity leave.</td>
+                            </tr>
+                            <tr v-for="leave in maternityLeaves" :key="leave.id" :class="leave.id === leaveForm.id ? 'bg-yellow-50' : 'hover:bg-gray-50'">
+                                <td class="border border-gray-300 px-2 py-2">{{ leave.starts_on }}</td>
+                                <td class="border border-gray-300 px-2 py-2">
+                                    <span v-if="leave.ends_on">{{ leave.ends_on }}</span>
+                                    <span v-else class="inline-block rounded bg-pink-100 px-2 py-0.5 text-xs font-medium text-pink-700">On leave</span>
+                                </td>
+                                <td class="border border-gray-300 px-2 py-2">{{ leave.paid_until }}</td>
+                                <td v-if="auth.can('employees.edit')" class="border border-gray-300 px-2 py-2 text-center">
+                                    <button type="button" class="text-sm text-blue-600 hover:underline" @click="editLeave(leave)">Edit</button>
+                                    <button type="button" class="ml-3 text-sm text-red-600 hover:underline" @click="leaveToDelete = leave">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <form v-if="auth.can('employees.edit')" class="mt-4 rounded border border-gray-200 bg-gray-50 p-4" @submit.prevent="saveLeave">
+                    <h3 class="mb-3 text-sm font-semibold text-gray-700">{{ leaveForm.id ? 'Edit maternity leave' : 'New maternity leave' }}</h3>
+                    <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-4">
+                        <DateInput v-model="leaveForm.starts_on" label="Start date *" :error="leaveErrors.starts_on" />
+                        <DateInput v-model="leaveForm.ends_on" label="End date" :error="leaveErrors.ends_on" />
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">Leave the end date empty while she's still on leave. The payroll pays 70% of the contract's base salary for the first 6 months of the leave; after that she isn't paid and shows on the payroll as In Maternity Leave.</p>
+                    <div class="mt-3 flex justify-end gap-2">
+                        <Button v-if="leaveForm.id" type="button" @click="resetLeave">Cancel</Button>
+                        <Button type="submit" variant="primary" :loading="savingLeave">{{ leaveForm.id ? 'Save maternity leave' : 'Add maternity leave' }}</Button>
+                    </div>
+                </form>
+            </FullWidthBox>
         </div>
+
+        <ConfirmDialog
+            :show="Boolean(leaveToDelete)"
+            title="Delete maternity leave?"
+            :message="leaveToDelete ? `The maternity leave from ${leaveToDelete.starts_on} will be deleted. Saved payrolls keep their figures.` : ''"
+            confirm-label="Yes, delete"
+            :processing="deletingLeave"
+            @confirm="deleteLeave"
+            @cancel="leaveToDelete = null"
+        />
 
         <ConfirmDialog
             :show="Boolean(contractToDelete)"

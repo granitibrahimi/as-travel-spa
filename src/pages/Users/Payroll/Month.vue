@@ -30,6 +30,10 @@ import Loader from '../../../components/Loader.vue';
 // journal (?payroll=…&type=taxes, pre-filled from `taxes_journal`) pays the
 // obligation's pension and income tax in full. A salary is paid once a payment journal covers it
 // (`row.paid`, `row.payment_journal`) — chosen on the journal form.
+// An employee on maternity leave (`row.maternity_leave`) is paid 70% of the
+// base salary for the leave's first 6 months (`row.paid_base_salary`, by
+// calendar day) and nothing after: then she's highlighted as in maternity
+// leave, with nothing to pay.
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
@@ -100,7 +104,10 @@ function askDeletePayment(journal) {
     confirming.value = 'deletePayment';
 }
 const canPostJournals = computed(() => auth.can('payrolls.finalize') && auth.can('journals.create'));
-const unpaid = computed(() => rows.value.filter((row) => row.paid === false).length);
+// Rows with nothing to pay (in maternity leave past its paid months) are never paid.
+const payable = (row) => Number(row.net_pay) > 0;
+const unpaid = computed(() => rows.value.filter((row) => payable(row) && row.paid === false).length);
+const inMaternityLeave = (row) => row.maternity_leave && ! payable(row);
 
 async function download(action, path, fallbackName) {
     if (busy.value) {
@@ -263,7 +270,7 @@ onMounted(() => {
                                 <tr v-if="rows.length === 0">
                                     <td :colspan="finalized ? 15 : 14" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No employee has a contract in this month.</td>
                                 </tr>
-                                <tr v-for="row in rows" :key="row.employee.id" class="hover:bg-gray-50">
+                                <tr v-for="row in rows" :key="row.employee.id" :class="inMaternityLeave(row) ? 'bg-pink-50 text-gray-500' : row.maternity_leave ? 'bg-pink-50/50 hover:bg-pink-50' : 'hover:bg-gray-50'">
                                     <td class="border border-gray-300 px-2 py-1.5">
                                         <RouterLink v-if="auth.can('employees.show')" :to="routeUrl('employees.edit', row.employee.id)" class="font-medium hover:underline">{{ row.employee.name }}</RouterLink>
                                         <span v-else class="font-medium">{{ row.employee.name }}</span>
@@ -271,8 +278,19 @@ onMounted(() => {
                                             {{ [row.bank, row.bank_account_number].filter(Boolean).join(' · ') || 'No bank details' }}
                                         </span>
                                         <span v-for="label in taxationLabels(row)" :key="label" class="mr-1 inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-700">{{ label }}</span>
+                                        <span
+                                            v-if="row.maternity_leave"
+                                            class="mr-1 inline-block rounded bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-700"
+                                            :title="`Maternity leave from ${row.maternity_leave.starts_on}${row.maternity_leave.ends_on ? ` to ${row.maternity_leave.ends_on}` : ''}, paid ${Math.round(row.maternity_leave.rate * 100)}% until ${row.maternity_leave.paid_until}. This month: ${row.maternity_leave.paid_days} paid, ${row.maternity_leave.unpaid_days} unpaid of ${row.maternity_leave.days} days.`"
+                                        >{{ inMaternityLeave(row) ? 'In Maternity Leave' : `Maternity leave · ${Math.round(row.maternity_leave.rate * 100)}%` }}</span>
                                     </td>
-                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">{{ money(row.base_salary) }}</td>
+                                    <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">
+                                        <template v-if="row.maternity_leave">
+                                            {{ money(row.paid_base_salary) }}
+                                            <span class="block text-xs text-gray-400 line-through" title="The contract's base salary">{{ money(row.base_salary) }}</span>
+                                        </template>
+                                        <template v-else>{{ money(row.base_salary) }}</template>
+                                    </td>
                                     <td class="border border-gray-300 px-2 py-1.5 text-right tabular-nums">
                                         <button v-if="row.with_bonuses" type="button" class="text-blue-600 hover:underline" :title="`${row.employee.name}: bonus per category`" @click="breakdown = { row, title: row.employee.name, userIds: [row.user?.id].filter(Boolean) }">{{ money(row.total_amount) }}</button>
                                         <span v-else class="text-xs text-gray-400">No bonuses</span>
@@ -295,6 +313,7 @@ onMounted(() => {
                                             class="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 hover:bg-green-200"
                                             :title="`Paid by ${row.payment_journal.gen_id}`"
                                         >Paid</RouterLink>
+                                        <span v-else-if="! payable(row)" class="text-xs text-gray-400">Nothing to pay</span>
                                         <span v-else class="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Not paid</span>
                                     </td>
                                 </tr>
@@ -302,7 +321,7 @@ onMounted(() => {
                             <tfoot v-if="rows.length">
                                 <tr class="bg-gray-50 font-semibold">
                                     <td class="border border-gray-300 px-2 py-2">Total ({{ rows.length }})</td>
-                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.base_salary) }}</td>
+                                    <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.paid_base_salary ?? totals.base_salary) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
                                         <button type="button" class="text-blue-600 hover:underline" @click="breakdown = { row: totals, title: 'All employees', userIds: rows.filter((employee) => employee.user && employee.with_bonuses).map((employee) => employee.user.id) }">{{ money(totals.total_amount) }}</button>
                                     </td>
@@ -317,7 +336,7 @@ onMounted(() => {
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.health_insurance) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.employer_health_insurance) }}</td>
                                     <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(totals.net_pay) }}</td>
-                                    <td v-if="finalized" class="border border-gray-300 px-2 py-2 text-center tabular-nums">{{ rows.length - unpaid }} / {{ rows.length }}</td>
+                                    <td v-if="finalized" class="border border-gray-300 px-2 py-2 text-center tabular-nums">{{ rows.filter(payable).length - unpaid }} / {{ rows.filter(payable).length }}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -326,6 +345,7 @@ onMounted(() => {
                     <p class="mt-3 text-xs text-gray-500">
                         Employees with a contract in the month (the latest one when it changed mid-month). Bonus amount = every person on the linked user's invoices × the rate of its category (click it for the breakdown; see Employee Bonus Calculation);
                         approved paid vacation days in the month add bonus amount / {{ data.working_days }} × days. Net salary = base salary + bonus; gross, pension and income tax as the Tax Administration's calculator ({{ summary }}); the employer adds its own pension on top, except for employees in pension.
+                        Maternity leave (set on the employee): 70% of the base salary for the leave's first 6 months, by calendar day (the base salary column shows what's paid); after that she isn't paid — highlighted as In Maternity Leave, with no health insurance.
                         Health insurance comes from the contract: the employee's share is taken off the net salary (To pay = net salary − employee health insurance, what the PCB CSV pays); the company's is a taxable benefit added to the gross salary, which is grossed up so the company bears its pension and tax.
                     </p>
                 </template>
