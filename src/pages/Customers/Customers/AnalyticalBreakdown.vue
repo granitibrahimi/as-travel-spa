@@ -192,7 +192,7 @@ function rowClass(document) {
 const debit = (document) => (document.amount > 0 ? document.amount : null);
 const credit = (document) => (document.amount < 0 ? -document.amount : null);
 
-const columns = 11;
+const columns = 12;
 const cell = 'border border-gray-200 px-2 py-1.5';
 
 async function fetchCustomer() {
@@ -264,6 +264,7 @@ onMounted(() => {
                                     <th :class="cell">Date</th>
                                     <th :class="cell">Document</th>
                                     <th :class="cell">Type</th>
+                                    <th :class="cell">Payment type</th>
                                     <th :class="[cell, 'text-right']">Debit</th>
                                     <th :class="[cell, 'text-right']">Credit</th>
                                     <th :class="[cell, 'text-right']">Open</th>
@@ -317,6 +318,7 @@ onMounted(() => {
                                             <span v-if="document.is_ghost" class="ml-1 rounded bg-gray-100 px-1 text-xs text-gray-500">ghost</span>
                                         </td>
                                         <td :class="cell">{{ document.type.name }}</td>
+                                        <td :class="cell">{{ document.payment_type }}</td>
                                         <td :class="[cell, 'text-right tabular-nums']">{{ debit(document) === null ? '' : money(debit(document)) }}</td>
                                         <td :class="[cell, 'text-right tabular-nums']">{{ credit(document) === null ? '' : money(credit(document)) }}</td>
                                         <td :class="[cell, 'text-right tabular-nums', document.open_amount !== 0 ? 'font-semibold text-red-600' : 'text-gray-400']">{{ money(document.open_amount) }}</td>
