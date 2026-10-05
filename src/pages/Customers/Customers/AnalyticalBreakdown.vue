@@ -41,16 +41,21 @@ const customer = ref(null);
 const from = ref(route.query.from ?? apiDaysAgo(365));
 const to = ref(route.query.to ?? todayApiDate());
 const status = ref(route.query.status || 'all');
+// The filters the table is showing — what the PDF is built from.
+const applied = ref({});
 const canSeeDetails = computed(() => auth.can('customerInvoices.reports'));
 const details = ref(route.query.details === '1' && canSeeDetails.value);
+// The copy for the customer: the API leaves the internal columns out of the
+// traveller rows (and the PDF), and the table hides them.
+const customerView = ref(route.query.customer_view === '1');
+const CUSTOMER_HIDDEN_COLUMNS = ['agent', 'svc_incl', 'fare_incl', 'client', 'client_type', 'ticket_arrangement', 'fop', 'vendor', 'staying_nights', 'comment'];
+const hiddenColumns = computed(() => (applied.value.customer_view ? CUSTOMER_HIDDEN_COLUMNS : []));
 
 const statusOptions = [
     { value: 'all', label: 'All' },
     { value: 'open', label: 'With an open amount' },
 ];
 
-// The filters the table is showing — what the PDF is built from.
-const applied = ref({});
 const downloading = ref(false);
 
 function apply() {
@@ -59,6 +64,7 @@ function apply() {
         to: to.value || undefined,
         status: status.value === 'all' ? undefined : status.value,
         details: details.value ? 1 : undefined,
+        customer_view: details.value && customerView.value ? 1 : undefined,
     };
 
     // Kept as '' in the URL when cleared, so "all time" survives a reload.
@@ -90,6 +96,11 @@ async function downloadPdf() {
 
 function toggleDetails(value) {
     details.value = value;
+    apply();
+}
+
+function toggleCustomerView(value) {
+    customerView.value = value;
     apply();
 }
 
@@ -220,8 +231,14 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div v-if="canSeeDetails" class="mt-3">
+                <div v-if="canSeeDetails" class="mt-3 flex flex-wrap items-center gap-x-8 gap-y-2">
                     <NiceCheckbox :model-value="details" label="Show invoice details (one row per traveller, as in the Customer Invoices Report)" @update:model-value="toggleDetails" />
+                    <NiceCheckbox
+                        :model-value="details && customerView"
+                        :disabled="! details"
+                        label="Customer view (hide Agent, SVC, Fare, Client, Client Type, Ticket/Arrangement, FOP, Vendor, Staying nights, Comment)"
+                        @update:model-value="toggleCustomerView"
+                    />
                 </div>
 
                 <p class="mt-3 text-xs text-gray-500">
@@ -332,7 +349,7 @@ onMounted(() => {
                                         <td :colspan="columns" :class="[cell, 'border-l-4 bg-gray-50 py-2 pl-6', section.colour.bar]">
                                             <!-- w-0 + min-w-full: scrolls inside the row instead of widening the table. -->
                                             <div class="w-0 min-w-full overflow-x-auto">
-                                                <CustomerInvoicesReportTable :rows="document.details ?? []">
+                                                <CustomerInvoicesReportTable :rows="document.details ?? []" :hide="hiddenColumns">
                                                     <template #empty="{ columns: span }">
                                                         <tr>
                                                             <td :colspan="span" class="border border-gray-300 px-2 py-3 text-center text-gray-400">No travellers on this invoice.</td>
