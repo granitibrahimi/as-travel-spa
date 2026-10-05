@@ -25,8 +25,8 @@ import { useNotificationsStore } from '../../../stores/notifications.js';
 // A group is every document joined by links (a payment and the invoices it
 // paid, or everything in a reconciliation); `unlinked` are the documents
 // without any link that still have an open amount. Each document carries its
-// `links` (counterpart + amount); with details=1 invoices also carry their
-// customer invoices report rows (`details`).
+// `links` (counterpart + amount); with details=1 invoices and credit notes
+// also carry their customer invoices report rows (`details`).
 //
 // The filters live in the URL query so Back from a document restores them.
 const route = useRoute();
@@ -189,7 +189,6 @@ function rowClass(document) {
     return highlighted.value.has(document.key) ? 'bg-yellow-50' : 'hover:bg-gray-50';
 }
 
-const isInvoice = (document) => document.type.id === 1;
 const debit = (document) => (document.amount > 0 ? document.amount : null);
 const credit = (document) => (document.amount < 0 ? -document.amount : null);
 
@@ -345,14 +344,14 @@ onMounted(() => {
                                         <td :class="cell">{{ document.invoice_type }}</td>
                                     </tr>
 
-                                    <tr v-if="details && isInvoice(document)">
+                                    <tr v-if="details && Array.isArray(document.details)">
                                         <td :colspan="columns" :class="[cell, 'border-l-4 bg-gray-50 py-2 pl-6', section.colour.bar]">
                                             <!-- w-0 + min-w-full: scrolls inside the row instead of widening the table. -->
                                             <div class="w-0 min-w-full overflow-x-auto">
                                                 <CustomerInvoicesReportTable :rows="document.details ?? []" :hide="hiddenColumns">
                                                     <template #empty="{ columns: span }">
                                                         <tr>
-                                                            <td :colspan="span" class="border border-gray-300 px-2 py-3 text-center text-gray-400">No travellers on this invoice.</td>
+                                                            <td :colspan="span" class="border border-gray-300 px-2 py-3 text-center text-gray-400">No travellers on this document.</td>
                                                         </tr>
                                                     </template>
                                                 </CustomerInvoicesReportTable>
