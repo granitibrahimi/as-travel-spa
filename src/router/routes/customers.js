@@ -5,6 +5,7 @@
 // `/customers/:id`; `.../:id/edit` precedes `.../:id`.
 const CustomersIndex = () => import('../../pages/Customers/Customers/Index.vue');
 const CustomersCreate = () => import('../../pages/Customers/Customers/Create.vue');
+const CustomersMerge = () => import('../../pages/Customers/Customers/Merge.vue');
 const CustomersEdit = () => import('../../pages/Customers/Customers/Edit.vue');
 const CustomersShow = () => import('../../pages/Customers/Customers/Show.vue');
 const CustomersReconcile = () => import('../../pages/Customers/Customers/Reconcile.vue');
@@ -62,6 +63,7 @@ const PersonsShow = () => import('../../pages/Customers/Persons/Show.vue');
 export default [
     { path: '/customers/customers', name: 'customers.list', component: CustomersIndex },
     { path: '/customers/customers/create', name: 'customers.create', component: CustomersCreate },
+    { path: '/customers/customers/merge', name: 'customers.merge', component: CustomersMerge },
     { path: '/customers/invoices', name: 'customerInvoices.list', component: InvoicesIndex },
     { path: '/customers/invoices/due', name: 'customerInvoices.due', component: InvoicesDue },
     { path: '/customers/invoices/my-report', name: 'customerInvoices.myReport', component: MyInvoicesReport },

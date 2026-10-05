@@ -89,6 +89,7 @@ export const workspaces = [
                 items: [
                     { label: 'Customers List', to: '/customers/customers', can: 'customers.list' },
                     { label: 'New Customer', to: '/customers/customers/create', can: 'customers.create' },
+                    { label: 'Merge Customers', to: '/customers/customers/merge', can: 'customers.merge' },
                     { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
                     { label: 'Pro Invoices', to: '/customers/pro-invoices', can: 'customerProInvoices.list' },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
@@ -278,6 +279,7 @@ export const workspaces = [
                 items: [
                     { label: 'All Customers', to: '/customers/customers', can: 'customers.list' },
                     { label: 'New Customer', to: '/customers/customers/create', can: 'customers.create' },
+                    { label: 'Merge Customers', to: '/customers/customers/merge', can: 'customers.merge' },
                     { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
                     { label: 'Pro Invoices', to: '/customers/pro-invoices', can: 'customerProInvoices.list' },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
