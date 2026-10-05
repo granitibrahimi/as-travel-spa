@@ -11,6 +11,7 @@ const CustomersShow = () => import('../../pages/Customers/Customers/Show.vue');
 const CustomersReconcile = () => import('../../pages/Customers/Customers/Reconcile.vue');
 const CustomersStatistics = () => import('../../pages/Customers/Customers/Statistics.vue');
 const CustomersStatements = () => import('../../pages/Customers/Customers/Statements.vue');
+const CustomersAnalyticalBreakdown = () => import('../../pages/Customers/Customers/AnalyticalBreakdown.vue');
 const CustomerInvoiceShow = () => import('../../pages/Customers/Invoices/Show.vue');
 const CustomerInvoiceCreate = () => import('../../pages/Customers/Invoices/Create.vue');
 const CustomerInvoiceEdit = () => import('../../pages/Customers/Invoices/Edit.vue');
@@ -86,6 +87,7 @@ export default [
     { path: '/customers/:id/reconcile', name: 'customers.reconcile', component: CustomersReconcile },
     { path: '/customers/:id/statistics', name: 'customers.statistics', component: CustomersStatistics },
     { path: '/customers/:id/statements', name: 'customers.statements', component: CustomersStatements },
+    { path: '/customers/:id/analytical-breakdown', name: 'customers.analyticalBreakdown', component: CustomersAnalyticalBreakdown },
     { path: '/customers/:id/edit', name: 'customers.edit', component: CustomersEdit },
     { path: '/customers/customers/:id', name: 'customers.show', component: CustomersShow },
     { path: '/customers/invoices/:id/edit', name: 'customerInvoices.edit', component: CustomerInvoiceEdit },

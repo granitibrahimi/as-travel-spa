@@ -58,6 +58,7 @@ const groups = computed(() => {
         { label: 'Edit', to: routeUrl('customers.edit', customer.id), can: 'customers.edit' },
         { label: 'Statistics', to: routeUrl('customers.statistics', customer.id), can: 'customers.invoices' },
         { label: 'Statements', to: routeUrl('customers.statements', customer.id), can: 'customers.statements' },
+        { label: 'Analytical Breakdown', to: routeUrl('customers.analyticalBreakdown', customer.id), can: 'customers.statements' },
         { label: 'Reconcile', to: routeUrl('customers.reconcile', customer.id), can: 'customers.reconcile' },
         // This customer is preselected as the old one (the one that gets deleted).
         { label: 'Merge', to: routeUrl('customers.merge', { old: customer.id }), can: 'customers.merge' },
