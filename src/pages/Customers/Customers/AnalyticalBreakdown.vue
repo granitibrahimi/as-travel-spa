@@ -192,7 +192,7 @@ function rowClass(document) {
 const debit = (document) => (document.amount > 0 ? document.amount : null);
 const credit = (document) => (document.amount < 0 ? -document.amount : null);
 
-const columns = 12;
+const columns = 11;
 const cell = 'border border-gray-200 px-2 py-1.5';
 
 async function fetchCustomer() {
@@ -264,7 +264,6 @@ onMounted(() => {
                                     <th :class="cell">Date</th>
                                     <th :class="cell">Document</th>
                                     <th :class="cell">Type</th>
-                                    <th :class="cell">Linked to</th>
                                     <th :class="[cell, 'text-right']">Debit</th>
                                     <th :class="[cell, 'text-right']">Credit</th>
                                     <th :class="[cell, 'text-right']">Open</th>
@@ -318,22 +317,6 @@ onMounted(() => {
                                             <span v-if="document.is_ghost" class="ml-1 rounded bg-gray-100 px-1 text-xs text-gray-500">ghost</span>
                                         </td>
                                         <td :class="cell">{{ document.type.name }}</td>
-                                        <td :class="[cell, 'min-w-64 whitespace-normal']">
-                                            <div class="flex flex-wrap gap-1">
-                                                <RouterLink
-                                                    v-for="(link, i) in document.links"
-                                                    :key="`${link.key}-${i}`"
-                                                    :to="customerTransactionPath(link.type.id, link.id) ?? ''"
-                                                    class="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-1.5 py-0.5 text-xs text-gray-700 hover:border-gray-400"
-                                                    :title="`${link.type.name} ${link.reference}`"
-                                                >
-                                                    <span class="text-gray-400">{{ link.type.name }}</span>
-                                                    {{ link.reference }}
-                                                    <span class="tabular-nums text-gray-500">{{ money(Math.abs(link.amount)) }}</span>
-                                                </RouterLink>
-                                                <span v-if="! document.links.length" class="text-xs text-gray-400">—</span>
-                                            </div>
-                                        </td>
                                         <td :class="[cell, 'text-right tabular-nums']">{{ debit(document) === null ? '' : money(debit(document)) }}</td>
                                         <td :class="[cell, 'text-right tabular-nums']">{{ credit(document) === null ? '' : money(credit(document)) }}</td>
                                         <td :class="[cell, 'text-right tabular-nums', document.open_amount !== 0 ? 'font-semibold text-red-600' : 'text-gray-400']">{{ money(document.open_amount) }}</td>
