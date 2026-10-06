@@ -49,7 +49,12 @@ const details = ref(route.query.details === '1' && canSeeDetails.value);
 // traveller rows (and the PDF), and the table hides them.
 const customerView = ref(route.query.customer_view === '1');
 const CUSTOMER_HIDDEN_COLUMNS = ['agent', 'svc_incl', 'fare_incl', 'client', 'client_type', 'ticket_arrangement', 'fop', 'vendor', 'staying_nights', 'comment'];
-const hiddenColumns = computed(() => (applied.value.customer_view ? CUSTOMER_HIDDEN_COLUMNS : []));
+// Ticket numbers can be left out too, with or without the customer view.
+const hideTktNumber = ref(route.query.hide_tkt_number === '1');
+const hiddenColumns = computed(() => [
+    ...(applied.value.customer_view ? CUSTOMER_HIDDEN_COLUMNS : []),
+    ...(applied.value.hide_tkt_number ? ['tkt_number'] : []),
+]);
 
 const statusOptions = [
     { value: 'all', label: 'All' },
@@ -65,6 +70,7 @@ function apply() {
         status: status.value === 'all' ? undefined : status.value,
         details: details.value ? 1 : undefined,
         customer_view: details.value && customerView.value ? 1 : undefined,
+        hide_tkt_number: details.value && hideTktNumber.value ? 1 : undefined,
     };
 
     // Kept as '' in the URL when cleared, so "all time" survives a reload.
@@ -101,6 +107,11 @@ function toggleDetails(value) {
 
 function toggleCustomerView(value) {
     customerView.value = value;
+    apply();
+}
+
+function toggleHideTktNumber(value) {
+    hideTktNumber.value = value;
     apply();
 }
 
@@ -237,6 +248,12 @@ onMounted(() => {
                         :disabled="! details"
                         label="Customer view (hide Agent, SVC, Fare, Client, Client Type, Ticket/Arrangement, FOP, Vendor, Staying nights, Comment)"
                         @update:model-value="toggleCustomerView"
+                    />
+                    <NiceCheckbox
+                        :model-value="details && hideTktNumber"
+                        :disabled="! details"
+                        label="Hide TKT NR"
+                        @update:model-value="toggleHideTktNumber"
                     />
                 </div>
 
