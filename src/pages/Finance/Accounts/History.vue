@@ -172,6 +172,7 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                                     <span v-else>{{ row.type }}</span>
                                 </div>
                                 <div v-if="row.reference_label ?? row.reference_id" class="text-xs text-gray-500">{{ row.reference_label ?? row.reference_id }}</div>
+                                <div v-if="row.reference" class="text-xs text-gray-500">Ref: {{ row.reference }}</div>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">
                                 <div v-if="row.payee">

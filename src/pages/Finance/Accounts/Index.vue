@@ -86,7 +86,7 @@ const filtered = computed(() => (apiResponse.value ?? []).filter(matchesClassifi
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ account.type }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ account.classification?.name ?? account.classification }}</td>
-                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(account.balance) }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(account.balance_with_children ?? account.balance) }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <RouterLink :to="routeUrl('accounts.history', account.id)" class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-xs hover:bg-gray-50">History</RouterLink>
                             </td>
