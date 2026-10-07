@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router';
 import api from '../../../helpers/api';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth';
+import { useNotificationsStore } from '../../../stores/notifications.js';
 import ActionsOverlay from '../../../components/ActionsOverlay.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 
@@ -31,6 +32,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'deleted', 'addDocument']);
 
 const auth = useAuthStore();
+const notifications = useNotificationsStore();
 
 const supplierId = computed(() => props.creditNote?.supplier?.id ?? null);
 
@@ -61,7 +63,10 @@ const groups = computed(() => {
         ...(supplierId.value
             ? [{ label: 'Reconcile', to: routeUrl('suppliers.reconcile', supplierId.value), can: 'suppliers.reconcile' }]
             : []),
-        { label: 'Edit', to: routeUrl('supplierCreditNotes.edit', cn.id), can: 'supplierCreditNotes.edit' },
+        // One created from a customer credit note is edited there (the API refuses here too).
+        ...(!cn.customer_credit_note
+            ? [{ label: 'Edit', to: routeUrl('supplierCreditNotes.edit', cn.id), can: 'supplierCreditNotes.edit' }]
+            : []),
         { label: 'Journal', to: `/finance/account-transactions/journal/supplier-credit-note/${cn.id}`, can: 'accountTransactions.journal' },
         ...(cn.qb_link
             ? [{ label: 'QB', href: cn.qb_link, can: 'supplierCreditNotes.show' }]
@@ -85,7 +90,9 @@ const groups = computed(() => {
 
     const other = [];
 
-    if (auth.can('supplierCreditNotes.delete')) {
+    // Same rules as the bill: not when created from a customer credit note,
+    // not while linked to transactions (the API refuses both).
+    if (auth.can('supplierCreditNotes.delete') && !cn.customer_credit_note && !cn.links?.length) {
         other.push({ label: 'Delete', danger: true, action: () => (toDelete.value = cn) });
     }
 
@@ -114,6 +121,12 @@ async function confirmDelete() {
         toDelete.value = null;
         emit('deleted', removed);
         emit('close');
+    } catch (error) {
+        toDelete.value = null;
+        notifications.push({
+            type: 'error',
+            message: error.response?.data?.errors?.credit_note?.[0] ?? 'Could not delete this credit note.',
+        });
     } finally {
         deleting.value = false;
     }

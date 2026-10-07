@@ -15,6 +15,7 @@ import SupplierTransactionLinks from '../../../components/SupplierTransactionLin
 import DocumentsBox from '../../../components/DocumentsBox.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
+import Alert from '../../../components/Alert.vue';
 import SupplierCreditNoteActions from './Actions.vue';
 
 const route = useRoute();
@@ -69,6 +70,10 @@ async function confirmUnlink() {
         <Loader v-if="! creditNote" />
 
         <template v-else>
+            <Alert v-if="creditNote.customer_credit_note" type="info" class="mb-6">
+                This Credit Note is created from a Customer Credit Note (<RouterLink :to="routeUrl('customerCreditNotes.show', creditNote.customer_credit_note.id)" class="font-medium underline">{{ creditNote.customer_credit_note.gen_id }}</RouterLink>). It cannot be Edited or Deleted. Changes on the Customer Credit Note will be reflected here as well.
+            </Alert>
+
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
                 <SupplierDetails :supplier="creditNote.supplier" />
 
@@ -133,21 +138,23 @@ async function confirmUnlink() {
 
             <FullWidthBox v-if="creditNote.lines.length" title="Line items" :collapsible="false" class="mt-6">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="border-b text-left text-gray-500">
-                                <th class="py-2 pr-2">Category</th>
-                                <th class="py-2 pr-2">Description</th>
-                                <th class="py-2 pr-2">Tax</th>
-                                <th class="py-2 pl-2 text-right">Amount</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">ID</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Category</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Description</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2 text-right">Amount</th>
+                                <th class="border border-gray-300 bg-gray-50 px-2 py-2">Tax Type</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="line in creditNote.lines" :key="line.id" class="border-b last:border-0">
-                                <td class="py-2 pr-2">{{ line.category ?? '—' }}</td>
-                                <td class="py-2 pr-2">{{ line.description ?? '—' }}</td>
-                                <td class="py-2 pr-2">{{ line.tax ?? '—' }}</td>
-                                <td class="py-2 pl-2 text-right tabular-nums">{{ money(line.amount) }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ line.id }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ line.category }}</td>
+                                <td class="border border-gray-300 px-2 py-2 whitespace-pre-line">{{ line.description }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(line.amount) }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ line.tax ?? '—' }}</td>
                             </tr>
                         </tbody>
                     </table>
