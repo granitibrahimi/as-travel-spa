@@ -21,13 +21,14 @@ import { useAuthStore } from '../../../stores/auth';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 
 // GET /customers/customers/{id}/analytical-breakdown?from=&to=&status=all|open&details=1 →
-// { groups: [{ number, documents, totals }], unlinked: { documents, totals }, totals }.
+// { groups: [{ number, documents, totals }], totals }, newest first.
 // A group is one invoice / credit note (role "main", first) and what was
 // applied to it (role "settlement": `applied` is the part of that payment /
 // credit note / journal applied here, `via` the reconciliations it went
-// through). The date filter goes by the invoice / credit note's date.
-// `unlinked` are the open documents not applied to an invoice (payments on
-// account, …). With details=1 the invoices and credit notes also carry their
+// through). Any other open document (a payment on account, an unapplied
+// journal, …) is a group of just itself (role "unapplied"), among the
+// invoices by its date. The date filter goes by each group's own document.
+// With details=1 the invoices and credit notes also carry their
 // customer invoices report rows (`details`).
 //
 // The filters live in the URL query so Back from a document restores them.
@@ -132,27 +133,20 @@ const sections = computed(() => {
         return [];
     }
 
-    const groups = data.value.groups.map((group, i) => ({
-        key: `group-${group.number}`,
-        title: `${group.documents[0].type.name} ${group.documents[0].reference}`,
-        summary: summary(group.documents.slice(1)) || 'nothing applied',
-        documents: group.documents,
-        totals: group.totals,
-        colour: PALETTE[i % PALETTE.length],
-    }));
+    // An open document not applied to an invoice is a grey group of just itself.
+    return data.value.groups.map((group, i) => {
+        const head = group.documents[0];
+        const unapplied = head.role === 'unapplied';
 
-    if (data.value.unlinked.documents.length) {
-        groups.push({
-            key: 'unlinked',
-            title: 'Unapplied',
-            summary: 'open payments, journals and credit note balances not applied to an invoice',
-            documents: data.value.unlinked.documents,
-            totals: data.value.unlinked.totals,
-            colour: { bar: 'border-l-gray-300', head: 'bg-gray-100 text-gray-700' },
-        });
-    }
-
-    return groups;
+        return {
+            key: `group-${group.number}`,
+            title: `${head.type.name} ${head.reference}`,
+            summary: unapplied ? 'open, not applied to an invoice' : summary(group.documents.slice(1)) || 'nothing applied',
+            documents: group.documents,
+            totals: group.totals,
+            colour: unapplied ? { bar: 'border-l-gray-300', head: 'bg-gray-100 text-gray-700' } : PALETTE[i % PALETTE.length],
+        };
+    });
 });
 
 function summary(documents) {
@@ -225,7 +219,7 @@ onMounted(() => {
                 </div>
 
                 <p class="mt-3 text-xs text-gray-500">
-                    Each invoice and credit note is shown with what was applied to it — the payments, credit notes and journals, each with the part it settled here (a payment that paid several invoices shows under each of them). The date range goes by the invoice / credit note date. A credit note applied to an invoice shows under that invoice.
+                    Each invoice and credit note is shown with what was applied to it — the payments, credit notes and journals, each with the part it settled here (a payment that paid several invoices shows under each of them). Open payments, credit notes and other transactions not applied to an invoice show as a grey group of their own, by their date. The date range goes by each group's own document. A credit note applied to an invoice shows under that invoice.
                 </p>
             </FullWidthBox>
 
