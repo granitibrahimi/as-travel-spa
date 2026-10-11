@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
 import { castResource } from '../../../types/responses.js';
@@ -42,10 +42,6 @@ function orderError(orderIndex, field) {
 function personError(orderIndex, personIndex, field) {
     return errors.value[`orders.${orderIndex}.persons.${personIndex}.${field}`];
 }
-
-// Pessimistic edit lock: another user editing blocks saving here.
-const lockedBy = ref(null);
-let heartbeat = null;
 
 const productOptions = computed(() => formOptions.products.map((product) => ({ value: product.id, label: product.name })));
 
@@ -98,6 +94,8 @@ async function load() {
             buying_value: person.buying_value,
             tkt_number: person.tkt_number ?? '',
             bill_id: person.bill_id ?? null,
+            // Its supplier bill is paid: name, TKT and buying value are read-only.
+            bill_locked: person.bill_locked ?? false,
             qb_link: person.qb_link ?? null,
         })),
     }));
@@ -109,49 +107,7 @@ async function load() {
     loading.value = false;
 }
 
-const lockUrl = () => `/customers/invoices/${route.params.id}/lock`;
-
-async function acquireLock() {
-    try {
-        await api.post(lockUrl());
-        lockedBy.value = null;
-        // Refresh the lock well within its 60s server TTL.
-        heartbeat = setInterval(() => {
-            api.post(`${lockUrl()}/heartbeat`).catch((e) => {
-                if (e.response?.status === 409) {
-                    lockedBy.value = e.response.data?.holder?.name ?? 'another user';
-                    stopHeartbeat();
-                }
-            });
-        }, 30000);
-    } catch (e) {
-        if (e.response?.status === 409) {
-            lockedBy.value = e.response.data?.holder?.name ?? 'another user';
-        }
-    }
-}
-
-function stopHeartbeat() {
-    if (heartbeat) {
-        clearInterval(heartbeat);
-        heartbeat = null;
-    }
-}
-
-function releaseLock() {
-    stopHeartbeat();
-    if (!lockedBy.value) {
-        api.delete(lockUrl()).catch(() => {});
-    }
-}
-
-onMounted(async () => {
-    // Independent requests (acquireLock only needs route.params.id) — run
-    // concurrently instead of waiting on load() first.
-    await Promise.all([load(), acquireLock()]);
-});
-
-onBeforeUnmount(releaseLock);
+onMounted(load);
 
 const addOrder = () => orders.value.push(blankOrder());
 const removeOrder = (index) => orders.value.splice(index, 1);
@@ -175,6 +131,7 @@ async function refreshPerson(person) {
         person.sold_value = updated.sold_value;
         person.buying_value = updated.buying_value;
         person.bill_id = updated.bill_id ?? null;
+        person.bill_locked = updated.bill_locked ?? false;
         person.qb_link = updated.qb_link ?? null;
     } finally {
         person._refreshing = false;
@@ -194,7 +151,7 @@ function copyOrder(index) {
         extra_info: src.extra_info,
         start_date: src.start_date,
         return_date: src.return_date,
-        persons: src.persons.map((person) => ({ ...person, id: null })),
+        persons: src.persons.map((person) => ({ ...person, id: null, bill_id: null, bill_locked: false })),
     });
 }
 
@@ -256,9 +213,6 @@ async function save() {
                     <div class="flex gap-2"><dt class="w-24 shrink-0 font-medium text-gray-500">Total</dt><dd class="tabular-nums">{{ money(total) }}</dd></div>
                 </dl>
 
-                <p v-if="lockedBy" class="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
-                    This invoice is currently being edited by {{ lockedBy }}. Saving is disabled until they finish.
-                </p>
                 <p v-if="soldLocked" class="mt-3 rounded bg-amber-50 px-3 py-2 text-xs text-amber-700">
                     This invoice has payments — sold values are locked and won't be changed.
                 </p>
@@ -308,12 +262,12 @@ async function save() {
                             class="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 sm:grid-cols-[1fr_1fr_auto]"
                         >
                             <div class="space-y-4">
-                                <InputText v-model="person.name_surname" label="Name and surname" :error="personError(oi, pi, 'name_surname')" />
-                                <InputText v-model="person.tkt_number" label="TKT Number" :error="personError(oi, pi, 'tkt_number')" />
+                                <InputText v-model="person.name_surname" label="Name and surname" :disabled="person.bill_locked" :error="personError(oi, pi, 'name_surname')" />
+                                <InputText v-model="person.tkt_number" label="TKT Number" :disabled="person.bill_locked" :error="personError(oi, pi, 'tkt_number')" />
                             </div>
                             <div class="space-y-4">
                                 <InputNumber v-model="person.sold_value" label="Sold value" :disabled="soldLocked" :error="personError(oi, pi, 'sold_value')" />
-                                <InputNumber v-model="person.buying_value" label="Buying value" :error="personError(oi, pi, 'buying_value')" />
+                                <InputNumber v-model="person.buying_value" label="Buying value" :disabled="person.bill_locked" :error="personError(oi, pi, 'buying_value')" />
                             </div>
                             <div class="flex flex-row gap-2 sm:flex-col sm:justify-center">
                                 <a
@@ -341,7 +295,7 @@ async function save() {
                                     </svg>
                                 </button>
                                 <button
-                                    v-if="order.persons.length > 1"
+                                    v-if="order.persons.length > 1 && !person.bill_locked"
                                     type="button"
                                     class="inline-flex h-8 w-8 items-center justify-center rounded bg-red-600 text-white hover:bg-red-700"
                                     aria-label="Remove person"
@@ -350,6 +304,15 @@ async function save() {
                                     <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Z"/></svg>
                                 </button>
                             </div>
+                            <p v-if="person.bill_locked" class="rounded bg-amber-50 px-3 py-2 text-xs text-amber-700 sm:col-span-3">
+                                The connected bill is paid — name, TKT number and buying value can't be changed.
+                                <a
+                                    :href="routeUrl('supplierBills.show', person.bill_id)"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="font-medium underline hover:text-amber-900"
+                                >View bill</a>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -359,7 +322,7 @@ async function save() {
                 <Button type="button" @click="addOrder">+ Add order</Button>
                 <div class="flex gap-2">
                     <Button type="button" @click="router.push(routeUrl('customerInvoices.show', route.params.id))">Cancel</Button>
-                    <Button type="button" variant="primary" :loading="saving" :disabled="Boolean(lockedBy)" @click="save">Save invoice</Button>
+                    <Button type="button" variant="primary" :loading="saving" @click="save">Save invoice</Button>
                 </div>
             </div>
         </template>
