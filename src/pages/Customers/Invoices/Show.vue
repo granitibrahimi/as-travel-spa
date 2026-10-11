@@ -112,10 +112,25 @@ async function toggleHideName(person) {
     }
 }
 
+// The credit notes created from this invoice (related_id), in the shape the
+// shared links table renders; unlinking one detaches it from the invoice.
+const relatedCreditNotes = computed(() => (invoice.value?.credit_notes ?? []).map((creditNote) => ({
+    id: creditNote.id,
+    kind: 'credit_note',
+    type: { id: 2, name: 'Credit Note' },
+    transaction_id: creditNote.id,
+    reference: creditNote.gen_id,
+    date: creditNote.on_date,
+    amount: creditNote.amount,
+    can_unlink: creditNote.can_unlink,
+})));
+
 const toUnlink = ref(null);
 const unlinking = ref(false);
 
-const unlinkMessage = computed(() => toUnlink.value
+const unlinkMessage = computed(() => toUnlink.value?.kind === 'credit_note'
+    ? `Credit note ${toUnlink.value.reference} will no longer be linked to this invoice. Its amount stays as it is.`
+    : toUnlink.value
     ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this invoice and restores its open amount.`
     : '');
 
@@ -127,7 +142,9 @@ async function confirmUnlink() {
     unlinking.value = true;
 
     try {
-        await api.delete(`/customers/transaction-links/${toUnlink.value.id}`);
+        await api.delete(toUnlink.value.kind === 'credit_note'
+            ? `/customers/credit-notes/${toUnlink.value.id}/related-invoice`
+            : `/customers/transaction-links/${toUnlink.value.id}`);
         toUnlink.value = null;
         await load();
     } catch (error) {
@@ -501,31 +518,8 @@ async function confirmUnlink() {
                 </div>
             </FullWidthBox>
 
-            <FullWidthBox v-if="invoice.credit_notes.length" title="Related credit notes" :collapsible="false"
-                          class="mb-6">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                        <tr class="border-b text-left text-gray-500">
-                            <th class="py-2 pr-2">Reference</th>
-                            <th class="py-2 pr-2">Date</th>
-                            <th class="py-2 pl-2 text-right">Amount</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr v-for="creditNote in invoice.credit_notes" :key="creditNote.id"
-                            class="border-b last:border-0">
-                            <td class="py-2 pr-2">
-                                <RouterLink :to="routeUrl('customerCreditNotes.show', creditNote.id)"
-                                            class="text-red-600 hover:underline">{{ creditNote.gen_id }}
-                                </RouterLink>
-                            </td>
-                            <td class="py-2 pr-2">{{ creditNote.on_date }}</td>
-                            <td class="py-2 pl-2 text-right tabular-nums">{{ money(creditNote.amount) }}</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <FullWidthBox v-if="relatedCreditNotes.length" title="Related credit notes" :collapsible="false" class="mb-6">
+                <CustomerTransactionLinks :links="relatedCreditNotes" @unlink="toUnlink = $event" />
             </FullWidthBox>
 
             <FullWidthBox v-if="invoice.connected.length" title="Connected payments" :collapsible="false">
