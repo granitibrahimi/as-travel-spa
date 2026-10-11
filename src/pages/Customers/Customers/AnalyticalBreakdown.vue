@@ -22,11 +22,13 @@ import { useNotificationsStore } from '../../../stores/notifications.js';
 
 // GET /customers/customers/{id}/analytical-breakdown?from=&to=&status=all|open&details=1 →
 // { groups: [{ number, documents, totals }], unlinked: { documents, totals }, totals }.
-// A group is every document joined by links (a payment and the invoices it
-// paid, or everything in a reconciliation); `unlinked` are the documents
-// without any link that still have an open amount. Each document carries its
-// `links` (counterpart + amount); with details=1 invoices and credit notes
-// also carry their customer invoices report rows (`details`).
+// A group is one invoice / credit note (role "main", first) and what was
+// applied to it (role "settlement": `applied` is the part of that payment /
+// credit note / journal applied here, `via` the reconciliations it went
+// through). The date filter goes by the invoice / credit note's date.
+// `unlinked` are the open documents not applied to an invoice (payments on
+// account, …). With details=1 the invoices and credit notes also carry their
+// customer invoices report rows (`details`).
 //
 // The filters live in the URL query so Back from a document restores them.
 const route = useRoute();
@@ -132,8 +134,8 @@ const sections = computed(() => {
 
     const groups = data.value.groups.map((group, i) => ({
         key: `group-${group.number}`,
-        title: `Group ${group.number}`,
-        summary: summary(group.documents),
+        title: `${group.documents[0].type.name} ${group.documents[0].reference}`,
+        summary: summary(group.documents.slice(1)) || 'nothing applied',
         documents: group.documents,
         totals: group.totals,
         colour: PALETTE[i % PALETTE.length],
@@ -142,8 +144,8 @@ const sections = computed(() => {
     if (data.value.unlinked.documents.length) {
         groups.push({
             key: 'unlinked',
-            title: 'Not linked',
-            summary: 'open documents with no payment, credit or reconciliation linked',
+            title: 'Unapplied',
+            summary: 'open payments, journals and credit note balances not applied to an invoice',
             documents: data.value.unlinked.documents,
             totals: data.value.unlinked.totals,
             colour: { bar: 'border-l-gray-300', head: 'bg-gray-100 text-gray-700' },
@@ -163,45 +165,10 @@ function summary(documents) {
     return Object.entries(counts).map(([name, count]) => `${count} × ${name}`).join(' · ');
 }
 
-// Hovering a document highlights what it is linked to: its counterparts, and
-// everything sharing one of its reconciliations.
-const hovered = ref(null);
-
-const highlighted = computed(() => {
-    const document = hovered.value;
-
-    if (! document) {
-        return new Set();
-    }
-
-    const keys = new Set(document.links.map((link) => link.key));
-    const reconciliations = document.links.filter((link) => link.key.startsWith('rec_')).map((link) => link.key);
-
-    if (reconciliations.length) {
-        for (const section of sections.value) {
-            for (const other of section.documents) {
-                if (other.links.some((link) => reconciliations.includes(link.key))) {
-                    keys.add(other.key);
-                }
-            }
-        }
-    }
-
-    keys.delete(document.key);
-
-    return keys;
-});
-
-function rowClass(document) {
-    if (hovered.value?.key === document.key) {
-        return 'bg-yellow-100';
-    }
-
-    return highlighted.value.has(document.key) ? 'bg-yellow-50' : 'hover:bg-gray-50';
-}
-
-const debit = (document) => (document.amount > 0 ? document.amount : null);
-const credit = (document) => (document.amount < 0 ? -document.amount : null);
+// A settlement row shows the part applied to its group's invoice / credit note.
+const shownAmount = (document) => (document.role === 'settlement' ? document.applied : document.amount);
+const debit = (document) => (shownAmount(document) > 0 ? shownAmount(document) : null);
+const credit = (document) => (shownAmount(document) < 0 ? -shownAmount(document) : null);
 
 const columns = 12;
 const cell = 'border border-gray-200 px-2 py-1.5';
@@ -258,7 +225,7 @@ onMounted(() => {
                 </div>
 
                 <p class="mt-3 text-xs text-gray-500">
-                    Documents linked to each other — a payment and the invoices it paid, or everything in one reconciliation — form a group. A group is shown whole when any of its documents falls in the date range. Hover a row to highlight what it is linked to.
+                    Each invoice and credit note is shown with what was applied to it — the payments, credit notes and journals, each with the part it settled here (a payment that paid several invoices shows under each of them). The date range goes by the invoice / credit note date. A credit note applied to an invoice shows under that invoice.
                 </p>
             </FullWidthBox>
 
@@ -319,26 +286,29 @@ onMounted(() => {
                                 </tr>
 
                                 <template v-for="document in section.documents" :key="document.key">
-                                    <tr
-                                        class="whitespace-nowrap transition-colors"
-                                        :class="rowClass(document)"
-                                        @mouseenter="hovered = document"
-                                        @mouseleave="hovered = null"
-                                    >
+                                    <tr class="whitespace-nowrap hover:bg-gray-50">
                                         <td :class="[cell, 'border-l-4', section.colour.bar]">{{ document.date }}</td>
-                                        <td :class="[cell, 'font-medium']">
+                                        <td :class="[cell, 'font-medium', document.role === 'settlement' ? 'pl-6' : '']">
                                             <RouterLink v-if="customerTransactionPath(document.type.id, document.id)" :to="customerTransactionPath(document.type.id, document.id)" class="text-red-600 hover:underline">
                                                 {{ document.reference }}
                                             </RouterLink>
                                             <span v-else>{{ document.reference }}</span>
                                             <span v-if="document.external_reference" class="ml-1 text-xs text-gray-400">({{ document.external_reference }})</span>
                                             <span v-if="document.is_ghost" class="ml-1 rounded bg-gray-100 px-1 text-xs text-gray-500">ghost</span>
+                                            <div v-if="document.role === 'settlement'" class="text-xs font-normal text-gray-400">
+                                                {{ money(Math.abs(document.amount)) }} in total
+                                                <span v-for="reconciliation in document.via" :key="reconciliation.id">
+                                                    · via
+                                                    <RouterLink :to="customerTransactionPath(9, reconciliation.id)" class="hover:underline">Reconciliation {{ reconciliation.reference }}</RouterLink>
+                                                </span>
+                                            </div>
                                         </td>
                                         <td :class="cell">{{ document.type.name }}</td>
                                         <td :class="cell">{{ document.payment_type }}</td>
                                         <td :class="[cell, 'text-right tabular-nums']">{{ debit(document) === null ? '' : money(debit(document)) }}</td>
                                         <td :class="[cell, 'text-right tabular-nums']">{{ credit(document) === null ? '' : money(credit(document)) }}</td>
-                                        <td :class="[cell, 'text-right tabular-nums', document.open_amount !== 0 ? 'font-semibold text-red-600' : 'text-gray-400']">{{ money(document.open_amount) }}</td>
+                                        <td v-if="document.role === 'settlement'" :class="cell"></td>
+                                        <td v-else :class="[cell, 'text-right tabular-nums', document.open_amount !== 0 ? 'font-semibold text-red-600' : 'text-gray-400']">{{ money(document.open_amount) }}</td>
                                         <td :class="cell">{{ document.status }}</td>
                                         <td :class="cell">{{ document.parent_destination }}</td>
                                         <td :class="[cell, 'text-right tabular-nums']">{{ document.travelers }}</td>
