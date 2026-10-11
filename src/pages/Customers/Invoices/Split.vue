@@ -56,7 +56,12 @@ function toggle(person) {
 const selectedPersons = computed(() => persons.value.filter(isSelected));
 const selectedTotal = computed(() => selectedPersons.value.reduce((sum, person) => sum + Number(person.sold_value), 0));
 const allSelected = computed(() => persons.value.length > 0 && selectedPersons.value.length === persons.value.length);
-const canSubmit = computed(() => form.customer_id && selectedPersons.value.length > 0 && !allSelected.value && !submitting.value);
+// Linked payments / credit notes / other transactions block a split (the
+// Actions menu says so before opening this page; this covers a direct URL).
+const hasLinked = computed(() => (invoice.value?.connected ?? []).length > 0
+    || (invoice.value?.credit_notes ?? []).length > 0
+    || Number(invoice.value?.paid_amount ?? 0) !== 0);
+const canSubmit = computed(() => !hasLinked.value && form.customer_id && selectedPersons.value.length > 0 && !allSelected.value && !submitting.value);
 
 function fieldError(name) {
     return errors.value[name]?.[0] ?? '';
@@ -115,6 +120,9 @@ async function submit() {
                             Selected: <span class="font-semibold">{{ selectedPersons.length }}</span> of {{ persons.length }} persons,
                             <span class="font-semibold tabular-nums">{{ money(selectedTotal) }}</span>.
                             The new invoice keeps this invoice's date, due date and agent.
+                        </p>
+                        <p v-if="hasLinked" class="rounded bg-red-50 px-3 py-2 text-sm text-red-700">
+                            This invoice has linked payments, credit notes or other transactions, so it can't be split. Please unlink them first.
                         </p>
                         <p v-if="allSelected" class="text-sm text-amber-600">At least one person must stay on this invoice.</p>
                         <p v-if="fieldError('person_ids')" class="text-sm text-red-600">{{ fieldError('person_ids') }}</p>

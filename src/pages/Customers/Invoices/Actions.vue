@@ -2,9 +2,10 @@
 import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../../helpers/api';
-import { castMutation } from '../../../types/responses.js';
+import { castMutation, castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { openFileInNewTab } from '../../../helpers/download';
+import { money } from '../../../helpers/money';
 import { useAuthStore } from '../../../stores/auth';
 import ActionsOverlay from '../../../components/ActionsOverlay.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
@@ -92,7 +93,7 @@ const groups = computed(() => {
             : []),
         { label: 'Journal', to: `/finance/account-transactions/journal/customer-invoice/${invoice.id}`, can: 'accountTransactions.journal' },
         { label: 'Edit', to: routeUrl('customerInvoices.edit', invoice.id), canAny: ['customerInvoices.edit', 'customerInvoices.editOwnWithinTheDay'] },
-        { label: 'Split Invoice', to: routeUrl('customerInvoices.split', invoice.id), can: 'customerInvoices.split' },
+        { label: 'Split Invoice', action: () => openSplit(invoice), can: 'customerInvoices.split' },
     ].filter(allowed);
 
     if (pages.length) {
@@ -138,6 +139,50 @@ async function createCreditNote(invoice) {
     const { data } = await api.post(`/customers/invoices/${invoice.id}/credit-note`);
     emit('close');
     router.push(routeUrl('customerCreditNotes.show', castMutation(data).id));
+}
+
+// Split: an invoice with linked transactions (payments, reconciliations with
+// credit notes / journals, its own credit notes) can't be split — the API
+// refuses it — so say so up front, listing them, instead of opening the page.
+// The list row lacks the links, so the invoice is fetched fresh.
+const splitBlockedBy = ref(null);
+const checkingSplit = ref(false);
+
+async function openSplit(invoice) {
+    if (checkingSplit.value) {
+        return;
+    }
+
+    checkingSplit.value = true;
+
+    try {
+        const { data } = await api.get(`/customers/invoices/${invoice.id}`);
+        const fresh = castResource(data);
+        const linked = [
+            ...(fresh.connected ?? []).map((link) => ({ key: `link-${link.id}`, label: `${link.type?.name ?? 'Transaction'} ${link.reference ?? ''}`.trim(), amount: link.amount })),
+            ...(fresh.credit_notes ?? []).map((creditNote) => ({ key: `cn-${creditNote.id}`, label: `Credit Note ${creditNote.gen_id}`, amount: creditNote.amount })),
+        ];
+
+        if (linked.length || Number(fresh.paid_amount) !== 0) {
+            splitBlockedBy.value = { invoice: fresh, linked };
+            return;
+        }
+
+        emit('close');
+        router.push(routeUrl('customerInvoices.split', invoice.id));
+    } finally {
+        checkingSplit.value = false;
+    }
+}
+
+function closeSplitBlocked(openInvoice) {
+    const invoice = splitBlockedBy.value?.invoice;
+    splitBlockedBy.value = null;
+
+    if (openInvoice && invoice) {
+        emit('close');
+        router.push(routeUrl('customerInvoices.show', invoice.id));
+    }
 }
 
 // Local delete flow (confirm dialog → API). The parent decides what happens
@@ -206,6 +251,23 @@ const dangerClass = 'block w-full rounded border border-red-200 px-3 py-2 text-l
         @confirm="confirmDelete"
         @cancel="toDelete = null"
     />
+
+    <ConfirmDialog
+        :show="Boolean(splitBlockedBy)"
+        title="This invoice has linked transactions"
+        message="It has linked payments, credit notes or other transactions, so it can't be split. Please unlink them first."
+        :confirm-label="showViewAction ? 'Open invoice' : 'OK'"
+        cancel-label="Close"
+        @confirm="closeSplitBlocked(showViewAction)"
+        @cancel="closeSplitBlocked(false)"
+    >
+        <ul v-if="splitBlockedBy?.linked.length" class="mt-3 max-h-48 space-y-1 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-2 text-sm">
+            <li v-for="item in splitBlockedBy.linked" :key="item.key" class="flex justify-between gap-4">
+                <span class="text-gray-700">{{ item.label }}</span>
+                <span class="tabular-nums text-gray-500">{{ money(item.amount) }}</span>
+            </li>
+        </ul>
+    </ConfirmDialog>
 
     <SendEmailModal :invoice="invoice" :show="emailOpen" @close="emailOpen = false" @sent="emit('close')" />
 
