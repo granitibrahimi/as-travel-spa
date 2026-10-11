@@ -92,6 +92,7 @@ const groups = computed(() => {
             : []),
         { label: 'Journal', to: `/finance/account-transactions/journal/customer-invoice/${invoice.id}`, can: 'accountTransactions.journal' },
         { label: 'Edit', to: routeUrl('customerInvoices.edit', invoice.id), canAny: ['customerInvoices.edit', 'customerInvoices.editOwnWithinTheDay'] },
+        { label: 'Split Invoice', to: routeUrl('customerInvoices.split', invoice.id), can: 'customerInvoices.split' },
     ].filter(allowed);
 
     if (pages.length) {
