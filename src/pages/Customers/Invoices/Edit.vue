@@ -16,11 +16,6 @@ import DateInput from '../../../components/Form/DateInput.vue';
 import Select from '../../../components/Form/Select.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
-import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
-import { useAuthStore } from '../../../stores/auth';
-
-// Hiding a person's name (left out of the customer's analytical breakdown) needs this permission.
-const canHideNames = useAuthStore().can('customerInvoices.hideName');
 
 // Edit a customer invoice's orders and their persons. Header (customer/date) is
 // read-only here — those have dedicated change-* screens. Mirrors the platform
@@ -64,7 +59,7 @@ const total = computed(() => orders.value.reduce(
 ));
 
 function blankPerson() {
-    return { id: null, name_surname: '', hide_name: false, sold_value: '', buying_value: '', tkt_number: '' };
+    return { id: null, name_surname: '', sold_value: '', buying_value: '', tkt_number: '' };
 }
 
 function blankOrder() {
@@ -99,7 +94,6 @@ async function load() {
         persons: (order.persons ?? []).map((person) => ({
             id: person.id,
             name_surname: person.name_surname ?? '',
-            hide_name: Boolean(person.hide_name),
             sold_value: person.sold_value,
             buying_value: person.buying_value,
             tkt_number: person.tkt_number ?? '',
@@ -226,7 +220,6 @@ async function save() {
                 persons: order.persons.map((person) => ({
                     id: person.id,
                     name_surname: person.name_surname,
-                    ...(canHideNames ? { hide_name: person.hide_name } : {}),
                     sold_value: person.sold_value,
                     buying_value: person.buying_value,
                     tkt_number: person.tkt_number,
@@ -316,7 +309,6 @@ async function save() {
                         >
                             <div class="space-y-4">
                                 <InputText v-model="person.name_surname" label="Name and surname" :error="personError(oi, pi, 'name_surname')" />
-                            <NiceCheckbox v-if="canHideNames" v-model="person.hide_name" label="Hide name on the analytical breakdown" :error="personError(oi, pi, 'hide_name')" />
                                 <InputText v-model="person.tkt_number" label="TKT Number" :error="personError(oi, pi, 'tkt_number')" />
                             </div>
                             <div class="space-y-4">
