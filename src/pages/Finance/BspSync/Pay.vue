@@ -103,6 +103,10 @@ async function submit() {
             errors.value = Object.fromEntries(
                 Object.entries(e.response.data.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
             );
+        } else if (! e.response || [502, 503, 504].includes(e.response.status)) {
+            // A gateway timeout cuts the request off while the server may still
+            // finish and commit the payment, so don't claim it failed.
+            error.value = 'The server took too long to respond. The payment may still have been saved — check Supplier Payments before trying again.';
         } else {
             error.value = e.response?.data?.message ?? 'Could not record the BSP payment.';
         }
