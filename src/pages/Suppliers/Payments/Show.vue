@@ -61,6 +61,39 @@ async function confirmUnlink() {
     }
 }
 
+// Unlinks everything the payment is connected to in one go (each bill / credit
+// note gets its open amount back), so a heavily linked payment can be deleted.
+// The payment may also be used inside a reconciliation without own links, so
+// a partly used payment offers it too.
+const canUnlinkAll = computed(() => auth.can('supplierTransactionsLinks.unlink')
+    && Boolean(payment.value)
+    && ((payment.value.links?.length ?? 0) > 0 || payment.value.open_amount !== payment.value.amount));
+
+const confirmingUnlinkAll = ref(false);
+const unlinkingAll = ref(false);
+
+async function confirmUnlinkAll() {
+    if (unlinkingAll.value) {
+        return;
+    }
+
+    unlinkingAll.value = true;
+
+    try {
+        const { data } = await api.delete(`/suppliers/payments/${payment.value.id}/links`);
+        confirmingUnlinkAll.value = false;
+        notifications.push({ type: 'success', message: data?.message ?? 'All transactions were unlinked.' });
+        await load();
+    } catch (error) {
+        notifications.push({
+            type: 'error',
+            message: error.response?.data?.message ?? 'Could not unlink the transactions.',
+        });
+    } finally {
+        unlinkingAll.value = false;
+    }
+}
+
 const rows = computed(() => payment.value ? [
     ['Amount', money(payment.value.amount)],
     ['Open amount', money(payment.value.open_amount)],
@@ -116,6 +149,16 @@ function onDeleted() {
         </div>
 
         <FullWidthBox title="Linked transactions" :collapsible="false" class="mt-6">
+            <template v-if="canUnlinkAll" #actions>
+                <button
+                    type="button"
+                    class="rounded border border-red-200 bg-white px-3 py-1 text-sm text-red-600 hover:bg-red-50"
+                    @click="confirmingUnlinkAll = true"
+                >
+                    Unlink all
+                </button>
+            </template>
+
             <SupplierTransactionLinks
                 :links="payment.links ?? []"
                 :total="payment.links_amount ?? 0"
@@ -153,6 +196,17 @@ function onDeleted() {
             :processing="unlinking"
             @confirm="confirmUnlink"
             @cancel="toUnlink = null"
+        />
+
+        <ConfirmDialog
+            :show="confirmingUnlinkAll"
+            title="Unlink all transactions?"
+            message="Every transaction linked to this payment is unlinked and gets its open amount back, and the payment becomes fully open again. Reconciliations this payment is used in are removed as a whole."
+            confirm-label="Yes, unlink all"
+            confirm-variant="danger"
+            :processing="unlinkingAll"
+            @confirm="confirmUnlinkAll"
+            @cancel="confirmingUnlinkAll = false"
         />
     </AppLayout>
 </template>
