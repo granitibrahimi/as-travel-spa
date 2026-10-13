@@ -8,6 +8,7 @@ import { useAuthStore } from '../../../stores/auth.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
+import { toInputDate } from '../../../helpers/date.js';
 import DateInput from '../../../components/Form/DateInput.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import Select from '../../../components/Form/Select.vue';
@@ -138,7 +139,7 @@ async function submit() {
                             <Select v-model="form.type" :options="vacationTypes" label="Type *" :placeholder="null" :error="errors.type" />
                             <div class="hidden md:block" />
                             <DateInput v-model="form.from" label="From *" :error="errors.from" />
-                            <DateInput v-model="form.to" label="To *" :error="errors.to" />
+                            <DateInput v-model="form.to" label="To *" :min="toInputDate(form.from) || undefined" :error="errors.to" />
                         </div>
                         <NiceCheckbox v-model="form.working_weekend" label="Includes a working weekend" class="mt-4" />
                         <div class="mt-4">

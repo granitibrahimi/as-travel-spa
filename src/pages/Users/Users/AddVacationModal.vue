@@ -1,7 +1,7 @@
 <script setup>
 import { reactive, ref, watch } from 'vue';
 import api from '../../../helpers/api.js';
-import { todayApiDate } from '../../../helpers/date.js';
+import { todayApiDate, toInputDate } from '../../../helpers/date.js';
 import SideOverlay from '../../../components/SideOverlay.vue';
 import Button from '../../../components/Button.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
@@ -110,7 +110,7 @@ async function submit() {
         <form class="space-y-4" @submit.prevent="submit">
             <Select v-model="form.type" :options="typeOptions" label="Type *" :placeholder="null" :error="errors.type" />
             <DateInput v-model="form.from" label="From *" :error="errors.from" />
-            <DateInput v-model="form.to" label="To *" :error="errors.to" />
+            <DateInput v-model="form.to" label="To *" :min="toInputDate(form.from) || undefined" :error="errors.to" />
             <Select v-model="form.status" :options="statusOptions" label="Status *" :placeholder="null" :error="errors.status" />
             <Textarea v-model="form.response" label="Response *" :rows="3" :error="errors.response" />
             <NiceCheckbox v-model="form.working_weekend" label="Includes a working weekend" />
