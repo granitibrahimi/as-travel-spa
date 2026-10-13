@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import { renameSync, existsSync } from 'node:fs';
+import { renameSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 // After the build, rename the generated index.html to index.php so a PHP host
@@ -16,7 +16,18 @@ function htmlToPhp() {
         closeBundle() {
             const html = resolve(outDir, 'index.html');
             const php = resolve(outDir, 'index.php');
-            if (existsSync(html)) renameSync(html, php);
+            if (! existsSync(html)) return;
+            renameSync(html, php);
+            // Never let a cache (Laravel Cloud's edge, the browser) keep the
+            // entry page: a cached index.php from the previous deploy points at
+            // hashed chunks the new deploy deleted, and the app goes blank
+            // (the host answers the missing .js with index.php → MIME error),
+            // even after the stale-chunk reload. Only the hashed assets cache.
+            writeFileSync(
+                php,
+                "<?php header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0'); ?>\n"
+                    + readFileSync(php, 'utf8'),
+            );
         },
     };
 }
