@@ -259,7 +259,7 @@ async function cancelActive() {
                         </thead>
                         <tbody>
                             <tr v-if="otherRequests.length === 0">
-                                <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No previous requests.</td>
+                                <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No previous requests.</td>
                             </tr>
                             <tr v-for="request in otherRequests" :key="request.id" class="hover:bg-gray-50">
                                 <td class="border border-gray-300 px-2 py-2 font-medium">{{ request.id }}</td>
@@ -269,7 +269,13 @@ async function cancelActive() {
                                 <td class="border border-gray-300 px-2 py-2 font-bold">{{ request.status }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ request.type }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ request.description || '—' }}</td>
-                                <td class="border border-gray-300 px-2 py-2">{{ request.responder?.name ?? '—' }}</td>
+                                <td class="border border-gray-300 px-2 py-2">
+                                    <template v-if="request.response || request.responder">
+                                        <div v-if="request.response">{{ request.response }}</div>
+                                        <div v-if="request.responder" class="text-xs text-gray-500">by {{ request.responder.name }}</div>
+                                    </template>
+                                    <template v-else>—</template>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
