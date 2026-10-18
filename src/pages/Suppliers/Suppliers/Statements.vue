@@ -93,7 +93,8 @@ async function fetchStatements() {
     }
 }
 
-async function download(kind, flag) {
+async function download(kind) {
+    const flag = kind === 'pdf' ? downloadingPdf : downloadingExcel;
     if (flag.value) {
         return;
     }
@@ -138,8 +139,8 @@ onMounted(() => {
                 <template #actions>
                     <div class="flex flex-wrap items-center gap-2">
                         <Button size="sm" :loading="sendingEmail" @click="sendEmail">Send email</Button>
-                        <Button size="sm" :loading="downloadingExcel" @click="download('excel', downloadingExcel)">Download Excel</Button>
-                        <Button size="sm" :loading="downloadingPdf" @click="download('pdf', downloadingPdf)">Download PDF</Button>
+                        <Button size="sm" :loading="downloadingExcel" @click="download('excel')">Download Excel</Button>
+                        <Button size="sm" :loading="downloadingPdf" @click="download('pdf')">Download PDF</Button>
                         <RouterLink :to="routeUrl('suppliers.show', id)" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50">
                             Back to supplier
                         </RouterLink>
