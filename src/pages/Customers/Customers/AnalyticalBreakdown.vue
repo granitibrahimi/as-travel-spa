@@ -21,7 +21,9 @@ import { useAuthStore } from '../../../stores/auth';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 
 // GET /customers/customers/{id}/analytical-breakdown?from=&to=&status=all|open&details=1 →
-// { groups: [{ number, documents, totals }], totals, credit_breakdown }, newest first.
+// { groups: [{ number, documents, totals }], previous_balance, totals, credit_breakdown }, newest first.
+// With a from, previous_balance ({ date, open }) is what is still open from
+// before it — in totals.open, so the open balance is the actual one.
 // A group is one invoice / credit note (role "main", first) and what was
 // applied to it (role "settlement": `applied` is the part of that payment /
 // credit note / journal applied here, `via` the reconciliations it went
@@ -71,7 +73,8 @@ const statusOptions = [
     { value: 'open', label: 'With an open amount' },
 ];
 
-const downloading = ref(false);
+// The export being prepared: 'pdf', 'excel' or null.
+const downloading = ref(null);
 
 function apply() {
     const params = {
@@ -89,16 +92,17 @@ function apply() {
     load(params);
 }
 
-// GET .../analytical-breakdown/pdf: the same breakdown, laid out like this page.
-async function downloadPdf() {
+// GET .../analytical-breakdown/pdf | excel: the same breakdown as this page,
+// for the filters it is showing.
+async function download(format) {
     if (downloading.value) {
         return;
     }
-    downloading.value = true;
+    downloading.value = format;
 
     try {
-        await downloadFile(`/customers/customers/${id}/analytical-breakdown/pdf`, {
-            fallbackName: 'analytical-breakdown.pdf',
+        await downloadFile(`/customers/customers/${id}/analytical-breakdown/${format}`, {
+            fallbackName: `analytical-breakdown.${format === 'excel' ? 'xlsx' : 'pdf'}`,
             config: { params: applied.value },
         });
     } catch (e) {
@@ -106,7 +110,7 @@ async function downloadPdf() {
         const tooBig = e.response?.status === 422 ? e.response.data?.errors?.from?.[0] : null;
         notifications.push({ type: 'error', message: tooBig ?? 'Could not export the breakdown.' });
     } finally {
-        downloading.value = false;
+        downloading.value = null;
     }
 }
 
@@ -191,8 +195,11 @@ onMounted(() => {
             <FullWidthBox :title="customer ? `Analytical Breakdown: ${customer.full_name}` : 'Analytical Breakdown'" :collapsible="false">
                 <template #actions>
                     <div class="flex flex-wrap items-center gap-2">
-                        <Button size="sm" :loading="downloading" :disabled="loading || ! data" @click="downloadPdf">
-                            {{ downloading ? 'Preparing…' : 'Download PDF' }}
+                        <Button size="sm" :loading="downloading === 'pdf'" :disabled="loading || ! data || downloading !== null" @click="download('pdf')">
+                            {{ downloading === 'pdf' ? 'Preparing…' : 'Download PDF' }}
+                        </Button>
+                        <Button size="sm" :loading="downloading === 'excel'" :disabled="loading || ! data || downloading !== null" @click="download('excel')">
+                            {{ downloading === 'excel' ? 'Preparing…' : 'Download Excel' }}
                         </Button>
                         <RouterLink :to="routeUrl('customers.show', id)" class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50">
                             Back to customer
@@ -244,7 +251,14 @@ onMounted(() => {
                     />
                     <StatCard label="Credit notes" :value="creditBreakdown.credit_notes" :format="money" animate />
                     <StatCard v-if="creditBreakdown.other !== 0" label="Other credits" :value="creditBreakdown.other" :format="money" animate sub="Journals, gift cards" />
-                    <StatCard label="Open balance" :value="data.totals.open" :format="money" animate :accent="data.totals.open > 0" />
+                    <StatCard
+                        label="Open balance"
+                        :value="data.totals.open"
+                        :format="money"
+                        animate
+                        :accent="data.totals.open > 0"
+                        :sub="data.previous_balance ? `Incl. ${money(data.previous_balance.open)} previous balance` : ''"
+                    />
                 </div>
 
                 <FullWidthBox title="Invoices & payments" :collapsible="false">
@@ -340,6 +354,20 @@ onMounted(() => {
                                         </td>
                                     </tr>
                                 </template>
+                            </tbody>
+
+                            <!-- Oldest last: what is still open from before the range, so
+                                 the open balance is the customer's actual one. -->
+                            <tbody v-if="data.previous_balance">
+                                <tr class="whitespace-nowrap bg-gray-100 font-medium text-gray-700">
+                                    <td :class="[cell, 'border-l-4 border-l-gray-400']">{{ data.previous_balance.date }}</td>
+                                    <td :class="cell" colspan="5">
+                                        Previous balance
+                                        <span class="ml-1 text-xs font-normal text-gray-500">still open from before {{ applied.from }}</span>
+                                    </td>
+                                    <td :class="[cell, 'text-right tabular-nums', data.previous_balance.open !== 0 ? 'font-semibold text-red-600' : 'text-gray-400']">{{ money(data.previous_balance.open) }}</td>
+                                    <td :class="cell" :colspan="columns - 7"></td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
