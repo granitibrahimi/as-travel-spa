@@ -73,8 +73,9 @@ async function load() {
         destination: order.destination?.id ?? null,
         destinationOption: order.destination?.id ? { id: order.destination.id, name: order.destination.name } : null,
         extra_info: order.extra_info ?? '',
-        start_date: order.start_date ?? '',
-        return_date: order.return_date ?? '',
+        // The show endpoint names the order dates from_date / to_date.
+        start_date: order.from_date ?? '',
+        return_date: order.to_date ?? '',
         persons: (order.persons ?? []).map((person) => ({
             id: person.id,
             name_surname: person.name_surname ?? '',
