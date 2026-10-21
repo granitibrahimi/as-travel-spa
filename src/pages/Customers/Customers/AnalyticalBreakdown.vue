@@ -21,7 +21,7 @@ import { useAuthStore } from '../../../stores/auth';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 
 // GET /customers/customers/{id}/analytical-breakdown?from=&to=&status=all|open&details=1 →
-// { groups: [{ number, documents, totals }], totals }, newest first.
+// { groups: [{ number, documents, totals }], totals, credit_breakdown }, newest first.
 // A group is one invoice / credit note (role "main", first) and what was
 // applied to it (role "settlement": `applied` is the part of that payment /
 // credit note / journal applied here, `via` the reconciliations it went
@@ -46,6 +46,13 @@ const to = ref(route.query.to ?? todayApiDate());
 const status = ref(route.query.status || 'all');
 // The filters the table is showing — what the PDF is built from.
 const applied = ref({});
+// totals.credit split by what gave it (payments, of those bank / cash, credit
+// notes, the rest); the parts add up to totals.credit.
+const creditBreakdown = computed(() => data.value?.credit_breakdown ?? {
+    payments: { total: 0, bank: 0, cash: 0 },
+    credit_notes: 0,
+    other: 0,
+});
 const canSeeDetails = computed(() => auth.can('customerInvoices.reports'));
 const details = ref(route.query.details === '1' && canSeeDetails.value);
 // The copy for the customer: the API leaves the internal columns out of the
@@ -226,9 +233,17 @@ onMounted(() => {
             <p v-if="error" class="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">{{ error }}</p>
 
             <template v-else-if="data">
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2" :class="creditBreakdown.other !== 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'">
                     <StatCard label="Debit (invoiced)" :value="data.totals.debit" :format="money" animate />
-                    <StatCard label="Credit (paid / credited)" :value="data.totals.credit" :format="money" animate />
+                    <StatCard
+                        label="Payments"
+                        :value="creditBreakdown.payments.total"
+                        :format="money"
+                        animate
+                        :sub="`Bank ${money(creditBreakdown.payments.bank)} · Cash ${money(creditBreakdown.payments.cash)}`"
+                    />
+                    <StatCard label="Credit notes" :value="creditBreakdown.credit_notes" :format="money" animate />
+                    <StatCard v-if="creditBreakdown.other !== 0" label="Other credits" :value="creditBreakdown.other" :format="money" animate sub="Journals, gift cards" />
                     <StatCard label="Open balance" :value="data.totals.open" :format="money" animate :accent="data.totals.open > 0" />
                 </div>
 
