@@ -250,7 +250,7 @@ onMounted(() => {
                         :sub="`Bank ${money(creditBreakdown.payments.bank)} · Cash ${money(creditBreakdown.payments.cash)}`"
                     />
                     <StatCard label="Credit notes" :value="creditBreakdown.credit_notes" :format="money" animate />
-                    <StatCard v-if="creditBreakdown.other !== 0" label="Other credits" :value="creditBreakdown.other" :format="money" animate sub="Journals, gift cards" />
+                    <StatCard v-if="creditBreakdown.other !== 0" label="Other credits" :value="creditBreakdown.other" :format="money" animate sub="Journals, fin. credit notes" />
                     <StatCard
                         label="Open balance"
                         :value="data.totals.open"

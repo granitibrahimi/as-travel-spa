@@ -28,8 +28,8 @@ const LABEL_TYPE_IDS = {
     Invoice: 1,
     'Credit Note': 2,
     Payment: 3,
-    'Gift Card': 4,
-    Refund: 5,
+    'Fin. Credit Note': 4,
+    Reimbursement: 5,
     Journal: 6,
 };
 
