@@ -11,7 +11,7 @@ import { useAuthStore } from '../../../stores/auth';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
-import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import UnlinkConfirmDialog from '../../../components/UnlinkConfirmDialog.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
 
@@ -130,12 +130,10 @@ const rowActions = (link) => [
             <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
 
-        <ConfirmDialog
-            :show="Boolean(toUnlink)"
-            title="Unlink transaction?"
+        <UnlinkConfirmDialog
+            :link="toUnlink"
+            party="supplier"
             :message="unlinkMessage(toUnlink)"
-            confirm-label="Yes, unlink"
-            confirm-variant="danger"
             :processing="unlinking"
             @confirm="confirmUnlink"
             @cancel="toUnlink = null"

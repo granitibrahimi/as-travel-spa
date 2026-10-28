@@ -14,6 +14,7 @@ import Loader from '../../../components/Loader.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
 import SupplierTransactionLinks from '../../../components/SupplierTransactionLinks.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import UnlinkConfirmDialog from '../../../components/UnlinkConfirmDialog.vue';
 import DocumentsBox from '../../../components/DocumentsBox.vue';
 import PaymentActions from './Actions.vue';
 
@@ -187,12 +188,10 @@ function onDeleted() {
             @deleted="onDeleted"
         />
 
-        <ConfirmDialog
-            :show="Boolean(toUnlink)"
-            title="Unlink transaction?"
+        <UnlinkConfirmDialog
+            :link="toUnlink"
+            party="supplier"
             :message="unlinkMessage"
-            confirm-label="Yes, unlink"
-            confirm-variant="danger"
             :processing="unlinking"
             @confirm="confirmUnlink"
             @cancel="toUnlink = null"

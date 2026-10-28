@@ -13,7 +13,7 @@ import FullWidthBox from '../../../components/FullWidthBox.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
 import SupplierTransactionLinks from '../../../components/SupplierTransactionLinks.vue';
 import DocumentsBox from '../../../components/DocumentsBox.vue';
-import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import UnlinkConfirmDialog from '../../../components/UnlinkConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 import Alert from '../../../components/Alert.vue';
 import SupplierCreditNoteActions from './Actions.vue';
@@ -186,12 +186,10 @@ async function confirmUnlink() {
             />
         </template>
 
-        <ConfirmDialog
-            :show="Boolean(toUnlink)"
-            title="Unlink transaction?"
+        <UnlinkConfirmDialog
+            :link="toUnlink"
+            party="supplier"
             :message="unlinkMessage"
-            confirm-label="Yes, unlink"
-            confirm-variant="danger"
             :processing="unlinking"
             @confirm="confirmUnlink"
             @cancel="toUnlink = null"

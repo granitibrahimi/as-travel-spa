@@ -11,6 +11,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import UnlinkConfirmDialog from '../../../components/UnlinkConfirmDialog.vue';
 import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import Loader from '../../../components/Loader.vue';
 import CustomerDetails from "../../../components/CustomerDetails.vue";
@@ -149,12 +150,10 @@ async function confirmUnlink() {
                 <CustomerTransactionLinks :links="giftCard.connected" @unlink="toUnlink = $event" />
             </FullWidthBox>
 
-            <ConfirmDialog
-                :show="Boolean(toUnlink)"
-                title="Unlink transaction?"
+            <UnlinkConfirmDialog
+                :link="toUnlink"
+                party="customer"
                 :message="unlinkMessage"
-                confirm-label="Yes, unlink"
-                confirm-variant="danger"
                 :processing="unlinking"
                 @confirm="confirmUnlink"
                 @cancel="toUnlink = null"

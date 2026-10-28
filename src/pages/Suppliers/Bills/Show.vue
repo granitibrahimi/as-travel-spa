@@ -15,6 +15,7 @@ import SupplierTransactionLinks from '../../../components/SupplierTransactionLin
 import DocumentsBox from '../../../components/DocumentsBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import UnlinkConfirmDialog from '../../../components/UnlinkConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 import Alert from '../../../components/Alert.vue';
 
@@ -220,12 +221,10 @@ async function confirmUnlink() {
             @cancel="showDelete = false"
         />
 
-        <ConfirmDialog
-            :show="Boolean(toUnlink)"
-            title="Unlink transaction?"
+        <UnlinkConfirmDialog
+            :link="toUnlink"
+            party="supplier"
             :message="unlinkMessage"
-            confirm-label="Yes, unlink"
-            confirm-variant="danger"
             :processing="unlinking"
             @confirm="confirmUnlink"
             @cancel="toUnlink = null"

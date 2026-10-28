@@ -12,7 +12,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Loader from '../../../components/Loader.vue';
 import DocumentsBox from '../../../components/DocumentsBox.vue';
-import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import UnlinkConfirmDialog from '../../../components/UnlinkConfirmDialog.vue';
 import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
 import PaymentActions from './Actions.vue';
@@ -217,12 +217,10 @@ async function confirmUnlink() {
                 @deleted="router.push(routeUrl('customers.show', payment.customer.id))"
             />
 
-            <ConfirmDialog
-                :show="Boolean(toUnlink)"
-                title="Unlink transaction?"
+            <UnlinkConfirmDialog
+                :link="toUnlink"
+                party="customer"
                 :message="unlinkMessage"
-                confirm-label="Yes, unlink"
-                confirm-variant="danger"
                 :processing="unlinking"
                 @confirm="confirmUnlink"
                 @cancel="toUnlink = null"

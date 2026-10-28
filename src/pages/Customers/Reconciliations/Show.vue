@@ -11,6 +11,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import UnlinkConfirmDialog from '../../../components/UnlinkConfirmDialog.vue';
 import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import Loader from '../../../components/Loader.vue';
 import CustomerDetails from "../../../components/CustomerDetails.vue";
@@ -32,10 +33,6 @@ onMounted(load);
 const toUnlink = ref(null);
 const unlinking = ref(false);
 
-const unlinkMessage = computed(() => toUnlink.value
-    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this reconciliation and restores the balance it adjusted.`
-    : '');
-
 async function confirmUnlink() {
     if (unlinking.value) {
         return;
@@ -43,20 +40,14 @@ async function confirmUnlink() {
 
     unlinking.value = true;
 
-    // Unlinking the reconciliation's last link deletes the reconciliation
-    // itself (backend UnlinkCustomerTransactionNewLinkAction), so reloading
-    // this page would 404 — bounce to the list instead.
-    const wasLastLink = (reconciliation.value?.links?.length ?? 0) <= 1;
-
     try {
         await api.delete(`/customers/transaction-links/${toUnlink.value.id}`);
         toUnlink.value = null;
 
-        if (wasLastLink) {
-            router.push(routeUrl('customerReconciliations.list'));
-        } else {
-            await load();
-        }
+        // Unlinking any of its links deletes the whole reconciliation
+        // (backend UnlinkCustomerTransactionNewLinkAction), so reloading this
+        // page would 404 — bounce to the list instead.
+        router.push(routeUrl('customerReconciliations.list'));
     } catch (error) {
         notifications.push({
             type: 'error',
@@ -160,12 +151,10 @@ async function confirmDelete() {
             @cancel="showDelete = false"
         />
 
-        <ConfirmDialog
-            :show="Boolean(toUnlink)"
-            title="Unlink transaction?"
-            :message="unlinkMessage"
-            confirm-label="Yes, unlink"
-            confirm-variant="danger"
+        <UnlinkConfirmDialog
+            :link="toUnlink"
+            party="customer"
+            :show-reconciliation-link="false"
             :processing="unlinking"
             @confirm="confirmUnlink"
             @cancel="toUnlink = null"

@@ -11,6 +11,7 @@ import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
+import UnlinkConfirmDialog from '../../../components/UnlinkConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
 import DocumentsBox from '../../../components/DocumentsBox.vue';
 import SupplierDetails from '../../../components/SupplierDetails.vue';
@@ -62,10 +63,6 @@ async function confirmDelete() {
 const toUnlink = ref(null);
 const unlinking = ref(false);
 
-const unlinkMessage = computed(() => toUnlink.value
-    ? `This reverses ${toUnlink.value.reference ?? toUnlink.value.transaction_id} from this reconciliation and restores its open amount. If this was the last linked transaction, the reconciliation itself is removed.`
-    : '');
-
 async function confirmUnlink() {
     if (unlinking.value) {
         return;
@@ -77,18 +74,10 @@ async function confirmUnlink() {
         await api.delete(`/suppliers/transaction-links/${toUnlink.value.id}`);
         toUnlink.value = null;
 
-        // Unlinking the last link on a reconciliation deletes the
-        // reconciliation itself (see UnlinkSupplierTransactionNewLinkAction) —
-        // reloading would then 404, so bounce back to the list instead.
-        try {
-            await load();
-        } catch (error) {
-            if (error.response?.status === 404) {
-                router.push(routeUrl('supplierReconciliations.list'));
-            } else {
-                throw error;
-            }
-        }
+        // Unlinking any of its links deletes the whole reconciliation
+        // (backend UnlinkSupplierTransactionNewLinkAction), so reloading this
+        // page would 404 — bounce to the list instead.
+        router.push(routeUrl('supplierReconciliations.list'));
     } catch (error) {
         notifications.push({
             type: 'error',
@@ -165,12 +154,10 @@ async function confirmUnlink() {
             @cancel="showDelete = false"
         />
 
-        <ConfirmDialog
-            :show="Boolean(toUnlink)"
-            title="Unlink transaction?"
-            :message="unlinkMessage"
-            confirm-label="Yes, unlink"
-            confirm-variant="danger"
+        <UnlinkConfirmDialog
+            :link="toUnlink"
+            party="supplier"
+            :show-reconciliation-link="false"
             :processing="unlinking"
             @confirm="confirmUnlink"
             @cancel="toUnlink = null"
