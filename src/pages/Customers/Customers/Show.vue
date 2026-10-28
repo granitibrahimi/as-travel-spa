@@ -371,7 +371,7 @@ watch(filters, () => {
                                     </RouterLink>
                                     <span v-else>{{ transaction.id }} | {{ transaction.reference }}</span>
                                 </td>
-                                <td class="border border-gray-300 px-2 py-2">{{ transaction.type.name }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ transaction.type.name }}{{ transaction.payment_method ? `: ${transaction.payment_method}` : '' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
                                     {{ money(transaction.open_amount) }}
                                 </td>
