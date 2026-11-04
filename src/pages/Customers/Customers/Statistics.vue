@@ -47,8 +47,10 @@ async function fetchStatistics(page = 1) {
                 page,
             },
         });
-        stats.value = data.stats;
-        invoices.value = castPaginated(data);
+        // The stats ride along in the paginated envelope's `extra` block.
+        const page = castPaginated(data);
+        stats.value = page.extra.stats ?? null;
+        invoices.value = page;
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
