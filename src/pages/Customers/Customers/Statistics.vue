@@ -48,9 +48,11 @@ async function fetchStatistics(page = 1) {
             },
         });
         // The stats ride along in the paginated envelope's `extra` block.
-        const page = castPaginated(data);
-        stats.value = page.extra.stats ?? null;
-        invoices.value = page;
+        // Not `page`: that would shadow the argument used in `params` above
+        // (temporal dead zone -> ReferenceError on every fetch).
+        const result = castPaginated(data);
+        stats.value = result.extra.stats ?? null;
+        invoices.value = result;
     } catch (error) {
         if (error.code !== 'ERR_CANCELED') {
             throw error;
