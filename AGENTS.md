@@ -42,6 +42,12 @@ bearer token. This file documents conventions to follow when working here.
   comparisons) use `parseApiDate()` — both in `src/helpers/date.js`. The
   `toInputDate`/`toApiDate`/`toInputDateTime`/`toApiDateTime` helpers are used
   only inside `DateInput`; page code should not call them.
+- **dd.mm.yyyy picker (rollout in progress)**: `DateInput` shows the browser's
+  locale order (e.g. `11/04/2026` in an en-US browser). `DatePicker`
+  (`src/components/Form/DatePicker.vue`) is a drop-in with the same `d.m.Y`
+  `v-model` that always shows and takes `dd.mm.yyyy`, with its own calendar.
+  It only emits whole, valid dates (or `''`). Used on the Analytical Breakdown
+  so far; the goal is to use it for every date field.
 
 ## Auth, permissions & user snapshot
 

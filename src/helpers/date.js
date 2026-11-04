@@ -115,6 +115,36 @@ export function endOfMonthApiDate() {
 
 
 
+/** A local Date → API `d.m.Y` string. */
+export function formatApiDate(date) {
+    const pad = (n) => String(n).padStart(2, '0');
+
+    return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
+}
+
+/**
+ * What a person typed (`4.11.2026`, `04.11.2026`, `4/11/2026`, `4-11-2026`)
+ * → the padded API `d.m.Y` (`04.11.2026`), or null when it isn't a whole,
+ * real calendar date (`31.02.2026`, `04.11.26`, `04.11`). Used by `DatePicker`
+ * to send only complete dates.
+ */
+export function normalizeApiDate(text) {
+    const match = /^\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})\s*$/.exec(String(text ?? ''));
+
+    if (!match) {
+        return null;
+    }
+
+    const [d, m, y] = match.slice(1).map(Number);
+    const date = new Date(y, m - 1, d);
+
+    if (y < 1900 || date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) {
+        return null;
+    }
+
+    return formatApiDate(date);
+}
+
 /**
  * Parse an API `d.m.Y` / `d.m.Y H:i:s` string into a local Date (for sorting,
  * comparisons, relative time). Returns null when the input is empty/invalid.

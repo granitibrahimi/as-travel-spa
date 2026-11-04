@@ -1,12 +1,12 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import Loader from '../../../components/Loader.vue';
 import StatCard from '../../../components/StatCard.vue';
-import DateInput from '../../../components/Form/DateInput.vue';
+import DatePicker from '../../../components/Form/DatePicker.vue';
 import Select from '../../../components/Form/Select.vue';
 import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
 import CustomerInvoicesReportTable from '../../../components/CustomerInvoicesReportTable.vue';
@@ -114,6 +114,11 @@ async function download(format) {
     }
 }
 
+// A new date range or status reloads straight away, like the checkboxes below.
+// The date fields only change once they hold a whole date (or are emptied),
+// so this doesn't fire on every keystroke.
+watch([from, to, status], apply);
+
 function toggleDetails(value) {
     details.value = value;
     apply();
@@ -208,8 +213,8 @@ onMounted(() => {
                 </template>
 
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
-                    <DateInput v-model="from" label="From date" :error="errors.from" />
-                    <DateInput v-model="to" label="To date" :error="errors.to" />
+                    <DatePicker v-model="from" label="From date" :error="errors.from" />
+                    <DatePicker v-model="to" label="To date" :error="errors.to" />
                     <Select v-model="status" :options="statusOptions" label="Show" :placeholder="null" :error="errors.status" />
                     <div class="flex items-end">
                         <Button type="button" variant="primary" :loading="loading" @click="apply">Apply</Button>
