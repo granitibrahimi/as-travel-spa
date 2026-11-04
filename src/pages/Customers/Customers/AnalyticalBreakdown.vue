@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
@@ -114,10 +114,15 @@ async function download(format) {
     }
 }
 
-// A new date range or status reloads straight away, like the checkboxes below.
-// The date fields only change once they hold a whole date (or are emptied),
-// so this doesn't fire on every keystroke.
-watch([from, to, status], apply);
+// A new date range or status reloads by itself, like the checkboxes below.
+// The date fields change as each part of a date is typed, so wait for a pause
+// instead of loading the breakdown once per part.
+let reloadTimer = null;
+watch([from, to, status], () => {
+    clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(apply, 400);
+});
+onBeforeUnmount(() => clearTimeout(reloadTimer));
 
 function toggleDetails(value) {
     details.value = value;
