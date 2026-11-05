@@ -17,6 +17,8 @@ import UnlinkConfirmDialog from '../../../components/UnlinkConfirmDialog.vue';
 import CustomerTransactionLinks from '../../../components/CustomerTransactionLinks.vue';
 import InvoiceActions from './Actions.vue';
 import CustomerDetails from "../../../components/CustomerDetails.vue";
+import Select from '../../../components/Form/Select.vue';
+import {hasDepartments} from '../../../helpers/customers.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -83,6 +85,41 @@ const connectedTotal = computed(() =>
 async function load() {
     const {data} = await api.get(`/customers/invoices/${route.params.id}`);
     invoice.value = castResource(data);
+
+    if (showDepartment.value && canChangeDepartment) {
+        loadDepartments();
+    }
+}
+
+// AQP customers have departments; the invoice can be assigned to one of them.
+// Users who may change it get a dropdown that saves as soon as it changes.
+const showDepartment = computed(() => hasDepartments(invoice.value?.customer));
+const canChangeDepartment = auth.can('customerInvoices.changeDepartment');
+const departments = ref([]);
+const savingDepartment = ref(false);
+const departmentOptions = computed(() => departments.value.map((department) => ({value: department.id, label: department.name})));
+
+async function loadDepartments() {
+    const {data} = await api.get(`/customers/customers/${invoice.value.customer.id}/departments`);
+    departments.value = castResource(data) ?? [];
+}
+
+async function changeDepartment(departmentId) {
+    if (savingDepartment.value) {
+        return;
+    }
+
+    savingDepartment.value = true;
+
+    try {
+        await api.put(`/customers/invoices/${invoice.value.id}/department`, {customer_department_id: departmentId});
+        const department = departments.value.find((candidate) => candidate.id === departmentId);
+        invoice.value.department = department ? {id: department.id, name: department.name} : null;
+    } catch (e) {
+        notifications.push({type: 'error', message: e.response?.data?.message ?? 'Could not change the department.'});
+    } finally {
+        savingDepartment.value = false;
+    }
 }
 
 async function loadSentEmails() {
@@ -196,6 +233,9 @@ async function confirmUnlink() {
                                     <th class="border border-gray-300 bg-gray-50 px-3 py-2 text-center font-medium text-gray-600">
                                         Due Date
                                     </th>
+                                    <th v-if="showDepartment" class="border border-gray-300 bg-gray-50 px-3 py-2 text-center font-medium text-gray-600">
+                                        Department
+                                    </th>
                                     <th v-if="canSeeDetails" class="border border-gray-300 bg-gray-50 px-3 py-2 text-center font-medium text-gray-600">
                                         Type
                                     </th>
@@ -255,6 +295,19 @@ async function confirmUnlink() {
                                         <span v-else>{{ invoice.due_date }}</span>
                                     </td>
 
+                                    <td v-if="showDepartment" class="border border-gray-300 px-3 py-2 text-center">
+                                        <Select
+                                            v-if="canChangeDepartment"
+                                            :model-value="invoice.department?.id ?? null"
+                                            :options="departmentOptions"
+                                            placeholder="No department"
+                                            :disabled="savingDepartment"
+                                            aria-label="Department"
+                                            class="min-w-[10rem] text-left"
+                                            @update:model-value="changeDepartment"
+                                        />
+                                        <span v-else>{{ invoice.department?.name ?? '—' }}</span>
+                                    </td>
                                     <td v-if="canSeeDetails" class="border border-gray-300 px-3 py-2 text-center">{{ invoice.type }}</td>
                                     <td v-if="canSeeDetails" class="border border-gray-300 px-3 py-2 text-center">
                                         <RouterLink

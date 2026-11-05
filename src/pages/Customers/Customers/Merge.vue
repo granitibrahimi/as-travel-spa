@@ -58,6 +58,7 @@ const processing = ref(false);
 
 // Preview keys → labels, in display order.
 const COUNT_LABELS = {
+    departments: 'Departments',
     invoices: 'Invoices',
     credit_notes: 'Credit notes',
     pro_invoices: 'Pro invoices',
