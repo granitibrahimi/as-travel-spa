@@ -15,7 +15,7 @@ import { useNotificationsStore } from '../../../stores/notifications.js';
 // GET /finance/reports/aqp-cutoff?customer_id=&from=d.m.Y&to=d.m.Y — one row
 // per person on every invoice of the customer dated in the range:
 // { data: { customer: { id, name }, columns: [{ key, label, type }],
-//   rows: [{ invoice_id, invoice_reference, invoice_date, description,
+//   rows: [{ id (order person), invoice_id, invoice_reference, invoice_date, description,
 //   destination, fare, svc, total }], footer: { fare, svc, total } } }
 // The /excel sibling takes the same params and renders the same table.
 const { loading, error, errors, data, load } = useReport('/finance/reports/aqp-cutoff');
@@ -103,6 +103,7 @@ async function downloadExcel() {
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase text-gray-500">
+                                <th class="border border-gray-300 px-2 py-2" style="width: 90px;">ID</th>
                                 <th class="border border-gray-300 px-2 py-2">Description</th>
                                 <th class="border border-gray-300 px-2 py-2">Destination</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Fare</th>
@@ -111,7 +112,8 @@ async function downloadExcel() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(row, i) in rows" :key="i" class="hover:bg-gray-50">
+                            <tr v-for="row in rows" :key="row.id" class="hover:bg-gray-50">
+                                <td class="border border-gray-300 px-2 py-2 tabular-nums">{{ row.id }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.description }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.destination || '—' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.fare) }}</td>
@@ -119,10 +121,10 @@ async function downloadExcel() {
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.total) }}</td>
                             </tr>
                             <tr v-if="rows.length === 0">
-                                <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No invoices for this customer in this range.</td>
+                                <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No invoices for this customer in this range.</td>
                             </tr>
                             <tr v-if="rows.length > 0" class="bg-gray-50 font-semibold">
-                                <td colspan="2" class="border border-gray-300 px-2 py-2 text-right">TOTAL</td>
+                                <td colspan="3" class="border border-gray-300 px-2 py-2 text-right">TOTAL</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(footer.fare) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(footer.svc) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(footer.total) }}</td>
