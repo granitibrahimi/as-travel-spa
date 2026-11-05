@@ -269,6 +269,7 @@ export const workspaces = [
                     { label: 'Balance Sheet', to: '/finance/reports/balance-sheet', can: 'financeReports.balanceSheet' },
                     { label: 'Trial Balance', to: '/finance/reports/trial-balance', can: 'financeReports.trialBalance' },
                     { label: 'Financial Statements', to: '/finance/reports/financial-statements', can: 'financeReports.financialStatements' },
+                    { label: 'AQP CutOff Report', to: '/finance/reports/aqp-cutoff', can: 'financeReports.aqpCutOff' },
                     { label: 'Fiscal Years', to: '/finance/fiscal-years', can: 'fiscalYears.list' },
                     { label: 'Employee Bonus Calculation', to: '/finance/reports/employee-bonus-calculation', can: 'bonuses.list' },
                 ],
