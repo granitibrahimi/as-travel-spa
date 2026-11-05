@@ -16,7 +16,7 @@ import { useNotificationsStore } from '../../../stores/notifications.js';
 // per person on every invoice of the customer dated in the range:
 // { data: { customer: { id, name }, columns: [{ key, label, type }],
 //   rows: [{ invoice_id, invoice_reference, invoice_date, description,
-//   destination, fare, ap_taxes, svc, total }], footer: { fare, ap_taxes, svc, total } } }
+//   destination, fare, svc, total }], footer: { fare, svc, total } } }
 // The /excel sibling takes the same params and renders the same table.
 const { loading, error, errors, data, load } = useReport('/finance/reports/aqp-cutoff');
 const notifications = useNotificationsStore();
@@ -106,7 +106,6 @@ async function downloadExcel() {
                                 <th class="border border-gray-300 px-2 py-2">Description</th>
                                 <th class="border border-gray-300 px-2 py-2">Destination</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Fare</th>
-                                <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">AP Taxes</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 100px;">SVC</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Total</th>
                             </tr>
@@ -116,17 +115,15 @@ async function downloadExcel() {
                                 <td class="border border-gray-300 px-2 py-2">{{ row.description }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.destination || '—' }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.fare) }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.ap_taxes) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.svc) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(row.total) }}</td>
                             </tr>
                             <tr v-if="rows.length === 0">
-                                <td colspan="6" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No invoices for this customer in this range.</td>
+                                <td colspan="5" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No invoices for this customer in this range.</td>
                             </tr>
                             <tr v-if="rows.length > 0" class="bg-gray-50 font-semibold">
                                 <td colspan="2" class="border border-gray-300 px-2 py-2 text-right">TOTAL</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(footer.fare) }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(footer.ap_taxes) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(footer.svc) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(footer.total) }}</td>
                             </tr>
