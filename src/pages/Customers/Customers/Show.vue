@@ -11,12 +11,14 @@ import DateInput from '../../../components/Form/DateInput.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
 import CustomerActions from './Actions.vue';
+import CustomerDepartments from './Departments.vue';
 import ProInvoiceActions from '../ProInvoices/Actions.vue';
 import Loader from '../../../components/Loader.vue';
 import {useAuthStore} from '../../../stores/auth.js';
 import {useFormOptionsStore, toOptions} from '../../../stores/formOptions.js';
 import {customerTransactionPath} from '../../../helpers/customerTransactions.js';
 import {routeUrl} from '../../../helpers/route.js';
+import {hasDepartments} from '../../../helpers/customers.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -35,6 +37,9 @@ const canViewTransactions = computed(() => auth.canAny(['customerTransactions.al
 
 // Only load/show the pro-invoices section for users who may view them.
 const canViewProInvoices = computed(() => auth.can('customerProInvoices.list'));
+
+// AQP customers have departments; show them to users who may list them.
+const showDepartments = computed(() => hasDepartments(customer.value) && auth.can('customerDepartments.list'));
 
 async function fetchSummary() {
     const {data} = await api.get(`/customers/customers/${id}/summary`);
@@ -263,6 +268,8 @@ watch(filters, () => {
                 @close="actionsOpen = false"
                 @deleted="router.push(routeUrl('customers.list'))"
             />
+
+            <CustomerDepartments v-if="showDepartments" :customer="customer"/>
 
             <FullWidthBox v-if="canViewProInvoices && (! proInvoices || proInvoices.data.length > 0)" title="Pro Invoices" :collapsible="false">
                 <div class="overflow-x-auto">

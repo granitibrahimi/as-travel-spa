@@ -15,6 +15,7 @@ import DateInput from '../../../components/Form/DateInput.vue';
 import Select from '../../../components/Form/Select.vue';
 import Textarea from '../../../components/Form/Textarea.vue';
 import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
+import { hasDepartments } from '../../../helpers/customers.js';
 
 // Create a customer invoice: a nested orders→persons editor scoped to a
 // customer (route param). Mirrors the platform CreateCustomerInvoiceAction
@@ -28,6 +29,10 @@ const formOptions = useFormOptionsStore();
 
 const customer = ref(null);
 const orders = ref([]);
+// AQP customers have departments; the invoice can optionally go to one.
+const departments = ref([]);
+const departmentId = ref(null);
+const departmentOptions = computed(() => departments.value.map((department) => ({ value: department.id, label: department.name })));
 const saving = ref(false);
 const importing = ref(false);
 const error = ref('');
@@ -97,6 +102,11 @@ onMounted(async () => {
     } catch {
         customer.value = null;
     }
+
+    if (hasDepartments(customer.value)) {
+        const { data } = await api.get(`/customers/customers/${route.params.customer}/departments`);
+        departments.value = castResource(data) ?? [];
+    }
 });
 
 const addOrder = () => orders.value.push(blankOrder());
@@ -160,6 +170,7 @@ async function save() {
     try {
         const payload = {
             customer_id: route.params.customer,
+            customer_department_id: departmentId.value,
             orders: orders.value.map((order) => ({
                 supplier: order.supplier,
                 product: order.product,
@@ -204,6 +215,10 @@ async function save() {
                 <div class="flex gap-2"><dt class="w-24 shrink-0 font-medium text-gray-500">Customer</dt><dd>{{ customer?.full_name ?? customer?.name ?? '—' }}</dd></div>
                 <div class="flex gap-2"><dt class="w-24 shrink-0 font-medium text-gray-500">Total</dt><dd class="tabular-nums">{{ money(total) }}</dd></div>
             </dl>
+
+            <div v-if="departments.length" class="mt-4 max-w-sm">
+                <Select v-model="departmentId" label="Department (optional)" :options="departmentOptions" placeholder="No department" :error="errors.customer_department_id" />
+            </div>
 
             <p v-if="error" class="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
         </FullWidthBox>
