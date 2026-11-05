@@ -41,6 +41,7 @@ const ReportsAccountsReceivable = () => import('../../pages/Finance/Reports/Acco
 const ReportsAccountsPayable = () => import('../../pages/Finance/Reports/AccountsPayable.vue');
 const ReportsAccountComparison = () => import('../../pages/Finance/Reports/AccountComparison.vue');
 const ReportsSalesBook = () => import('../../pages/Finance/Reports/SalesBook.vue');
+const ReportsAqpCutOff = () => import('../../pages/Finance/Reports/AqpCutOff.vue');
 const ReportsPurchasesBook = () => import('../../pages/Finance/Reports/PurchasesBook.vue');
 const ReportsBalanceSheet = () => import('../../pages/Finance/Reports/BalanceSheet.vue');
 const ReportsChartOfAccounts = () => import('../../pages/Finance/Reports/ChartOfAccounts.vue');
@@ -92,6 +93,7 @@ export default [
     { path: '/finance/reports/chart-of-accounts', name: 'financeReports.chartOfAccounts', component: ReportsChartOfAccounts },
     { path: '/finance/reports/trial-balance', name: 'financeReports.trialBalance', component: ReportsTrialBalance },
     { path: '/finance/reports/financial-statements', name: 'financeReports.financialStatements', component: ReportsFinancialStatements },
+    { path: '/finance/reports/aqp-cutoff', name: 'financeReports.aqpCutOff', component: ReportsAqpCutOff },
     { path: '/finance/reports/employee-bonus-calculation', name: 'financeReports.employeeBonusCalculation', component: ReportsEmployeeBonusCalculation },
     { path: '/finance/fiscal-years', name: 'fiscalYears.list', component: FiscalYearsIndex },
     { path: '/finance/fiscal-years/:year/trial-balance', name: 'fiscalYears.trialBalance', component: FiscalYearsTrialBalance },

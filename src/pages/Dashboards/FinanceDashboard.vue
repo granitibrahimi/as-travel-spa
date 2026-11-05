@@ -22,6 +22,7 @@ const reports = [
     { label: 'Balance Sheet', to: routeUrl('financeReports.balanceSheet'), can: 'financeReports.balanceSheet' },
     { label: 'Trial Balance', to: routeUrl('financeReports.trialBalance'), can: 'financeReports.trialBalance' },
     { label: 'Financial Statements', to: routeUrl('financeReports.financialStatements'), can: 'financeReports.financialStatements' },
+    { label: 'AQP CutOff Report', to: routeUrl('financeReports.aqpCutOff'), can: 'financeReports.aqpCutOff' },
     { label: 'Fiscal Years', to: routeUrl('fiscalYears.list'), can: 'fiscalYears.list' },
     { label: 'Employee Bonus Calculation', to: routeUrl('financeReports.employeeBonusCalculation'), can: 'bonuses.list' },
 ];
