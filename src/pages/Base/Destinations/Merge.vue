@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import api from '../../../helpers/api.js';
+import api, { getDestinationsAutosuggestEndpoint } from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -14,10 +14,8 @@ import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 
 const router = useRouter();
 
-// Merge targets (child destinations) live under /api/customers (sibling of the
-// /api/v1 api client base), so addressed with an absolute URL off the origin.
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-const targetsUrl = `${apiOrigin}/api/customers/child-destinations`;
+// Merge target: any destination, looked up via the destinations autosuggest.
+const targetsUrl = getDestinationsAutosuggestEndpoint();
 
 const apiResponse = ref(null);
 const loading = ref(false);
