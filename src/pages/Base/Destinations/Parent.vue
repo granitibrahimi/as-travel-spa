@@ -14,10 +14,6 @@ import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 
 const router = useRouter();
 
-// Parent-destination lookup lives under /api/customers (sibling of the /api/v1
-// api client base), so addressed with an absolute URL off the origin.
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-
 const apiResponse = ref(null);
 const loading = ref(false);
 const search = ref('');
