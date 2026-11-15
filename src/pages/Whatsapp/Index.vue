@@ -4,23 +4,60 @@ import { useWhatsappStore } from '../../stores/whatsapp.js';
 import AppLayout from '../../layouts/AppLayout.vue';
 import Loader from '../../components/Loader.vue';
 import Button from '../../components/Button.vue';
+import MessageMedia from '../../components/Whatsapp/MessageMedia.vue';
 
 const store = useWhatsappStore();
 
-const search = ref('');
+const search = ref(store.query);
 const draft = ref('');
 const thread = ref(null);
 
-const filtered = computed(() => {
-    const q = search.value.trim().toLowerCase();
-    const rows = store.conversations;
+// Search runs on the server (name or phone, any format) so it reaches every
+// conversation, not just the first page loaded.
+let searchTimer = null;
 
-    if (!q) {
-        return rows;
+watch(search, (value) => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => store.search(value), 300);
+});
+
+const TYPE_LABELS = {
+    image: '📷 Photo',
+    video: '🎥 Video',
+    audio: '🎤 Audio',
+    document: '📄 Document',
+    sticker: 'Sticker',
+    location: '📍 Location',
+    contacts: '👤 Contact',
+    reaction: 'Reaction',
+};
+
+// Preview / fallback text for a message whose body may be empty (media etc.).
+function preview(message) {
+    if (!message) {
+        return '';
     }
 
-    return rows.filter((row) => (row.name ?? '').toLowerCase().includes(q) || (row.phone ?? '').includes(q));
-});
+    const label = message.type === 'audio' && message.media?.voice ? '🎤 Voice note' : TYPE_LABELS[message.type];
+
+    if (message.body) {
+        return label && message.type !== 'text' && message.type !== 'reaction' ? `${label}: ${message.body}` : message.body;
+    }
+
+    return label ?? 'Unsupported message';
+}
+
+// Outbound delivery ticks, WhatsApp style.
+const STATUS = {
+    sent: { icon: '✓', title: 'Sent' },
+    delivered: { icon: '✓✓', title: 'Delivered' },
+    read: { icon: '✓✓', title: 'Read' },
+    failed: { icon: '!', title: 'Failed' },
+};
+
+function mapsUrl(location) {
+    return `https://www.google.com/maps?q=${location.latitude},${location.longitude}`;
+}
 
 const baseTitle = document.title;
 
@@ -128,12 +165,12 @@ onUnmounted(() => {
                 <div class="min-h-0 flex-1 overflow-y-auto">
                     <Loader v-if="store.loadingList && store.conversations.length === 0" />
 
-                    <p v-else-if="filtered.length === 0" class="p-4 text-center text-sm text-gray-400">
-                        No conversations.
+                    <p v-else-if="store.conversations.length === 0" class="p-4 text-center text-sm text-gray-400">
+                        {{ search.trim() ? 'No conversations match.' : 'No conversations.' }}
                     </p>
 
                     <button
-                        v-for="row in filtered"
+                        v-for="row in store.conversations"
                         :key="row.id"
                         type="button"
                         class="flex w-full items-start gap-3 border-b border-gray-100 px-3 py-3 text-left hover:bg-gray-50"
@@ -150,14 +187,14 @@ onUnmounted(() => {
                             </span>
                             <span class="mt-0.5 flex items-center justify-between gap-2">
                                 <span class="truncate text-xs text-gray-500">
-                                    <span v-if="row.last_message && row.last_message.direction !== 1" class="text-gray-400">You: </span>{{ row.last_message?.body ?? row.phone }}
+                                    <span v-if="row.last_message && row.last_message.direction !== 1" class="text-gray-400">You: </span>{{ row.last_message ? preview(row.last_message) : row.phone }}
                                 </span>
                                 <span
                                     v-if="row.unread_count > 0"
                                     class="shrink-0 rounded-full bg-green-500 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
                                 >{{ row.unread_count }}</span>
                             </span>
-                            <span v-if="!row.ai_enabled" class="mt-1 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">AI off</span>
+                            <span v-if="row.ai_available && !row.ai_enabled" class="mt-1 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">AI off</span>
                         </span>
                     </button>
                 </div>
@@ -172,7 +209,7 @@ onUnmounted(() => {
                             <span class="text-sm font-semibold text-gray-900">{{ store.active.name }}</span>
                             <span class="ml-2 text-xs text-gray-400">{{ store.active.phone }}</span>
                         </div>
-                        <label class="flex shrink-0 items-center gap-2 text-xs text-gray-500">
+                        <label v-if="store.active.ai_available" class="flex shrink-0 items-center gap-2 text-xs text-gray-500">
                             <input
                                 type="checkbox"
                                 :checked="store.active.ai_enabled"
@@ -202,11 +239,31 @@ onUnmounted(() => {
                                         class="max-w-[75%] rounded-lg px-3 py-2 text-sm shadow-sm"
                                         :class="message.direction === 1 ? 'bg-white text-gray-800' : (message.direction === 3 ? 'bg-green-100 text-gray-800' : 'bg-green-500 text-white')"
                                     >
-                                        <p class="whitespace-pre-wrap break-words">{{ message.body }}</p>
+                                        <MessageMedia v-if="message.media" :conversation-id="store.active.id" :message="message" />
+                                        <a
+                                            v-if="message.location"
+                                            :href="mapsUrl(message.location)"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="underline"
+                                        >📍 {{ message.body || 'Location' }}</a>
+                                        <p v-else-if="message.body || !message.media" class="whitespace-pre-wrap break-words" :class="message.body ? '' : 'italic opacity-70'">
+                                            {{ message.media ? message.body : preview(message) }}
+                                        </p>
+                                        <p v-if="message.status === 'failed' && message.error" class="mt-1 text-[11px] font-medium text-red-700">
+                                            Not delivered: {{ message.error }}
+                                        </p>
                                         <p class="mt-1 text-right text-[10px] opacity-70">
                                             <span v-if="message.direction === 2 && message.user">{{ message.user }} · </span>
+                                            <span v-else-if="message.direction === 2 && message.from_phone_app">Phone · </span>
                                             <span v-else-if="message.direction === 3">AI · </span>
                                             {{ fmtTime(message.at) }}
+                                            <span
+                                                v-if="message.direction !== 1 && STATUS[message.status]"
+                                                :title="STATUS[message.status].title"
+                                                class="ml-1 font-semibold"
+                                                :class="message.status === 'read' ? (message.direction === 2 ? 'text-sky-200' : 'text-sky-600') : (message.status === 'failed' ? 'text-red-700' : '')"
+                                            >{{ STATUS[message.status].icon }}</span>
                                         </p>
                                     </div>
                                 </div>
@@ -218,7 +275,7 @@ onUnmounted(() => {
                         <textarea
                             v-model="draft"
                             rows="1"
-                            placeholder="Type a reply… (sending pauses AI for this chat)"
+                            :placeholder="store.active.ai_available ? 'Type a reply… (sending pauses AI for this chat)' : 'Type a reply…'"
                             class="max-h-32 min-h-[38px] flex-1 resize-none rounded border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500"
                             @keydown.enter.exact.prevent="send"
                         />
