@@ -12,6 +12,8 @@ const CHANNEL = 'whatsapp-inbox';
 // Kept out of Pinia state on purpose: the live channel object holds
 // non-serialisable socket internals.
 let channel = null;
+// In-flight conversation-list request, cancelled when the search changes.
+let listController = null;
 
 function upsert(list, conversation) {
     const index = list.findIndex((row) => row.id === conversation.id);
@@ -28,6 +30,8 @@ function upsert(list, conversation) {
 export const useWhatsappStore = defineStore('whatsapp', {
     state: () => ({
         conversations: [],
+        // Server-side search (name or phone number) applied to the list.
+        query: '',
         loadingList: false,
         subscribed: false,
 
@@ -46,14 +50,34 @@ export const useWhatsappStore = defineStore('whatsapp', {
 
     actions: {
         async loadConversations() {
+            listController?.abort();
+            const controller = new AbortController();
+            listController = controller;
             this.loadingList = true;
 
             try {
-                const { data } = await api.get('/whatsapp/conversations');
+                const q = this.query.trim();
+                const { data } = await api.get('/whatsapp/conversations', {
+                    params: q ? { q } : {},
+                    signal: controller.signal,
+                });
                 this.conversations = castPaginated(data).data;
+            } catch (error) {
+                if (error?.code !== 'ERR_CANCELED') {
+                    throw error;
+                }
             } finally {
-                this.loadingList = false;
+                if (listController === controller) {
+                    this.loadingList = false;
+                    listController = null;
+                }
             }
+        },
+
+        search(query) {
+            this.query = query;
+
+            return this.loadConversations();
         },
 
         async openConversation(id) {
@@ -148,6 +172,7 @@ export const useWhatsappStore = defineStore('whatsapp', {
             channel = echo.private(CHANNEL);
             channel.listen('.message', (payload) => this.onLiveMessage(payload));
             channel.listen('.read', (payload) => this.onLiveRead(payload));
+            channel.listen('.status', (payload) => this.onLiveStatus(payload));
             channel.error?.(() => {});
 
             this.subscribed = true;
@@ -174,7 +199,11 @@ export const useWhatsappStore = defineStore('whatsapp', {
                 ...conversation,
                 unread_count: isActive ? 0 : (conversation.unread_count ?? 0),
             };
-            upsert(this.conversations, row);
+
+            // While searching, only refresh rows that match; don't pull others in.
+            if (!this.query.trim() || this.conversations.some((c) => c.id === row.id)) {
+                upsert(this.conversations, row);
+            }
 
             if (isActive && message && !this.messages.some((m) => m.id === message.id)) {
                 this.messages.push(message);
@@ -182,6 +211,18 @@ export const useWhatsappStore = defineStore('whatsapp', {
                 if (inbound) {
                     this.markRead(this.activeId);
                 }
+            }
+        },
+
+        onLiveStatus({ id, conversation_id: conversationId, status, status_at: statusAt }) {
+            if (conversationId !== this.activeId) {
+                return;
+            }
+
+            const message = this.messages.find((m) => m.id === id);
+            if (message) {
+                message.status = status;
+                message.status_at = statusAt;
             }
         },
 
