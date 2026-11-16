@@ -113,11 +113,6 @@ onBeforeUnmount(() => clearInterval(timer));
 
 <template>
     <div class="space-y-6">
-        <div>
-            <h1 class="text-2xl font-bold">Hi, {{ auth.user?.name }}</h1>
-            <p class="text-sm text-gray-500">Here is your activity for today.</p>
-        </div>
-
         <Loader v-if="loading" message="Loading your dashboard"/>
 
         <p v-else-if="error" class="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">
