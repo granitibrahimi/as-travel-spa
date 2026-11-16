@@ -12,6 +12,7 @@ import InputText from '../../components/Form/InputText.vue';
 import Select from '../../components/Form/Select.vue';
 import Textarea from '../../components/Form/Textarea.vue';
 import Loader from '../../components/Loader.vue';
+import SourceIcon from './SourceIcon.vue';
 import { requestStatusClass } from './statusClass.js';
 
 const route = useRoute();
@@ -31,6 +32,28 @@ const editing = ref(false);
 const editForm = reactive({ customer_name: '', customer_contact: '', source: null, description: '' });
 const editErrors = ref({});
 const savingEdit = ref(false);
+
+/** Where the contact opens: the Instagram / Facebook profile, a WhatsApp chat, a call or an e-mail. */
+const contactHref = computed(() => {
+    const contact = (task.value?.customer_contact ?? '').trim();
+    if (! contact) {
+        return null;
+    }
+    const handle = contact.replace(/^.*(instagram|facebook)\.com\//i, '').replace(/^[@/]+/, '').replace(/\/+$/, '');
+    switch (task.value.source.id) {
+        case 6: return /^[\w.]+$/.test(handle) ? `https://instagram.com/${handle}` : null;
+        case 7: return /^[\w.]+$/.test(handle) ? `https://facebook.com/${handle}` : null;
+        case 2: {
+            const digits = contact.replace(/\D/g, '').replace(/^00/, '');
+            return digits.length >= 8 ? `https://wa.me/${digits}` : null;
+        }
+        default:
+            if (/^\S+@\S+\.\S+$/.test(contact)) {
+                return `mailto:${contact}`;
+            }
+            return contact.replace(/[^\d+]/g, '').length >= 6 ? `tel:${contact.replace(/[^\d+]/g, '')}` : null;
+    }
+});
 
 const agentOptions = computed(() => options.value.agents.map((a) => ({ value: a.id, label: a.name })));
 const sourceOptions = computed(() => options.value.sources.map((s) => ({ value: s.id, label: s.name })));
@@ -135,28 +158,53 @@ async function saveEdit() {
         <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div class="space-y-6 lg:col-span-2">
                 <FullWidthBox :title="`#${task.id} · ${task.customer_name}`" :collapsible="false">
+                    <template #actions>
+                        <span class="text-sm text-gray-500">
+                            Assigned to:
+                            <span class="font-medium" :class="task.assigned_to ? 'text-gray-900' : 'text-red-600'">{{ task.assigned_to?.name ?? 'Nobody yet' }}</span>
+                        </span>
+                    </template>
+
                     <template v-if="! editing">
-                        <div class="mb-3 flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                        <div class="mb-4">
                             <span class="rounded px-2 py-0.5 text-xs font-medium" :class="requestStatusClass(task.status)">{{ task.status.name }}</span>
-                            <span>{{ task.source.name }}</span>
-                            <span>· Created by {{ task.created_by?.name ?? '—' }} · {{ task.created_at }}</span>
                         </div>
 
-                        <dl class="mb-4 grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
-                            <div><dt class="text-xs uppercase text-gray-400">Contact</dt><dd>{{ task.customer_contact ?? '—' }}</dd></div>
-                            <div><dt class="text-xs uppercase text-gray-400">Assigned to</dt><dd>{{ task.assigned_to?.name ?? '—' }}<span v-if="task.assigned_at" class="text-gray-400"> · {{ task.assigned_at }}</span></dd></div>
-                            <div v-if="task.finished_at"><dt class="text-xs uppercase text-gray-400">Finished</dt><dd>{{ task.finished_by?.name ?? '—' }} · {{ task.finished_at }}</dd></div>
+                        <dl class="space-y-4 text-sm">
+                            <div>
+                                <dt class="text-xs uppercase text-gray-400">Source</dt>
+                                <dd class="mt-1 flex flex-wrap items-center gap-2">
+                                    <SourceIcon :source="task.source" />
+                                    <span class="font-medium">{{ task.source.name }}</span>
+                                    <template v-if="task.customer_contact">
+                                        <span class="text-gray-300">·</span>
+                                        <a v-if="contactHref" :href="contactHref" target="_blank" rel="noopener" class="text-red-600 hover:underline">{{ task.customer_contact }}</a>
+                                        <span v-else>{{ task.customer_contact }}</span>
+                                    </template>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs uppercase text-gray-400">What does the customer want?</dt>
+                                <dd class="mt-1 whitespace-pre-line text-gray-800">{{ task.description || '—' }}</dd>
+                            </div>
+                            <div v-if="task.finished_at">
+                                <dt class="text-xs uppercase text-gray-400">Finished</dt>
+                                <dd class="mt-1">{{ task.finished_by?.name ?? '—' }} · {{ task.finished_at }}</dd>
+                            </div>
                         </dl>
 
-                        <p class="whitespace-pre-line text-sm text-gray-800">{{ task.description || 'No description.' }}</p>
+                        <div v-if="auth.can('simpleTasks.changeStatus')" class="mt-6 border-t border-gray-100 pt-4">
+                            <Textarea v-model="statusComment" label="Comment (optional)" :rows="3" maxlength="200" />
+                            <p class="mt-1 text-xs text-gray-400">Saved in the history with the next status change.</p>
+                        </div>
                     </template>
 
                     <form v-else class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="saveEdit">
                         <InputText v-model="editForm.customer_name" label="Customer name *" :error="editErrors.customer_name" />
-                        <InputText v-model="editForm.customer_contact" label="Phone / email" :error="editErrors.customer_contact" />
+                        <InputText v-model="editForm.customer_contact" label="Phone / email / username" :error="editErrors.customer_contact" />
                         <Select v-model="editForm.source" label="Source *" :options="sourceOptions" :error="editErrors.source" />
                         <div class="md:col-span-2">
-                            <Textarea v-model="editForm.description" label="Description" :rows="5" :error="editErrors.description" />
+                            <Textarea v-model="editForm.description" label="What does the customer want?" :rows="5" :error="editErrors.description" />
                         </div>
                         <div class="flex justify-end gap-2 md:col-span-2">
                             <Button type="button" size="sm" @click="editing = false">Cancel</Button>
@@ -202,7 +250,6 @@ async function saveEdit() {
 
                 <FullWidthBox v-if="auth.can('simpleTasks.changeStatus')" title="Status" :collapsible="false">
                     <div class="space-y-3">
-                        <InputText v-model="statusComment" label="Comment (optional)" maxlength="200" />
                         <div class="flex flex-col gap-2">
                             <button
                                 v-for="s in options.statuses"
