@@ -59,7 +59,7 @@ async function submit() {
             <FullWidthBox title="Request details" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <InputText v-model="form.customer_name" label="Customer name *" :error="errors.customer_name" />
-                    <InputText v-model="form.customer_contact" label="Phone / email" :error="errors.customer_contact" />
+                    <InputText v-model="form.customer_contact" label="Phone / email / username" :error="errors.customer_contact" />
                     <Select v-model="form.source" label="Source *" :options="sourceOptions" :error="errors.source" />
                     <Select
                         v-if="auth.can('simpleTasks.assign')"
