@@ -12,12 +12,14 @@ import InputText from '../../components/Form/InputText.vue';
 import Select from '../../components/Form/Select.vue';
 import Loader from '../../components/Loader.vue';
 import { requestStatusDotClass } from './statusClass.js';
+import OfferSentDialog from './OfferSentDialog.vue';
 import { getEcho } from '../../helpers/echo';
 import { flip } from '../../composables/useFlip.js';
 
 // Status ids from the API's SimpleTaskStatus enum.
 const OPEN = 1;
 const ASSIGNED = 2;
+const OFFER_SENT = 3;
 
 const REFRESH_MS = 60_000;
 
@@ -237,6 +239,14 @@ function openMove(task, status) {
     moveError.value = '';
 }
 
+async function confirmOfferSent({ offerText, comment }) {
+    const ok = await runMove(move.value.task, OFFER_SENT, { comment, offerText });
+
+    if (ok) {
+        move.value = null;
+    }
+}
+
 async function confirmMove() {
     if (move.value.status.id === ASSIGNED && ! moveAgent.value) {
         moveError.value = 'Choose an agent.';
@@ -257,7 +267,7 @@ async function confirmMove() {
  * Open: unassign (and reopen a finished request). Assigned: assign to the
  * agent (and reopen a finished request). Anything else: change the status.
  */
-async function runMove(task, statusId, { agentId = null, comment = null } = {}) {
+async function runMove(task, statusId, { agentId = null, comment = null, offerText = null } = {}) {
     if (moving.value) {
         return false;
     }
@@ -285,7 +295,7 @@ async function runMove(task, statusId, { agentId = null, comment = null } = {}) 
                 await api.put(`${url}/status`, { status: ASSIGNED });
             }
         } else {
-            await api.put(`${url}/status`, { status: statusId, comment });
+            await api.put(`${url}/status`, { status: statusId, comment, offer_text: offerText ?? undefined });
         }
 
         return true;
@@ -526,8 +536,17 @@ const openTask = (event, task) => {
             </div>
         </template>
 
+        <OfferSentDialog
+            :show="Boolean(move) && ! move.failed && move.status.id === OFFER_SENT"
+            :task="move?.task ?? null"
+            :processing="moving"
+            :error="moveError"
+            @confirm="confirmOfferSent"
+            @cancel="move = null"
+        />
+
         <ConfirmDialog
-            :show="Boolean(move)"
+            :show="Boolean(move) && (move.failed || move.status.id !== OFFER_SENT)"
             :title="dialogTitle"
             :message="dialogMessage"
             :confirm-label="move?.failed ? 'OK' : (move?.status.id === ASSIGNED ? 'Assign' : `Move to ${move?.status.name}`)"

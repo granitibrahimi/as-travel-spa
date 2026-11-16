@@ -15,6 +15,7 @@ import AsyncSelect from '../../components/Form/AsyncSelect.vue';
 import NiceCheckbox from '../../components/Form/NiceCheckbox.vue';
 import Loader from '../../components/Loader.vue';
 import SourceIcon from './SourceIcon.vue';
+import OfferSentDialog from './OfferSentDialog.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -103,19 +104,66 @@ async function saveAssignee() {
     }
 }
 
-async function changeStatus(statusId) {
+// Status id from the API's SimpleTaskStatus enum: Offer sent asks for the offer text first.
+const OFFER_SENT = 3;
+const offerDialog = ref(false);
+const offerError = ref('');
+
+async function changeStatus(statusId, extra = {}) {
     if (savingStatus.value || statusId === task.value.status.id) {
+        return;
+    }
+
+    if (statusId === OFFER_SENT && ! extra.offer_text) {
+        offerError.value = '';
+        offerDialog.value = true;
         return;
     }
 
     savingStatus.value = true;
 
     try {
-        await api.put(`/simple-tasks/${task.value.id}/status`, { status: statusId, comment: statusComment.value || null });
+        await api.put(`/simple-tasks/${task.value.id}/status`, { status: statusId, comment: statusComment.value || null, ...extra });
         statusComment.value = '';
+        offerDialog.value = false;
         await load();
+    } catch (error) {
+        if (error.response?.status !== 422 || ! offerDialog.value) {
+            throw error;
+        }
+        offerError.value = Object.values(firstErrors(error))[0] ?? 'Could not save.';
     } finally {
         savingStatus.value = false;
+    }
+}
+
+function confirmOfferSent({ offerText, comment }) {
+    statusComment.value = comment ?? '';
+    changeStatus(OFFER_SENT, { offer_text: offerText });
+}
+
+const savingComment = ref(false);
+const commentError = ref('');
+
+async function saveComment() {
+    if (savingComment.value || ! statusComment.value.trim()) {
+        return;
+    }
+
+    savingComment.value = true;
+    commentError.value = '';
+
+    try {
+        await api.post(`/simple-tasks/${task.value.id}/comments`, { comment: statusComment.value.trim() });
+        statusComment.value = '';
+        await load();
+    } catch (error) {
+        if (error.response?.status !== 422) {
+            throw error;
+        }
+        commentError.value = firstErrors(error).comment ?? 'Could not save the comment.';
+    } finally {
+        savingComment.value = false;
     }
 }
 
@@ -199,15 +247,26 @@ async function saveEdit() {
                                 <dt class="text-xs uppercase text-gray-400">What does the customer want?</dt>
                                 <dd class="mt-1 whitespace-pre-line text-gray-800">{{ task.description || '—' }}</dd>
                             </div>
+                            <div v-if="task.offer_text">
+                                <dt class="text-xs uppercase text-gray-400">Offer sent<template v-if="task.offer_sent_at"> · {{ task.offer_sent_at }}</template></dt>
+                                <dd class="mt-1 whitespace-pre-line rounded border border-green-200 bg-green-50 p-3 text-gray-800">{{ task.offer_text }}</dd>
+                            </div>
                             <div v-if="task.finished_at">
                                 <dt class="text-xs uppercase text-gray-400">Finished</dt>
                                 <dd class="mt-1">{{ task.finished_by?.name ?? '—' }} · {{ task.finished_at }}</dd>
                             </div>
                         </dl>
 
-                        <div v-if="auth.can('simpleTasks.changeStatus')" class="mt-6 border-t border-gray-100 pt-4">
-                            <Textarea v-model="statusComment" label="Comment (optional)" :rows="3" maxlength="200" />
-                            <p class="mt-1 text-xs text-gray-400">Saved in the history with the next status change.</p>
+                        <div class="mt-6 border-t border-gray-100 pt-4">
+                            <Textarea v-model="statusComment" label="Comment" :rows="3" maxlength="200" :error="commentError" />
+                            <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                <p class="text-xs text-gray-400">
+                                    Saved in the history.<template v-if="auth.can('simpleTasks.changeStatus')"> Changing the status also saves it, together with the change.</template>
+                                </p>
+                                <Button size="sm" variant="primary" :disabled="savingComment || ! statusComment.trim()" @click="saveComment">
+                                    {{ savingComment ? 'Saving…' : 'Save comment' }}
+                                </Button>
+                            </div>
                         </div>
                     </template>
 
@@ -228,7 +287,7 @@ async function saveEdit() {
                             <NiceCheckbox v-model="editForm.urgent" label="Urgent" :error="editErrors.urgent" />
                         </div>
                         <div class="md:col-span-2">
-                            <Textarea v-model="editForm.description" label="What does the customer want?" :rows="5" :error="editErrors.description" />
+                            <Textarea v-model="editForm.description" label="What does the customer want? *" :rows="5" :error="editErrors.description" />
                         </div>
                         <div class="flex justify-end gap-2 md:col-span-2">
                             <Button type="button" size="sm" @click="editing = false">Cancel</Button>
@@ -293,5 +352,15 @@ async function saveEdit() {
                 </FullWidthBox>
             </div>
         </div>
+
+        <OfferSentDialog
+            :show="offerDialog"
+            :task="task"
+            :processing="savingStatus"
+            :error="offerError"
+            :initial-comment="statusComment"
+            @confirm="confirmOfferSent"
+            @cancel="offerDialog = false"
+        />
     </AppLayout>
 </template>

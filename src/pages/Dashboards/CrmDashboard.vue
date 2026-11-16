@@ -6,6 +6,7 @@ import DropdownMenu from '../../components/DropdownMenu.vue';
 import InputText from '../../components/Form/InputText.vue';
 import Loader from '../../components/Loader.vue';
 import StatCard from '../../components/StatCard.vue';
+import OfferSentDialog from '../Requests/OfferSentDialog.vue';
 import api from '../../helpers/api';
 import { money } from '../../helpers/money';
 import { routeUrl } from '../../helpers/route.js';
@@ -77,14 +78,15 @@ function openMove(task, status, name) {
     moveError.value = '';
 }
 
-async function confirmMove() {
+async function confirmMove(offer = null) {
     moving.value = true;
     moveError.value = '';
 
     try {
         await api.put(`/simple-tasks/${move.value.task.id}/status`, {
             status: move.value.status,
-            comment: moveComment.value.trim() || null,
+            comment: offer ? offer.comment : (moveComment.value.trim() || null),
+            offer_text: offer?.offerText,
         });
         move.value = null;
         await load({ quiet: true });
@@ -209,14 +211,23 @@ const openTask = (event, task) => {
             </div>
         </template>
 
+        <OfferSentDialog
+            :show="move?.status === OFFER_SENT"
+            :task="move?.task ?? null"
+            :processing="moving"
+            :error="moveError"
+            @confirm="confirmMove"
+            @cancel="move = null"
+        />
+
         <ConfirmDialog
-            :show="Boolean(move)"
+            :show="Boolean(move) && move.status !== OFFER_SENT"
             :title="move ? `Move #${move.task.id} to ${move.name}?` : ''"
             :message="move ? `${move.task.customer_name}: this finishes the request and notifies the responsible agents.` : ''"
             :confirm-label="move ? `Move to ${move.name}` : ''"
             :confirm-variant="move?.status === SPAM ? 'danger' : 'primary'"
             :processing="moving"
-            @confirm="confirmMove"
+            @confirm="confirmMove()"
             @cancel="move = null"
         >
             <div class="mt-3">
