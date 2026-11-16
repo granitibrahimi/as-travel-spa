@@ -53,6 +53,7 @@ const rowActions = (task) => [
     <AppLayout title="Requests" fluid>
         <FullWidthBox title="Requests" :collapsible="false">
             <template #actions>
+                <RouterLink :to="routeUrl('simpleTasks.dashboard')" class="rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Board view</RouterLink>
                 <FiltersButton v-model="showFilters" :count="activeCount" />
             </template>
 
