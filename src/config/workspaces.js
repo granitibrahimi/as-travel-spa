@@ -56,6 +56,7 @@ export const workspaces = [
             {
                 label: 'Requests',
                 items: [
+                    { label: 'Dashboard', to: '/requests/dashboard', canAny: ['simpleTasks.list', 'simpleTasks.listAll'] },
                     { label: 'All Requests', to: '/requests', canAny: ['simpleTasks.list', 'simpleTasks.listAll'] },
                     { label: 'New Request', to: '/requests/create', can: 'simpleTasks.create' },
                 ],
