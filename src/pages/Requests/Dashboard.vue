@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castResource } from '../../types/responses.js';
@@ -261,6 +261,21 @@ const dialogMessage = computed(() => {
     }
     return `${move.value.task.customer_name}: this finishes the request and notifies the responsible agents.`;
 });
+
+const router = useRouter();
+
+// Clicking anywhere on a card opens the request, except on its own links,
+// buttons and menu (and not when the user was selecting text).
+const openTask = (event, task) => {
+    if (event.target.closest('a, button, input, textarea, select, [role="menu"], [role="menuitem"]')) return;
+    if (window.getSelection()?.toString()) return;
+    const url = routeUrl('simpleTasks.show', task.id);
+    if (event.metaKey || event.ctrlKey) {
+        window.open(router.resolve(url).href, '_blank');
+        return;
+    }
+    router.push(url);
+};
 </script>
 
 <template>
@@ -376,9 +391,10 @@ const dialogMessage = computed(() => {
                         <div
                             v-for="task in column.tasks"
                             :key="task.id"
-                            class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+                            class="cursor-pointer rounded-lg border border-gray-200 bg-white p-3 shadow-sm hover:border-red-200"
+                            @click="openTask($event, task)"
                             :class="[
-                                (canAssign || canChangeStatus) ? 'cursor-grab active:cursor-grabbing' : '',
+                                (canAssign || canChangeStatus) ? 'active:cursor-grabbing' : '',
                                 dragging?.id === task.id ? 'opacity-50 ring-2 ring-red-300' : '',
                             ]"
                             :draggable="canAssign || canChangeStatus"

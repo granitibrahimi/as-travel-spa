@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import ConfirmDialog from '../../components/ConfirmDialog.vue';
 import DropdownMenu from '../../components/DropdownMenu.vue';
 import InputText from '../../components/Form/InputText.vue';
@@ -109,6 +109,21 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => clearInterval(timer));
+
+const router = useRouter();
+
+// Clicking anywhere on a card opens the request, except on its own links,
+// buttons and menu (and not when the user was selecting text).
+const openTask = (event, task) => {
+    if (event.target.closest('a, button, input, textarea, select, [role="menu"], [role="menuitem"]')) return;
+    if (window.getSelection()?.toString()) return;
+    const url = routeUrl('simpleTasks.show', task.id);
+    if (event.metaKey || event.ctrlKey) {
+        window.open(router.resolve(url).href, '_blank');
+        return;
+    }
+    router.push(url);
+};
 </script>
 
 <template>
@@ -166,7 +181,8 @@ onBeforeUnmount(() => clearInterval(timer));
                         <div
                             v-for="task in column.tasks"
                             :key="task.id"
-                            class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+                            class="cursor-pointer rounded-lg border border-gray-200 bg-white p-3 shadow-sm hover:border-red-200"
+                            @click="openTask($event, task)"
                         >
                             <div class="flex items-start justify-between gap-2">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="font-medium text-gray-900 hover:text-red-600">#{{ task.id }} · {{ task.customer_name }}</RouterLink>
