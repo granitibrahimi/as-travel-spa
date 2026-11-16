@@ -26,6 +26,7 @@ const REFRESH_MS = 60_000;
 const auth = useAuthStore();
 const canAssign = computed(() => auth.can('simpleTasks.assign'));
 const canChangeStatus = computed(() => auth.can('simpleTasks.changeStatus'));
+const canSeeBoard = computed(() => auth.can('simpleTasks.dashboard'));
 
 const board = ref(null);
 const loading = ref(false);
@@ -154,6 +155,10 @@ const filterName = computed(() => {
 let timer = null;
 
 onMounted(async () => {
+    if (! canSeeBoard.value) {
+        return;
+    }
+
     fetchBoard();
     subscribe();
     // Fallback refresh, in case the live connection drops.
@@ -404,7 +409,12 @@ const openTask = (event, task) => {
             </div>
         </div>
 
-        <Loader v-if="! board" />
+        <p v-if="! canSeeBoard" class="rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+            You don't have access to the requests board.
+            <RouterLink :to="routeUrl('simpleTasks.list')" class="text-red-600 hover:underline">Open the list instead</RouterLink>.
+        </p>
+
+        <Loader v-else-if="! board" />
 
         <template v-else>
             <!-- Agents: who is holding how many waiting requests. Drop a card on an agent to assign it. -->
