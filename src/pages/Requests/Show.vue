@@ -119,6 +119,31 @@ async function changeStatus(statusId) {
     }
 }
 
+const savingComment = ref(false);
+const commentError = ref('');
+
+async function saveComment() {
+    if (savingComment.value || ! statusComment.value.trim()) {
+        return;
+    }
+
+    savingComment.value = true;
+    commentError.value = '';
+
+    try {
+        await api.post(`/simple-tasks/${task.value.id}/comments`, { comment: statusComment.value.trim() });
+        statusComment.value = '';
+        await load();
+    } catch (error) {
+        if (error.response?.status !== 422) {
+            throw error;
+        }
+        commentError.value = firstErrors(error).comment ?? 'Could not save the comment.';
+    } finally {
+        savingComment.value = false;
+    }
+}
+
 function startEdit() {
     Object.assign(editForm, {
         customer_name: task.value.customer_name,
@@ -205,9 +230,16 @@ async function saveEdit() {
                             </div>
                         </dl>
 
-                        <div v-if="auth.can('simpleTasks.changeStatus')" class="mt-6 border-t border-gray-100 pt-4">
-                            <Textarea v-model="statusComment" label="Comment (optional)" :rows="3" maxlength="200" />
-                            <p class="mt-1 text-xs text-gray-400">Saved in the history with the next status change.</p>
+                        <div class="mt-6 border-t border-gray-100 pt-4">
+                            <Textarea v-model="statusComment" label="Comment" :rows="3" maxlength="200" :error="commentError" />
+                            <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                <p class="text-xs text-gray-400">
+                                    Saved in the history.<template v-if="auth.can('simpleTasks.changeStatus')"> Changing the status also saves it, together with the change.</template>
+                                </p>
+                                <Button size="sm" variant="primary" :disabled="savingComment || ! statusComment.trim()" @click="saveComment">
+                                    {{ savingComment ? 'Saving…' : 'Save comment' }}
+                                </Button>
+                            </div>
                         </div>
                     </template>
 
