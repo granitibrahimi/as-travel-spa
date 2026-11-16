@@ -20,7 +20,8 @@ import Loader from '../../../components/Loader.vue';
 // stored (`source: 'stored'`). Vacation days are the approved paid vacation
 // days in the month, counted by the API.
 // POST …/:year/:month saves the draft; POST …/finalize, …/reopen and DELETE …
-// change its state; GET …/excel and (finalized only) …/pcb-csv download it.
+// change its state; GET …/excel and (finalized only) …/pcb-csv and …/atk-xls
+// (Lista e pagave for the ATK EDI import) download it.
 // A finalized month's journals (`saved.journals`): finalizing books the one
 // obligation journal (reopening deletes it); salaries payment journals are
 // made on the journal form (?payroll=<year>-<month>, pre-filled from
@@ -168,6 +169,7 @@ onMounted(() => {
                 <div v-if="data" class="flex flex-wrap gap-2">
                     <Button type="button" :loading="busy === 'excel'" @click="download('excel', 'excel', 'payroll.xlsx')">Download Excel</Button>
                     <Button v-if="finalized && auth.can('payrolls.paymentFile')" type="button" :loading="busy === 'pcb'" @click="download('pcb', 'pcb-csv', 'pagat_pcb.csv')">PCB Payment CSV</Button>
+                    <Button v-if="finalized && auth.can('payrolls.paymentFile')" type="button" :loading="busy === 'atk'" @click="download('atk', 'atk-xls', 'ATK Lista e pagave.xls')">ATK Lista e pagave</Button>
                     <Button v-if="saved?.can_delete && auth.can('payrolls.delete')" type="button" @click="confirming = 'delete'">Delete draft</Button>
                     <template v-if="finalized && auth.can('payrolls.reopen')">
                         <Button v-if="saved.can_reopen" type="button" @click="confirming = 'reopen'">Reopen</Button>
