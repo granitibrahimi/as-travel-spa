@@ -1,4 +1,4 @@
-// CRM operations: tasks, support tickets, and the statistics reports.
+// CRM operations: tasks, simple requests, support tickets, and the statistics reports.
 // Order note: `/tasks/dashboard` and `/tasks/create` precede `/tasks/:id`.
 const TasksIndex = () => import('../../pages/Tasks/Index.vue');
 const TasksDashboard = () => import('../../pages/Tasks/Dashboard.vue');
@@ -9,6 +9,9 @@ const TaskOfferShow = () => import('../../pages/Tasks/OfferShow.vue');
 const SupportIndex = () => import('../../pages/Support/Index.vue');
 const SupportCreate = () => import('../../pages/Support/Create.vue');
 const SupportShow = () => import('../../pages/Support/Show.vue');
+const RequestsIndex = () => import('../../pages/Requests/Index.vue');
+const RequestsCreate = () => import('../../pages/Requests/Create.vue');
+const RequestsShow = () => import('../../pages/Requests/Show.vue');
 const WhatsappIndex = () => import('../../pages/Whatsapp/Index.vue');
 
 export default [
@@ -20,6 +23,9 @@ export default [
     { path: '/tasks/:taskId/offer-requests/:offerRequestId/offers/create', name: 'taskRequestOffers.create', component: TaskOfferManage },
     { path: '/tasks/:taskId/offer-requests/:offerRequestId/offers/:offerId/edit', name: 'taskRequestOffers.edit', component: TaskOfferManage },
     { path: '/tasks/:taskId/offer-requests/:offerRequestId/offers/:offerId', name: 'taskRequestOffers.show', component: TaskOfferShow },
+    { path: '/requests', name: 'simpleTasks.list', component: RequestsIndex },
+    { path: '/requests/create', name: 'simpleTasks.create', component: RequestsCreate },
+    { path: '/requests/:id', name: 'simpleTasks.show', component: RequestsShow },
     { path: '/support', name: 'supportTickets.list', component: SupportIndex },
     { path: '/support/create', name: 'supportTickets.create', component: SupportCreate },
     { path: '/support/:id', name: 'supportTickets.show', component: SupportShow },

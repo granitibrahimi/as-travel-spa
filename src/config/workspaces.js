@@ -53,6 +53,13 @@ export const workspaces = [
                     { label: 'New Task', to: '/tasks/create', can: 'tasks.create' },
                 ],
             },
+            {
+                label: 'Requests',
+                items: [
+                    { label: 'All Requests', to: '/requests', canAny: ['simpleTasks.list', 'simpleTasks.listAll'] },
+                    { label: 'New Request', to: '/requests/create', can: 'simpleTasks.create' },
+                ],
+            },
             { separator: true },
             {
                 label: 'Invoices',
