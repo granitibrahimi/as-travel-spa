@@ -40,6 +40,7 @@ export default [
     { path: '/users/roles', name: 'userRoles.list', component: RolesIndex },
     { path: '/users/roles/create', name: 'userRoles.create', component: RolesManage },
     { path: '/users/roles/:id/edit', name: 'userRoles.edit', component: RolesManage },
+    { path: '/users/roles/:id/clone', name: 'userRoles.clone', component: RolesManage },
     { path: '/users/roles/:id/permissions', name: 'userRoles.permissions', component: RolesPermissions },
 
     // Notifications

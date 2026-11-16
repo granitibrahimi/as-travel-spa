@@ -39,7 +39,7 @@ async function confirmDelete() {
     deleting.value = true;
 
     try {
-        await api.delete(`/roles/${toDelete.value.id}`);
+        await api.delete(`/users/roles/${toDelete.value.id}`);
         toDelete.value = null;
         await fetchRoles();
     } finally {
@@ -50,6 +50,7 @@ async function confirmDelete() {
 const rowActions = (role) => [
     ...(auth.can('roles.permissions') ? [{ label: 'Permissions', href: routeUrl('userRoles.permissions', role.id) }] : []),
     ...(auth.can('roles.edit') ? [{ label: 'Edit', href: routeUrl('userRoles.edit', role.id) }] : []),
+    ...(auth.can('roles.create') && auth.can('roles.permissions') ? [{ label: 'Clone', href: routeUrl('userRoles.clone', role.id) }] : []),
     ...(auth.can('roles.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = role) }] : []),
 ];
 </script>
