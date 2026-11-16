@@ -13,7 +13,6 @@ import Select from '../../components/Form/Select.vue';
 import Textarea from '../../components/Form/Textarea.vue';
 import Loader from '../../components/Loader.vue';
 import SourceIcon from './SourceIcon.vue';
-import { requestStatusClass } from './statusClass.js';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -166,10 +165,6 @@ async function saveEdit() {
                     </template>
 
                     <template v-if="! editing">
-                        <div class="mb-4">
-                            <span class="rounded px-2 py-0.5 text-xs font-medium" :class="requestStatusClass(task.status)">{{ task.status.name }}</span>
-                        </div>
-
                         <dl class="space-y-4 text-sm">
                             <div>
                                 <dt class="text-xs uppercase text-gray-400">Source</dt>
