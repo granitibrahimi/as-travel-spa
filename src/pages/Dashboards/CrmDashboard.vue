@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import ConfirmDialog from '../../components/ConfirmDialog.vue';
 import DropdownMenu from '../../components/DropdownMenu.vue';
 import InputText from '../../components/Form/InputText.vue';
@@ -109,6 +109,21 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => clearInterval(timer));
+
+const router = useRouter();
+
+// Clicking anywhere on a card opens the request, except on its own links,
+// buttons and menu (and not when the user was selecting text).
+const openTask = (event, task) => {
+    if (event.target.closest('a, button, input, textarea, select, [role="menu"], [role="menuitem"]')) return;
+    if (window.getSelection()?.toString()) return;
+    const url = routeUrl('simpleTasks.show', task.id);
+    if (event.metaKey || event.ctrlKey) {
+        window.open(router.resolve(url).href, '_blank');
+        return;
+    }
+    router.push(url);
+};
 </script>
 
 <template>
@@ -166,15 +181,21 @@ onBeforeUnmount(() => clearInterval(timer));
                         <div
                             v-for="task in column.tasks"
                             :key="task.id"
-                            class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+                            class="cursor-pointer rounded-lg border bg-white p-3 shadow-sm hover:border-red-200"
+                            :class="task.urgent ? 'border-red-300' : 'border-gray-200'"
+                            @click="openTask($event, task)"
                         >
                             <div class="flex items-start justify-between gap-2">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="font-medium text-gray-900 hover:text-red-600">#{{ task.id }} · {{ task.customer_name }}</RouterLink>
+                                <span v-if="task.urgent" class="ml-1 shrink-0 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
                                 <DropdownMenu :items="cardActions(task, column)" />
                             </div>
 
                             <p class="mt-1 text-xs text-gray-500">
                                 {{ task.source.name }}<template v-if="task.customer_contact"> · {{ task.customer_contact }}</template>
+                            </p>
+                            <p v-if="task.parent_destination || task.specific_hotel" class="mt-1 text-xs text-gray-700">
+                                {{ [task.parent_destination?.name, task.specific_hotel].filter(Boolean).join(' · ') }}
                             </p>
                             <p v-if="task.description" class="mt-1 line-clamp-2 text-xs text-gray-500">{{ task.description }}</p>
 

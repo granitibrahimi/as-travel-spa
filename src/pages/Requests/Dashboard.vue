@@ -1,6 +1,6 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castResource } from '../../types/responses.js';
@@ -12,6 +12,8 @@ import InputText from '../../components/Form/InputText.vue';
 import Select from '../../components/Form/Select.vue';
 import Loader from '../../components/Loader.vue';
 import { requestStatusDotClass } from './statusClass.js';
+import { getEcho } from '../../helpers/echo';
+import { flip } from '../../composables/useFlip.js';
 
 // Status ids from the API's SimpleTaskStatus enum.
 const OPEN = 1;
@@ -30,17 +32,89 @@ const period = ref(null);
 const agentFilter = ref(null);
 const agentOptions = ref([]);
 
-async function fetchBoard() {
-    loading.value = true;
+const boardEl = ref(null);
+// Counters only animate once the first load is on screen.
+const animateCounts = ref(false);
+
+/**
+ * Load the board. Once it is on screen, cards glide to their new column
+ * (FLIP) and new ones pop in; `highlight` flashes the requests that changed.
+ */
+async function fetchBoard({ quiet = false, highlight = [] } = {}) {
+    if (! quiet) {
+        loading.value = true;
+    }
 
     try {
         const { data } = await api.get('/simple-tasks/dashboard', {
             params: { period: period.value || undefined },
         });
-        board.value = castResource(data);
+        const next = castResource(data);
+
+        if (board.value && boardEl.value) {
+            await flip(boardEl.value, () => { board.value = next; }, { highlight });
+        } else {
+            board.value = next;
+            await nextTick();
+            animateCounts.value = true;
+        }
     } finally {
         loading.value = false;
     }
+}
+
+// --- Live updates over Reverb: every change to a request pings private-simple-tasks ---
+const CHANNEL = 'simple-tasks';
+const live = ref(false);
+const lastEvent = ref(null);
+let channel = null;
+let pending = new Set();
+let debounce = null;
+let retry = null;
+
+function onLiveChange(payload) {
+    pending.add(payload.id);
+    lastEvent.value = {
+        text: `#${payload.id} ${String(payload.change ?? 'updated').toLowerCase()}${payload.by ? ` by ${payload.by}` : ''}`,
+        at: Date.now(),
+    };
+
+    // A drag or a dialog in progress: the reload happens when it finishes.
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+        if (dragging.value || move.value || moving.value) {
+            debounce = setTimeout(() => onLiveChange(payload), 1500);
+            return;
+        }
+        const ids = [...pending];
+        pending = new Set();
+        fetchBoard({ quiet: true, highlight: ids });
+    }, 350);
+}
+
+function subscribe() {
+    const echo = getEcho();
+
+    if (! echo) {
+        // Echo connects on login/boot; try again shortly.
+        retry = setTimeout(subscribe, 1500);
+        return;
+    }
+
+    channel = echo.private(CHANNEL);
+    channel.listen('.changed', onLiveChange);
+    channel.subscribed?.(() => { live.value = true; });
+    channel.error?.(() => { live.value = false; });
+}
+
+function unsubscribe() {
+    clearTimeout(retry);
+    clearTimeout(debounce);
+    if (channel) {
+        getEcho()?.leave(`private-${CHANNEL}`);
+        channel = null;
+    }
+    live.value = false;
 }
 
 function setPeriod(value) {
@@ -79,9 +153,11 @@ let timer = null;
 
 onMounted(async () => {
     fetchBoard();
+    subscribe();
+    // Fallback refresh, in case the live connection drops.
     timer = setInterval(() => {
         if (document.visibilityState === 'visible' && ! dragging.value && ! move.value && ! moving.value) {
-            fetchBoard();
+            fetchBoard({ quiet: true });
         }
     }, REFRESH_MS);
 
@@ -91,7 +167,10 @@ onMounted(async () => {
     }
 });
 
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => {
+    clearInterval(timer);
+    unsubscribe();
+});
 
 // --- Moving requests: drag a card onto a column or an agent ---
 const dragging = ref(null); // the task being dragged
@@ -222,7 +301,7 @@ async function runMove(task, statusId, { agentId = null, comment = null } = {}) 
         return false;
     } finally {
         moving.value = false;
-        await fetchBoard();
+        await fetchBoard({ quiet: true, highlight: [task.id] });
     }
 }
 
@@ -261,6 +340,21 @@ const dialogMessage = computed(() => {
     }
     return `${move.value.task.customer_name}: this finishes the request and notifies the responsible agents.`;
 });
+
+const router = useRouter();
+
+// Clicking anywhere on a card opens the request, except on its own links,
+// buttons and menu (and not when the user was selecting text).
+const openTask = (event, task) => {
+    if (event.target.closest('a, button, input, textarea, select, [role="menu"], [role="menuitem"]')) return;
+    if (window.getSelection()?.toString()) return;
+    const url = routeUrl('simpleTasks.show', task.id);
+    if (event.metaKey || event.ctrlKey) {
+        window.open(router.resolve(url).href, '_blank');
+        return;
+    }
+    router.push(url);
+};
 </script>
 
 <template>
@@ -282,6 +376,18 @@ const dialogMessage = computed(() => {
             </div>
 
             <div class="flex items-center gap-2">
+                <span v-if="lastEvent" :key="lastEvent.at" class="live-event hidden text-xs text-gray-500 md:inline">{{ lastEvent.text }}</span>
+                <span
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+                    :class="live ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'"
+                    :title="live ? 'New and changed requests appear here instantly' : 'Not connected: refreshing every minute'"
+                >
+                    <span class="relative flex h-2 w-2">
+                        <span v-if="live" class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                        <span class="relative inline-flex h-2 w-2 rounded-full" :class="live ? 'bg-green-500' : 'bg-gray-400'" />
+                    </span>
+                    {{ live ? 'Live' : 'Offline' }}
+                </span>
                 <span v-if="loading && board" class="text-xs text-gray-400">Refreshing…</span>
                 <RouterLink v-if="auth.can('simpleTasks.create')" :to="routeUrl('simpleTasks.create')" class="inline-block rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">+ New request</RouterLink>
                 <RouterLink :to="routeUrl('simpleTasks.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50">List view</RouterLink>
@@ -309,7 +415,7 @@ const dialogMessage = computed(() => {
                         @click="toggleAgent('none')"
                     >
                         <span class="block text-sm font-medium text-gray-900">Not assigned</span>
-                        <span class="mt-1 block text-2xl font-semibold" :class="board.unassigned ? 'text-red-600' : 'text-gray-300'">{{ board.unassigned }}</span>
+                        <span class="mt-1 block text-2xl font-semibold" :class="board.unassigned ? 'text-red-600' : 'text-gray-300'"><span :key="board.unassigned" class="inline-block" :class="animateCounts && 'count-bump'">{{ board.unassigned }}</span></span>
                         <span class="block text-xs text-gray-400">waiting for an agent</span>
                     </button>
 
@@ -329,7 +435,7 @@ const dialogMessage = computed(() => {
                     >
                         <span class="block truncate text-sm font-medium text-gray-900">{{ agent.name }}</span>
                         <span class="mt-1 flex items-baseline gap-1">
-                            <span class="text-2xl font-semibold" :class="agent.waiting ? 'text-amber-600' : 'text-gray-300'">{{ agent.waiting }}</span>
+                            <span :key="agent.waiting" class="inline-block text-2xl font-semibold" :class="[agent.waiting ? 'text-amber-600' : 'text-gray-300', animateCounts && 'count-bump']">{{ agent.waiting }}</span>
                             <span class="text-xs text-gray-400">waiting</span>
                         </span>
                         <span class="block text-xs text-gray-500">
@@ -346,7 +452,7 @@ const dialogMessage = computed(() => {
                 <button type="button" class="text-red-600 hover:underline" @click="agentFilter = null">Show everyone</button>
             </p>
 
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div ref="boardEl" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <section
                     v-for="column in columns"
                     :key="column.status.id"
@@ -361,7 +467,7 @@ const dialogMessage = computed(() => {
                             <span class="inline-block h-2.5 w-2.5 rounded-full" :class="requestStatusDotClass(column.status)" />
                             {{ column.status.name }}
                         </span>
-                        <span class="rounded bg-gray-200 px-2 py-0.5 text-xs">{{ column.count }}</span>
+                        <span :key="column.count" class="rounded bg-gray-200 px-2 py-0.5 text-xs" :class="animateCounts && 'count-bump'">{{ column.count }}</span>
                     </h2>
                     <p class="mb-3 text-xs text-gray-400">
                         <template v-if="column.status.finished">
@@ -376,9 +482,13 @@ const dialogMessage = computed(() => {
                         <div
                             v-for="task in column.tasks"
                             :key="task.id"
-                            class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+                            :data-flip-id="task.id"
+                            :data-flip-column="column.status.id"
+                            class="cursor-pointer rounded-lg border bg-white p-3 shadow-sm hover:border-red-200"
+                            @click="openTask($event, task)"
                             :class="[
-                                (canAssign || canChangeStatus) ? 'cursor-grab active:cursor-grabbing' : '',
+                                task.urgent ? 'border-red-300' : 'border-gray-200',
+                                (canAssign || canChangeStatus) ? 'active:cursor-grabbing' : '',
                                 dragging?.id === task.id ? 'opacity-50 ring-2 ring-red-300' : '',
                             ]"
                             :draggable="canAssign || canChangeStatus"
@@ -387,6 +497,7 @@ const dialogMessage = computed(() => {
                         >
                             <div class="flex items-start justify-between gap-2">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="font-medium text-gray-900 hover:text-red-600">#{{ task.id }} · {{ task.customer_name }}</RouterLink>
+                                <span v-if="task.urgent" class="ml-1 shrink-0 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
                                 <div class="flex items-center gap-1">
                                     <span v-if="canAssign || canChangeStatus" class="select-none text-gray-300" title="Drag to move">⠿</span>
                                     <DropdownMenu :items="cardActions(task)" />
@@ -395,6 +506,9 @@ const dialogMessage = computed(() => {
 
                             <p class="mt-1 text-xs text-gray-500">
                                 {{ task.source.name }}<template v-if="task.customer_contact"> · {{ task.customer_contact }}</template>
+                            </p>
+                            <p v-if="task.parent_destination || task.specific_hotel" class="mt-1 text-xs text-gray-700">
+                                {{ [task.parent_destination?.name, task.specific_hotel].filter(Boolean).join(' · ') }}
                             </p>
                             <p v-if="task.description" class="mt-1 line-clamp-2 text-xs text-gray-500">{{ task.description }}</p>
 
@@ -436,3 +550,50 @@ const dialogMessage = computed(() => {
         </ConfirmDialog>
     </AppLayout>
 </template>
+
+<style scoped>
+/* A card that just arrived on the board. */
+.flip-new {
+    animation: flip-new 900ms cubic-bezier(.2, .8, .2, 1);
+}
+
+@keyframes flip-new {
+    0% { opacity: 0; transform: translateY(-12px) scale(.92); box-shadow: 0 0 0 0 rgba(217, 33, 40, .5); }
+    45% { opacity: 1; transform: translateY(0) scale(1.03); box-shadow: 0 0 0 6px rgba(217, 33, 40, .25); }
+    100% { transform: none; box-shadow: 0 1px 2px rgba(0, 0, 0, .05); }
+}
+
+/* A card that changed column or was edited: a brief glow. */
+.flip-moved {
+    animation: flip-moved 1400ms ease-out;
+}
+
+@keyframes flip-moved {
+    0%, 30% { box-shadow: 0 0 0 4px rgba(217, 33, 40, .35); border-color: rgb(252 165 165); }
+    100% { box-shadow: 0 1px 2px rgba(0, 0, 0, .05); }
+}
+
+.count-bump {
+    animation: count-bump 600ms cubic-bezier(.2, .8, .2, 1);
+}
+
+@keyframes count-bump {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.45); }
+    100% { transform: scale(1); }
+}
+
+.live-event {
+    animation: live-event 4s ease-out forwards;
+}
+
+@keyframes live-event {
+    0% { opacity: 0; transform: translateY(4px); }
+    10%, 75% { opacity: 1; transform: none; }
+    100% { opacity: .5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flip-new, .flip-moved, .count-bump, .live-event { animation: none; }
+}
+</style>

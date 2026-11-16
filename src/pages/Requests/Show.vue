@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import api from '../../helpers/api';
+import api, { getParentDestinationsAutosuggestEndpoint } from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castResource } from '../../types/responses.js';
 import { useAuthStore } from '../../stores/auth';
@@ -11,6 +11,8 @@ import Button from '../../components/Button.vue';
 import InputText from '../../components/Form/InputText.vue';
 import Select from '../../components/Form/Select.vue';
 import Textarea from '../../components/Form/Textarea.vue';
+import AsyncSelect from '../../components/Form/AsyncSelect.vue';
+import NiceCheckbox from '../../components/Form/NiceCheckbox.vue';
 import Loader from '../../components/Loader.vue';
 import SourceIcon from './SourceIcon.vue';
 
@@ -28,7 +30,8 @@ const statusComment = ref('');
 const savingStatus = ref(false);
 
 const editing = ref(false);
-const editForm = reactive({ customer_name: '', customer_contact: '', source: null, description: '' });
+const editForm = reactive({ customer_name: '', customer_contact: '', source: null, description: '', urgent: false, parent_destination_id: null, specific_hotel: '' });
+const editFormDestination = computed(() => task.value?.parent_destination ?? null);
 const editErrors = ref({});
 const savingEdit = ref(false);
 
@@ -122,6 +125,9 @@ function startEdit() {
         customer_contact: task.value.customer_contact ?? '',
         source: task.value.source.id,
         description: task.value.description ?? '',
+        urgent: Boolean(task.value.urgent),
+        parent_destination_id: task.value.parent_destination?.id ?? null,
+        specific_hotel: task.value.specific_hotel ?? '',
     });
     editErrors.value = {};
     editing.value = true;
@@ -158,6 +164,7 @@ async function saveEdit() {
             <div class="space-y-6 lg:col-span-2">
                 <FullWidthBox :title="`#${task.id} · ${task.customer_name}`" :collapsible="false">
                     <template #actions>
+                        <span v-if="task.urgent" class="rounded bg-red-600 px-2 py-0.5 text-xs font-semibold uppercase text-white">Urgent</span>
                         <span class="text-sm text-gray-500">
                             Assigned to:
                             <span class="font-medium" :class="task.assigned_to ? 'text-gray-900' : 'text-red-600'">{{ task.assigned_to?.name ?? 'Nobody yet' }}</span>
@@ -177,6 +184,16 @@ async function saveEdit() {
                                         <span v-else>{{ task.customer_contact }}</span>
                                     </template>
                                 </dd>
+                            </div>
+                            <div v-if="task.parent_destination || task.specific_hotel" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <dt class="text-xs uppercase text-gray-400">Parent destination</dt>
+                                    <dd class="mt-1 font-medium">{{ task.parent_destination?.name ?? '—' }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs uppercase text-gray-400">Specific hotel</dt>
+                                    <dd class="mt-1 font-medium">{{ task.specific_hotel || '—' }}</dd>
+                                </div>
                             </div>
                             <div>
                                 <dt class="text-xs uppercase text-gray-400">What does the customer want?</dt>
@@ -198,6 +215,18 @@ async function saveEdit() {
                         <InputText v-model="editForm.customer_name" label="Customer name *" :error="editErrors.customer_name" />
                         <InputText v-model="editForm.customer_contact" label="Phone / email / username" :error="editErrors.customer_contact" />
                         <Select v-model="editForm.source" label="Source *" :options="sourceOptions" :error="editErrors.source" />
+                        <AsyncSelect
+                            v-model="editForm.parent_destination_id"
+                            label="Parent destination"
+                            :url="getParentDestinationsAutosuggestEndpoint()"
+                            :initial-option="editFormDestination"
+                            placeholder="Search for a destination…"
+                            :error="editErrors.parent_destination_id"
+                        />
+                        <InputText v-model="editForm.specific_hotel" label="Specific hotel" placeholder="Optional" :error="editErrors.specific_hotel" />
+                        <div class="md:col-span-2">
+                            <NiceCheckbox v-model="editForm.urgent" label="Urgent" :error="editErrors.urgent" />
+                        </div>
                         <div class="md:col-span-2">
                             <Textarea v-model="editForm.description" label="What does the customer want?" :rows="5" :error="editErrors.description" />
                         </div>

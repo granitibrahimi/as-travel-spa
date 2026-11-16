@@ -86,6 +86,7 @@ const rowActions = (task) => [
                             <th class="border border-gray-300 px-2 py-2">Customer</th>
                             <th class="border border-gray-300 px-2 py-2">Contact</th>
                             <th class="border border-gray-300 px-2 py-2">Source</th>
+                            <th class="border border-gray-300 px-2 py-2">Destination</th>
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 120px;">Status</th>
                             <th class="border border-gray-300 px-2 py-2">Assigned to</th>
                             <th class="border border-gray-300 px-2 py-2 whitespace-nowrap" style="width: 140px;">Created</th>
@@ -94,18 +95,22 @@ const rowActions = (task) => [
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="9" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No requests found.</td>
+                            <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No requests found.</td>
                         </tr>
                         <tr v-for="task in (loading ? [] : apiResponse?.data ?? [])" :key="task.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ task.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="text-red-600 hover:underline">{{ task.customer_name }}</RouterLink>
+                                <span v-if="task.urgent" class="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">{{ task.customer_contact ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ task.source.name }}</td>
+                            <td class="border border-gray-300 px-2 py-2">
+                                {{ task.parent_destination?.name ?? '—' }}<span v-if="task.specific_hotel" class="text-gray-500"> · {{ task.specific_hotel }}</span>
+                            </td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <span class="rounded px-2 py-0.5 text-xs font-medium" :class="requestStatusClass(task.status)">{{ task.status.name }}</span>
                             </td>
