@@ -85,7 +85,7 @@ async function submit() {
                         <NiceCheckbox v-model="form.urgent" label="Urgent" :error="errors.urgent" />
                     </div>
                     <div class="md:col-span-2">
-                        <Textarea v-model="form.description" label="What does the customer want?" :rows="5" :error="errors.description" />
+                        <Textarea v-model="form.description" label="What does the customer want? *" :rows="5" :error="errors.description" />
                     </div>
                 </div>
             </FullWidthBox>

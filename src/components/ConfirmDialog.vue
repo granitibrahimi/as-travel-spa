@@ -12,12 +12,16 @@ const props = defineProps({
     confirmVariant: { type: String, default: 'primary' },
     // While true the whole dialog is locked: buttons disabled, keys and backdrop ignored.
     processing: { type: Boolean, default: false },
+    // Disables the confirm button (and Enter) until the slot's form is valid.
+    confirmDisabled: { type: Boolean, default: false },
+    // 'md' (default) or 'lg' for dialogs holding a longer form.
+    size: { type: String, default: 'md' },
 });
 
 const emit = defineEmits(['confirm', 'cancel']);
 
 function confirm() {
-    if (! props.processing) {
+    if (! props.processing && ! props.confirmDisabled) {
         emit('confirm');
     }
 }
@@ -30,7 +34,8 @@ function cancel() {
 
 // Enter confirms, Escape cancels — active only while the dialog is open.
 function onKeydown(event) {
-    if (event.key === 'Enter') {
+    // Enter in a textarea is a new line, not a confirm.
+    if (event.key === 'Enter' && event.target?.tagName !== 'TEXTAREA') {
         event.preventDefault();
         confirm();
     } else if (event.key === 'Escape') {
@@ -58,8 +63,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                 <div
                     role="dialog"
                     aria-modal="true"
-                    class="confirm-dialog-card relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
-                    :class="{ 'pointer-events-none opacity-75': processing }"
+                    class="confirm-dialog-card relative w-full rounded-lg bg-white p-6 shadow-xl"
+                    :class="[size === 'lg' ? 'max-h-[90vh] max-w-2xl overflow-y-auto' : 'max-w-md', { 'pointer-events-none opacity-75': processing }]"
                 >
                     <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
                     <p v-if="message" class="mt-2 text-sm text-gray-600">{{ message }}</p>
@@ -67,7 +72,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
 
                     <div class="mt-6 flex justify-end gap-3">
                         <Button :disabled="processing" @click="cancel">{{ cancelLabel }}</Button>
-                        <Button :variant="confirmVariant" :disabled="processing" @click="confirm">
+                        <Button :variant="confirmVariant" :disabled="processing || confirmDisabled" @click="confirm">
                             {{ processing ? 'Working…' : confirmLabel }}
                         </Button>
                     </div>
