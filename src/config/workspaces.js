@@ -433,6 +433,7 @@ export const workspaces = [
                 items: [
                     { label: 'Conversations', to: '/ai-chat/conversations', can: 'aiChat.conversations' },
                     { label: 'Instructions', to: '/ai-chat/instructions', can: 'aiChat.instructions' },
+                    { label: 'Bot Instructions', to: '/ai-chat/bot-instructions', can: 'aiChat.instructions' },
                 ],
             },
             {
