@@ -226,8 +226,8 @@ const openTask = (event, task) => {
                                 {{ task.source.name }}<template v-if="task.customer_contact"> · {{ task.customer_contact }}</template>
                             </p>
                             <p v-if="task.parent_destinations?.length || task.parent_destination || task.specific_hotel || task.combo" class="mt-1 text-xs text-gray-700">
+                                <span v-if="task.combo" class="mr-1 rounded bg-indigo-100 px-1 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">Combo</span>
                                 {{ [(task.parent_destinations ?? []).map((d) => d.name).join(', ') || task.parent_destination?.name, task.specific_hotel].filter(Boolean).join(' · ') }}
-                                <span v-if="task.combo" class="ml-1 rounded bg-indigo-100 px-1 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">Combo</span>
                             </p>
                             <p v-if="column.key === 'open' || column.key === 'in_progress'" class="mt-1 text-xs text-gray-400">
                                 <template v-if="task.assigned_to">{{ task.assigned_to.name }}</template>

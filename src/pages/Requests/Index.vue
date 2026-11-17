@@ -116,8 +116,8 @@ const rowActions = (task) => [
                             <td class="border border-gray-300 px-2 py-2">{{ task.customer_contact ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ task.source.name }}</td>
                             <td class="border border-gray-300 px-2 py-2">
+                                <span v-if="task.combo" class="mr-1 rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">Combo</span>
                                 {{ (task.parent_destinations ?? []).map((d) => d.name).join(', ') || task.parent_destination?.name || '—' }}<span v-if="task.specific_hotel" class="text-gray-500"> · {{ task.specific_hotel }}</span>
-                                <span v-if="task.combo" class="ml-1 rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">Combo</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <span class="rounded px-2 py-0.5 text-xs font-medium" :class="requestStatusClass(task.status)">{{ task.status.name }}</span>

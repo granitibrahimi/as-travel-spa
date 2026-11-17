@@ -259,9 +259,9 @@ async function saveEdit() {
                                 <div>
                                     <dt class="text-xs uppercase text-gray-400">Destinations</dt>
                                     <dd class="mt-1 flex flex-wrap items-center gap-1.5">
+                                        <span v-if="task.combo" class="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold uppercase text-indigo-700">Combo</span>
                                         <span v-for="d in destinations" :key="d.id" class="rounded-full border border-gray-300 bg-gray-50 px-2.5 py-0.5 font-medium">{{ d.name }}</span>
                                         <span v-if="! destinations.length" class="font-medium">—</span>
-                                        <span v-if="task.combo" class="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold uppercase text-indigo-700">Combo</span>
                                     </dd>
                                 </div>
                                 <div>
