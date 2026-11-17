@@ -14,7 +14,7 @@ import Textarea from '../../components/Form/Textarea.vue';
 import NiceCheckbox from '../../components/Form/NiceCheckbox.vue';
 import Loader from '../../components/Loader.vue';
 import SourceIcon from './SourceIcon.vue';
-import OfferSentDialog from './OfferSentDialog.vue';
+import AddOfferDialog from './AddOfferDialog.vue';
 import DestinationsSection from './DestinationsSection.vue';
 
 const route = useRoute();
@@ -105,34 +105,25 @@ async function saveAssignee() {
     }
 }
 
-// Status id from the API's SimpleTaskStatus enum: Offer sent asks for the offer text first.
-const OFFER_SENT = 3;
+// Offers are added one by one (several per request); closing is a status.
 const offerDialog = ref(false);
-const offerError = ref('');
 
-async function changeStatus(statusId, extra = {}) {
+async function offerSaved() {
+    offerDialog.value = false;
+    await load();
+}
+
+async function changeStatus(statusId) {
     if (savingStatus.value || statusId === task.value.status.id) {
-        return;
-    }
-
-    if (statusId === OFFER_SENT && ! extra.offer_text) {
-        offerError.value = '';
-        offerDialog.value = true;
         return;
     }
 
     savingStatus.value = true;
 
     try {
-        await api.put(`/simple-tasks/${task.value.id}/status`, { status: statusId, comment: statusComment.value || null, ...extra });
+        await api.put(`/simple-tasks/${task.value.id}/status`, { status: statusId, comment: statusComment.value || null });
         statusComment.value = '';
-        offerDialog.value = false;
         await load();
-    } catch (error) {
-        if (error.response?.status !== 422 || ! offerDialog.value) {
-            throw error;
-        }
-        offerError.value = Object.values(firstErrors(error))[0] ?? 'Could not save.';
     } finally {
         savingStatus.value = false;
     }
@@ -154,11 +145,6 @@ async function toggleSpam() {
     } finally {
         savingSpam.value = false;
     }
-}
-
-function confirmOfferSent({ offerText, comment }) {
-    statusComment.value = comment ?? '';
-    changeStatus(OFFER_SENT, { offer_text: offerText });
 }
 
 const savingComment = ref(false);
@@ -273,9 +259,18 @@ async function saveEdit() {
                                 <dt class="text-xs uppercase text-gray-400">What does the customer want?</dt>
                                 <dd class="mt-1 whitespace-pre-line text-gray-800">{{ task.description || '—' }}</dd>
                             </div>
-                            <div v-if="task.offer_text">
-                                <dt class="text-xs uppercase text-gray-400">Offer sent<template v-if="task.offer_sent_at"> · {{ task.offer_sent_at }}</template></dt>
-                                <dd class="mt-1 whitespace-pre-line rounded border border-green-200 bg-green-50 p-3 text-gray-800">{{ task.offer_text }}</dd>
+                            <div>
+                                <dt class="flex items-center justify-between text-xs uppercase text-gray-400">
+                                    <span>{{ task.offers.length }} {{ task.offers.length === 1 ? 'offer' : 'offers' }} sent</span>
+                                    <Button v-if="auth.can('simpleTasks.changeStatus')" size="sm" variant="primary" @click="offerDialog = true">+ Add offer</Button>
+                                </dt>
+                                <dd v-if="task.offers.length" class="mt-2 space-y-2">
+                                    <div v-for="(offer, index) in task.offers" :key="offer.id ?? 'legacy'" class="rounded border border-green-200 bg-green-50 p-3">
+                                        <p class="mb-1 text-xs text-gray-500">Offer {{ index + 1 }}<template v-if="offer.user"> · {{ offer.user }}</template><template v-if="offer.created_at"> · {{ offer.created_at }}</template></p>
+                                        <p class="whitespace-pre-line text-gray-800">{{ offer.offer_text }}</p>
+                                    </div>
+                                </dd>
+                                <dd v-else class="mt-1 text-gray-400">No offer sent yet.</dd>
                             </div>
                             <div v-if="task.finished_at">
                                 <dt class="text-xs uppercase text-gray-400">Finished</dt>
@@ -369,7 +364,7 @@ async function saveEdit() {
                                 <span v-if="s.id === task.status.id" class="text-xs">(current)</span>
                             </button>
                         </div>
-                        <p class="text-xs text-gray-400">Offer sent finishes the request and notifies the responsible agents.</p>
+                        <p class="text-xs text-gray-400">Closed finishes the request and notifies the responsible agents.</p>
                         <div class="border-t border-gray-100 pt-3">
                             <button
                                 type="button"
@@ -385,14 +380,6 @@ async function saveEdit() {
             </div>
         </div>
 
-        <OfferSentDialog
-            :show="offerDialog"
-            :task="task"
-            :processing="savingStatus"
-            :error="offerError"
-            :initial-comment="statusComment"
-            @confirm="confirmOfferSent"
-            @cancel="offerDialog = false"
-        />
+        <AddOfferDialog :show="offerDialog" :task="task" @saved="offerSaved" @cancel="offerDialog = false" />
     </AppLayout>
 </template>

@@ -6,7 +6,7 @@ import DropdownMenu from '../../components/DropdownMenu.vue';
 import InputText from '../../components/Form/InputText.vue';
 import Loader from '../../components/Loader.vue';
 import StatCard from '../../components/StatCard.vue';
-import OfferSentDialog from '../Requests/OfferSentDialog.vue';
+import AddOfferDialog from '../Requests/AddOfferDialog.vue';
 import api from '../../helpers/api';
 import { money } from '../../helpers/money';
 import { routeUrl } from '../../helpers/route.js';
@@ -22,8 +22,7 @@ const REFRESH_MS = 60_000;
 // Board columns (keys from the API): dot colour and the line under the title.
 const COLUMN_STYLE = {
     open: { dot: 'bg-red-500', hint: 'Not taken by anyone yet, oldest first' },
-    old: { dot: 'bg-orange-500', hint: 'Waiting since before today, oldest first' },
-    today: { dot: 'bg-amber-500', hint: 'Assigned today, oldest first' },
+    assigned: { dot: 'bg-amber-500', hint: 'Assigned to you, not started yet' },
     in_progress: { dot: 'bg-blue-500', hint: 'You are working on these' },
     offer_sent: { dot: 'bg-green-500', hint: null },
 };
@@ -75,7 +74,8 @@ const cardActions = (task, column) => [
                 : column.key !== 'in_progress'
                     ? [{ label: 'Move to In progress', action: () => openMove(task, IN_PROGRESS, 'In progress') }]
                     : []),
-            ...(column.key !== 'open' ? [{ label: 'Move to Offer sent', action: () => openMove(task, OFFER_SENT, 'Offer sent') }] : []),
+            { label: 'Add offer…', action: () => { offerTask.value = task; } },
+            ...(column.key !== 'open' ? [{ label: 'Move to Closed', action: () => openMove(task, OFFER_SENT, 'Closed') }] : []),
             ...(task.spam ? [] : [{ label: 'Mark as spam', danger: true, action: () => openMove(task, SPAM_FLAG, 'Spam') }]),
         ]
         : []),
@@ -100,7 +100,15 @@ function openMove(task, status, name) {
     moveError.value = '';
 }
 
-async function confirmMove(offer = null) {
+// Add an offer from a card (the request stays where it is).
+const offerTask = ref(null);
+
+async function offerSaved() {
+    offerTask.value = null;
+    await load({ quiet: true });
+}
+
+async function confirmMove() {
     moving.value = true;
     moveError.value = '';
 
@@ -110,8 +118,7 @@ async function confirmMove(offer = null) {
         } else {
             await api.put(`/simple-tasks/${move.value.task.id}/status`, {
                 status: move.value.status,
-                comment: offer ? offer.comment : (moveComment.value.trim() || null),
-                offer_text: offer?.offerText,
+                comment: moveComment.value.trim() || null,
             });
         }
         move.value = null;
@@ -130,7 +137,7 @@ let timer = null;
 onMounted(() => {
     load();
     timer = setInterval(() => {
-        if (document.visibilityState === 'visible' && ! move.value) {
+        if (document.visibilityState === 'visible' && ! move.value && ! offerTask.value) {
             load({ quiet: true });
         }
     }, REFRESH_MS);
@@ -183,7 +190,7 @@ const openTask = (event, task) => {
                 />
             </div>
 
-            <div v-if="requests" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <div v-if="requests" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <section
                     v-for="column in requests.columns"
                     :key="column.key"
@@ -198,7 +205,7 @@ const openTask = (event, task) => {
                     </h2>
                     <p class="mb-3 text-xs text-gray-400">
                         <template v-if="column.finished">
-                            Finished since {{ requests.finished_from }}<template v-if="column.total > column.tasks.length"> · latest {{ column.tasks.length }} shown</template>
+                            Closed since {{ requests.finished_from }}<template v-if="column.total > column.tasks.length"> · latest {{ column.tasks.length }} shown</template>
                         </template>
                         <template v-else>{{ COLUMN_STYLE[column.key]?.hint }}</template>
                     </p>
@@ -235,6 +242,7 @@ const openTask = (event, task) => {
                             </p>
                             <p v-if="task.description" class="mt-1 line-clamp-2 text-xs text-gray-500">{{ task.description }}</p>
 
+                            <p v-if="task.offers_count" class="mt-1 text-xs"><span class="rounded bg-green-50 px-1.5 py-0.5 text-green-700">{{ task.offers_count }} {{ task.offers_count === 1 ? 'offer' : 'offers' }} sent</span></p>
                             <div class="mt-2 text-xs text-gray-400" :title="column.finished ? task.finished_at : (task.assigned_at ?? task.created_at)">
                                 <template v-if="column.finished">{{ task.finished_since }}</template>
                                 <template v-else>Created {{ task.created_since }}</template>
@@ -245,17 +253,10 @@ const openTask = (event, task) => {
             </div>
         </template>
 
-        <OfferSentDialog
-            :show="move?.status === OFFER_SENT"
-            :task="move?.task ?? null"
-            :processing="moving"
-            :error="moveError"
-            @confirm="confirmMove"
-            @cancel="move = null"
-        />
+        <AddOfferDialog :show="Boolean(offerTask)" :task="offerTask" @saved="offerSaved" @cancel="offerTask = null" />
 
         <ConfirmDialog
-            :show="Boolean(move) && move.status !== OFFER_SENT"
+            :show="Boolean(move)"
             :title="move ? (move.status === SPAM_FLAG ? `Mark #${move.task.id} as spam?` : `Move #${move.task.id} to ${move.name}?`) : ''"
             :message="moveMessage"
             :confirm-label="move ? (move.status === SPAM_FLAG ? 'Mark as spam' : `Move to ${move.name}`) : ''"

@@ -12,14 +12,13 @@ import InputText from '../../components/Form/InputText.vue';
 import Select from '../../components/Form/Select.vue';
 import Loader from '../../components/Loader.vue';
 import { requestStatusDotClass } from './statusClass.js';
-import OfferSentDialog from './OfferSentDialog.vue';
+import AddOfferDialog from './AddOfferDialog.vue';
 import { getEcho } from '../../helpers/echo';
 import { flip } from '../../composables/useFlip.js';
 
 // Status ids from the API's SimpleTaskStatus enum.
 const OPEN = 1;
 const ASSIGNED = 2;
-const OFFER_SENT = 3;
 const IN_PROGRESS = 5;
 
 const REFRESH_MS = 60_000;
@@ -245,12 +244,13 @@ function openMove(task, status) {
     moveError.value = '';
 }
 
-async function confirmOfferSent({ offerText, comment }) {
-    const ok = await runMove(move.value.task, OFFER_SENT, { comment, offerText });
+// Add an offer from a card (the request stays where it is).
+const offerTask = ref(null);
 
-    if (ok) {
-        move.value = null;
-    }
+async function offerSaved() {
+    const id = offerTask.value.id;
+    offerTask.value = null;
+    await fetchBoard({ quiet: true, highlight: [id] });
 }
 
 async function confirmMove() {
@@ -273,7 +273,7 @@ async function confirmMove() {
  * Open: unassign (and reopen a finished request). Assigned: assign to the
  * agent (and reopen a finished request). Anything else: change the status.
  */
-async function runMove(task, statusId, { agentId = null, comment = null, offerText = null } = {}) {
+async function runMove(task, statusId, { agentId = null, comment = null } = {}) {
     if (moving.value) {
         return false;
     }
@@ -301,7 +301,7 @@ async function runMove(task, statusId, { agentId = null, comment = null, offerTe
                 await api.put(`${url}/status`, { status: ASSIGNED });
             }
         } else {
-            await api.put(`${url}/status`, { status: statusId, comment, offer_text: offerText ?? undefined });
+            await api.put(`${url}/status`, { status: statusId, comment });
         }
 
         return true;
@@ -325,6 +325,7 @@ const statuses = computed(() => (board.value?.columns ?? []).map((column) => col
 
 const cardActions = (task) => [
     { label: 'View', href: routeUrl('simpleTasks.show', task.id) },
+    ...(canChangeStatus.value && ! task.status.finished ? [{ label: 'Add offer…', action: () => { offerTask.value = task; } }] : []),
     ...statuses.value
         .filter((status) => canMoveTo(task, status))
         .map((status) => ({
@@ -425,7 +426,7 @@ const openTask = (event, task) => {
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="text-sm font-semibold uppercase text-gray-600">Agents</h2>
                     <p class="text-xs text-gray-400">
-                        Waiting = assigned, not finished, not spam · Sent/Spam since {{ board.finished_from }}
+                        Waiting = assigned, not closed, not spam · Offers / closed / spam since {{ board.finished_from }}
                         <template v-if="canAssign"> · Drop a card on an agent to assign it</template>
                     </p>
                 </div>
@@ -465,7 +466,7 @@ const openTask = (event, task) => {
                             <template v-if="agent.oldest_waiting_since">Oldest {{ agent.oldest_waiting_since }}</template>
                             <template v-else>Nothing waiting</template>
                         </span>
-                        <span class="block text-xs text-gray-400">{{ agent.offers_sent }} sent · {{ agent.spam }} spam</span>
+                        <span class="block text-xs text-gray-400">{{ agent.offers_sent }} offers · {{ agent.closed ?? 0 }} closed · {{ agent.spam }} spam</span>
                     </button>
                 </div>
             </section>
@@ -494,7 +495,7 @@ const openTask = (event, task) => {
                     </h2>
                     <p class="mb-3 text-xs text-gray-400">
                         <template v-if="column.status.finished">
-                            Finished since {{ board.finished_from }}<template v-if="column.total > column.tasks.length && agentFilter === null"> · latest {{ column.tasks.length }} shown</template>
+                            Closed since {{ board.finished_from }}<template v-if="column.total > column.tasks.length && agentFilter === null"> · latest {{ column.tasks.length }} shown</template>
                         </template>
                         <template v-else>Waiting, oldest first</template>
                     </p>
@@ -540,6 +541,7 @@ const openTask = (event, task) => {
                             </p>
                             <p v-if="task.description" class="mt-1 line-clamp-2 text-xs text-gray-500">{{ task.description }}</p>
 
+                            <p v-if="task.offers_count" class="mt-1 text-xs"><span class="rounded bg-green-50 px-1.5 py-0.5 text-green-700">{{ task.offers_count }} {{ task.offers_count === 1 ? 'offer' : 'offers' }} sent</span></p>
                             <div class="mt-2 flex items-center justify-between gap-2 text-xs text-gray-400">
                                 <span :title="column.status.finished ? task.finished_at : task.created_at">
                                     <template v-if="column.status.finished">{{ task.finished_since }}</template>
@@ -554,17 +556,10 @@ const openTask = (event, task) => {
             </div>
         </template>
 
-        <OfferSentDialog
-            :show="Boolean(move) && ! move.failed && move.status.id === OFFER_SENT"
-            :task="move?.task ?? null"
-            :processing="moving"
-            :error="moveError"
-            @confirm="confirmOfferSent"
-            @cancel="move = null"
-        />
+        <AddOfferDialog :show="Boolean(offerTask)" :task="offerTask" @saved="offerSaved" @cancel="offerTask = null" />
 
         <ConfirmDialog
-            :show="Boolean(move) && (move.failed || move.status.id !== OFFER_SENT)"
+            :show="Boolean(move)"
             :title="dialogTitle"
             :message="dialogMessage"
             :confirm-label="move?.failed ? 'OK' : (move?.status.id === ASSIGNED ? 'Assign' : `Move to ${move?.status.name}`)"

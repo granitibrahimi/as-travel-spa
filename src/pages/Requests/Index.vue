@@ -121,6 +121,7 @@ const rowActions = (task) => [
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <span class="rounded px-2 py-0.5 text-xs font-medium" :class="requestStatusClass(task.status)">{{ task.status.name }}</span>
+                                <span v-if="task.offers_count" class="mt-1 block text-[11px] text-green-700">{{ task.offers_count }} {{ task.offers_count === 1 ? 'offer' : 'offers' }} sent</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">{{ task.assigned_to?.name ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ task.created_at }}</td>
