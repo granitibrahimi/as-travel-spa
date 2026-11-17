@@ -61,6 +61,13 @@ export const workspaces = [
                     { label: 'New Request', to: '/requests/create', can: 'simpleTasks.create' },
                 ],
             },
+            {
+                label: 'AI Chat',
+                items: [
+                    { label: 'Conversations', to: '/ai-chat/conversations', can: 'aiChat.conversations' },
+                    { label: 'Instructions', to: '/ai-chat/instructions', can: 'aiChat.instructions' },
+                ],
+            },
             { separator: true },
             {
                 label: 'Invoices',
