@@ -26,7 +26,9 @@ const STATUS = {
 
 async function load() {
     const { data } = await api.get('/ai-chat/instructions');
-    entries.value = castResource(data);
+    // An empty list comes back without `data` (the API drops empty values), so default to [].
+    const rows = castResource(data);
+    entries.value = Array.isArray(rows) ? rows : [];
 }
 
 // While something is indexing, refresh every few seconds so the status moves on by itself.

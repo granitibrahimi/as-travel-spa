@@ -27,7 +27,9 @@ const filtered = computed(() => {
 
 async function loadList() {
     const { data } = await api.get('/ai-chat/conversations');
-    conversations.value = castResource(data);
+    // An empty list comes back without `data` (the API drops empty values), so default to [].
+    const rows = castResource(data);
+    conversations.value = Array.isArray(rows) ? rows : [];
 }
 
 async function loadThread(id) {
