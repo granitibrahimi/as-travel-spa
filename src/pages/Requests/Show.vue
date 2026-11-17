@@ -16,10 +16,13 @@ import Textarea from '../../components/Form/Textarea.vue';
 import NiceCheckbox from '../../components/Form/NiceCheckbox.vue';
 import Loader from '../../components/Loader.vue';
 import SourceIcon from './SourceIcon.vue';
+import { useRequestViewing } from '../../composables/useRequestViewing.js';
 import AddOfferDialog from './AddOfferDialog.vue';
 import DestinationsSection from './DestinationsSection.vue';
 
 const route = useRoute();
+// Boards show a "working" icon while this request is open here.
+useRequestViewing(() => route.params.id);
 const auth = useAuthStore();
 
 const task = ref(null);

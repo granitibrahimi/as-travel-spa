@@ -1,4 +1,5 @@
 <script setup>
+import ViewersBadge from './ViewersBadge.vue';
 import SourceIcon from './SourceIcon.vue';
 import SpamBadge from './SpamBadge.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
@@ -78,7 +79,10 @@ let debounce = null;
 let retry = null;
 
 function onLiveChange(payload) {
-    pending.add(payload.id);
+    // Opening or leaving a request only refreshes its working icon: no flash.
+    if (payload.change !== 'Opened' && payload.change !== 'Left') {
+        pending.add(payload.id);
+    }
     lastEvent.value = {
         text: `#${payload.id} ${String(payload.change ?? 'updated').toLowerCase()}${payload.by ? ` by ${payload.by}` : ''}`,
         at: Date.now(),
@@ -534,6 +538,7 @@ const openTask = (event, task) => {
                                 </div>
                             </div>
 
+                            <ViewersBadge :viewers="task.viewers ?? []" class="mt-1" />
                             <p class="mt-1 flex items-center gap-2 text-xs text-gray-500">
                                 <SourceIcon :source="task.source" badge />
                                 <span v-if="task.customer_contact" class="truncate">{{ task.customer_contact }}</span>

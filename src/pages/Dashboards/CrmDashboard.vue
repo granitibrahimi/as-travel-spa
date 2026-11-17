@@ -1,4 +1,5 @@
 <script setup>
+import ViewersBadge from '../Requests/ViewersBadge.vue';
 import SourceIcon from '../Requests/SourceIcon.vue';
 import SpamBadge from '../Requests/SpamBadge.vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
@@ -231,6 +232,7 @@ const openTask = (event, task) => {
                                 <DropdownMenu :items="cardActions(task, column)" />
                             </div>
 
+                            <ViewersBadge :viewers="task.viewers ?? []" class="mt-1" />
                             <p class="mt-1 flex items-center gap-2 text-xs text-gray-500">
                                 <SourceIcon :source="task.source" badge />
                                 <span v-if="task.customer_contact" class="truncate">{{ task.customer_contact }}</span>
