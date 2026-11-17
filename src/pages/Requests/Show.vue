@@ -66,7 +66,9 @@ const sourceOptions = computed(() => options.value.sources.map((s) => ({ value: 
 
 async function load() {
     const { data } = await api.get(`/simple-tasks/${route.params.id}`);
-    task.value = castResource(data);
+    const loaded = castResource(data);
+    // Empty lists can be left out of the API response.
+    task.value = { ...loaded, offers: loaded.offers ?? [], history: loaded.history ?? [] };
     assignee.value = task.value.assigned_to?.id ?? null;
 }
 
