@@ -1,7 +1,7 @@
 <script setup>
 // A request's source as a coloured icon (ids from the API's SimpleTaskSource).
-// `badge` draws a white icon on the source's colour (board cards), otherwise
-// a coloured icon on its own (request page).
+// `badge` draws the coloured icon in a box with a border of the same colour
+// (board cards, list), otherwise the coloured icon on its own (request page).
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -29,13 +29,13 @@ const label = computed(() => props.source?.name ?? info.value.name);
 <template>
     <span
         class="inline-flex shrink-0 items-center justify-center"
-        :class="badge ? 'h-6 w-6 rounded-md text-white' : 'h-4 w-4'"
-        :style="badge ? { backgroundColor: info.color } : { color: info.color }"
+        :class="badge ? 'h-6 w-6 rounded-md border bg-white' : 'h-4 w-4'"
+        :style="badge ? { color: info.color, borderColor: info.color } : { color: info.color }"
         :title="label"
         role="img"
         :aria-label="label"
     >
-        <svg :class="badge ? 'h-4 w-4' : 'h-4 w-4'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <!-- Phone -->
             <path v-if="id === 1" d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
             <!-- WhatsApp: chat bubble with a handset -->
