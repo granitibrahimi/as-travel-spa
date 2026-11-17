@@ -12,6 +12,8 @@ import DropdownMenu from '../../../components/DropdownMenu.vue';
 import UserDetails from '../../../components/UserDetails.vue';
 import VacationBalanceBox from '../../../components/VacationBalanceBox.vue';
 import Loader from '../../../components/Loader.vue';
+import Button from '../../../components/Button.vue';
+import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import AddVacationModal from './AddVacationModal.vue';
 
 const auth = useAuthStore();
@@ -70,6 +72,27 @@ const userActions = computed(() => {
     ];
 });
 
+// AS Travel app push notifications: removing every subscription makes the
+// app drop its old one and ask the user to turn notifications on again.
+const pushSubscriptions = computed(() => (Array.isArray(user.value?.push_subscriptions) ? user.value.push_subscriptions : []));
+const confirmPushReset = ref(false);
+const resettingPush = ref(false);
+
+async function resetPush() {
+    resettingPush.value = true;
+
+    try {
+        await api.delete(`/users/users/${id}/push-subscriptions`);
+        confirmPushReset.value = false;
+        await fetchUser();
+        notifications.push({ type: 'success', message: 'Push subscriptions removed. The app will ask for notifications again.' });
+    } catch (e) {
+        notifications.push({ type: 'error', message: 'Could not remove the push subscriptions.' });
+    } finally {
+        resettingPush.value = false;
+    }
+}
+
 function onVacationSaved() {
     notifications.push({ type: 'success', message: 'Vacation recorded.' });
     fetchUser();
@@ -93,7 +116,49 @@ function onVacationSaved() {
             </FullWidthBox>
 
             <VacationBalanceBox :user="user" @recalculated="fetchUser" />
+
+            <FullWidthBox title="App push notifications" :collapsible="false">
+                <template #actions>
+                    <Button
+                        v-if="auth.can('users.edit') && pushSubscriptions.length"
+                        size="sm"
+                        variant="danger"
+                        @click="confirmPushReset = true"
+                    >Remove all</Button>
+                </template>
+
+                <p class="flex items-center gap-2 text-sm">
+                    <span
+                        class="inline-block h-2.5 w-2.5 rounded-full"
+                        :class="pushSubscriptions.length ? 'bg-green-500' : 'bg-gray-300'"
+                    />
+                    <span v-if="pushSubscriptions.length" class="font-medium text-gray-900">
+                        Subscribed on {{ pushSubscriptions.length }} {{ pushSubscriptions.length === 1 ? 'device' : 'devices' }}
+                    </span>
+                    <span v-else class="text-gray-500">Not subscribed. The AS Travel app asks for notifications the next time it opens.</span>
+                </p>
+
+                <ul v-if="pushSubscriptions.length" class="mt-3 divide-y divide-gray-100 rounded border border-gray-200">
+                    <li v-for="s in pushSubscriptions" :key="s.id" class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+                        <span class="font-medium text-gray-800">{{ s.device }}</span>
+                        <span class="text-xs text-gray-500">
+                            Since {{ s.created_at }}<template v-if="s.last_used_at"> · last push {{ s.last_used_at }}</template>
+                        </span>
+                    </li>
+                </ul>
+            </FullWidthBox>
         </div>
+
+        <ConfirmDialog
+            :show="confirmPushReset"
+            title="Remove all push subscriptions?"
+            :message="`${user?.name ?? 'This user'} stops getting push notifications until they open the AS Travel app and allow them again. The app will ask them.`"
+            confirm-label="Remove all"
+            confirm-variant="danger"
+            :processing="resettingPush"
+            @confirm="resetPush"
+            @cancel="confirmPushReset = false"
+        />
 
         <AddVacationModal
             :show="showAddVacation"
