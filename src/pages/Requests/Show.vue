@@ -1,4 +1,6 @@
 <script setup>
+import SpamBadge from './SpamBadge.vue';
+import SpamIcon from './SpamIcon.vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../helpers/api';
@@ -220,7 +222,7 @@ async function saveEdit() {
                 <FullWidthBox :title="`#${task.id} · ${task.customer_name}`" :collapsible="false">
                     <template #actions>
                         <span v-if="task.urgent" class="rounded bg-red-600 px-2 py-0.5 text-xs font-semibold uppercase text-white">Urgent</span>
-                        <span v-if="task.spam" class="rounded bg-gray-700 px-2 py-0.5 text-xs font-semibold uppercase text-white">Spam</span>
+                        <SpamBadge v-if="task.spam" size="md" />
                         <span class="text-sm text-gray-500">
                             Assigned to:
                             <span class="font-medium" :class="task.assigned_to ? 'text-gray-900' : 'text-red-600'">{{ task.assigned_to?.name ?? 'Nobody yet' }}</span>
@@ -228,6 +230,10 @@ async function saveEdit() {
                     </template>
 
                     <template v-if="! editing">
+                        <div v-if="task.spam" class="mb-4 flex items-center gap-2 rounded border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-800">
+                            <SpamIcon class="h-4 w-4 shrink-0" />
+                            This request is flagged as spam. It keeps its status and doesn't count as waiting.
+                        </div>
                         <dl class="space-y-4 text-sm">
                             <div>
                                 <dt class="text-xs uppercase text-gray-400">Source</dt>
@@ -369,10 +375,13 @@ async function saveEdit() {
                             <button
                                 type="button"
                                 :disabled="savingSpam"
-                                class="w-full rounded border px-3 py-2 text-left text-sm disabled:opacity-60"
-                                :class="task.spam ? 'border-gray-700 bg-gray-700 text-white hover:bg-gray-800' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+                                class="flex w-full items-center gap-2 rounded border px-3 py-2 text-left text-sm font-medium disabled:opacity-60"
+                                :class="task.spam ? 'border-orange-500 bg-orange-500 text-white hover:bg-orange-600' : 'border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100'"
                                 @click="toggleSpam"
-                            >{{ task.spam ? 'Marked as spam · click to remove' : 'Mark as spam' }}</button>
+                            >
+                                <SpamIcon class="h-4 w-4 shrink-0" />
+                                {{ task.spam ? 'Flagged as spam · click to remove' : 'Mark as spam' }}
+                            </button>
                             <p class="mt-1 text-xs text-gray-400">A flag, like Urgent: the status stays. Marking notifies the responsible agents.</p>
                         </div>
                     </div>

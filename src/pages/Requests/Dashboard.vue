@@ -1,4 +1,5 @@
 <script setup>
+import SpamBadge from './SpamBadge.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../helpers/api';
@@ -512,7 +513,7 @@ const openTask = (event, task) => {
                             @click="openTask($event, task)"
                             :class="[
                                 task.urgent ? 'border-red-300' : 'border-gray-200',
-                                task.spam ? 'opacity-60' : '',
+                                task.spam ? '!border-orange-300 !bg-orange-50' : '',
                                 (canAssign || canChangeStatus) ? 'active:cursor-grabbing' : '',
                                 dragging?.id === task.id ? 'opacity-50 ring-2 ring-red-300' : '',
                             ]"
@@ -524,7 +525,7 @@ const openTask = (event, task) => {
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="font-medium text-gray-900 hover:text-red-600">#{{ task.id }} · {{ task.customer_name }}</RouterLink>
                                 <span class="ml-1 flex shrink-0 gap-1">
                                     <span v-if="task.urgent" class="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
-                                    <span v-if="task.spam" class="rounded bg-gray-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Spam</span>
+                                    <SpamBadge v-if="task.spam" />
                                 </span>
                                 <div class="flex items-center gap-1">
                                     <span v-if="canAssign || canChangeStatus" class="select-none text-gray-300" title="Drag to move">⠿</span>

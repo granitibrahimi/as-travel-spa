@@ -1,0 +1,7 @@
+<!-- "No entry" icon used for the Spam flag. -->
+<template>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M5.6 5.6l12.8 12.8" />
+    </svg>
+</template>

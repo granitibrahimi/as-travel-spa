@@ -1,4 +1,5 @@
 <script setup>
+import SpamBadge from './SpamBadge.vue';
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../helpers/api';
@@ -111,7 +112,7 @@ const rowActions = (task) => [
                             <td class="border border-gray-300 px-2 py-2 font-medium">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="text-red-600 hover:underline">{{ task.customer_name }}</RouterLink>
                                 <span v-if="task.urgent" class="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
-                                <span v-if="task.spam" class="ml-2 rounded bg-gray-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Spam</span>
+                                <SpamBadge v-if="task.spam" class="ml-2" />
                             </td>
                             <td class="border border-gray-300 px-2 py-2">{{ task.customer_contact ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ task.source.name }}</td>

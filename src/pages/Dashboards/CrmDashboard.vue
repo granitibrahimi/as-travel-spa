@@ -1,4 +1,5 @@
 <script setup>
+import SpamBadge from '../Requests/SpamBadge.vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import ConfirmDialog from '../../components/ConfirmDialog.vue';
@@ -217,14 +218,14 @@ const openTask = (event, task) => {
                             v-for="task in column.tasks"
                             :key="task.id"
                             class="cursor-pointer rounded-lg border bg-white p-3 shadow-sm hover:border-red-200"
-                            :class="[task.urgent ? 'border-red-300' : 'border-gray-200', task.spam ? 'opacity-60' : '']"
+                            :class="[task.urgent ? 'border-red-300' : 'border-gray-200', task.spam ? '!border-orange-300 !bg-orange-50' : '']"
                             @click="openTask($event, task)"
                         >
                             <div class="flex items-start justify-between gap-2">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="font-medium text-gray-900 hover:text-red-600">#{{ task.id }} · {{ task.customer_name }}</RouterLink>
                                 <span class="ml-1 flex shrink-0 gap-1">
                                     <span v-if="task.urgent" class="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
-                                    <span v-if="task.spam" class="rounded bg-gray-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Spam</span>
+                                    <SpamBadge v-if="task.spam" />
                                 </span>
                                 <DropdownMenu :items="cardActions(task, column)" />
                             </div>
