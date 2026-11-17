@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import api, { getParentDestinationsAutosuggestEndpoint } from '../../helpers/api';
+import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castResource } from '../../types/responses.js';
 import { useAuthStore } from '../../stores/auth';
@@ -11,11 +11,11 @@ import Button from '../../components/Button.vue';
 import InputText from '../../components/Form/InputText.vue';
 import Select from '../../components/Form/Select.vue';
 import Textarea from '../../components/Form/Textarea.vue';
-import AsyncSelect from '../../components/Form/AsyncSelect.vue';
 import NiceCheckbox from '../../components/Form/NiceCheckbox.vue';
 import Loader from '../../components/Loader.vue';
 import SourceIcon from './SourceIcon.vue';
 import OfferSentDialog from './OfferSentDialog.vue';
+import DestinationsSection from './DestinationsSection.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -31,8 +31,9 @@ const statusComment = ref('');
 const savingStatus = ref(false);
 
 const editing = ref(false);
-const editForm = reactive({ customer_name: '', customer_contact: '', source: null, description: '', urgent: false, parent_destination_id: null, specific_hotel: '' });
-const editFormDestination = computed(() => task.value?.parent_destination ?? null);
+const editForm = reactive({ customer_name: '', customer_contact: '', source: null, description: '', urgent: false, spam: false, combo: false, specific_hotel: '' });
+const editDestinations = ref([]);
+const destinations = computed(() => task.value?.parent_destinations ?? (task.value?.parent_destination ? [task.value.parent_destination] : []));
 const editErrors = ref({});
 const savingEdit = ref(false);
 
@@ -137,6 +138,24 @@ async function changeStatus(statusId, extra = {}) {
     }
 }
 
+// Spam is a flag (like Urgent), not a status.
+const savingSpam = ref(false);
+
+async function toggleSpam() {
+    if (savingSpam.value) {
+        return;
+    }
+
+    savingSpam.value = true;
+
+    try {
+        await api.put(`/simple-tasks/${task.value.id}/spam`, { spam: ! task.value.spam });
+        await load();
+    } finally {
+        savingSpam.value = false;
+    }
+}
+
 function confirmOfferSent({ offerText, comment }) {
     statusComment.value = comment ?? '';
     changeStatus(OFFER_SENT, { offer_text: offerText });
@@ -174,9 +193,11 @@ function startEdit() {
         source: task.value.source.id,
         description: task.value.description ?? '',
         urgent: Boolean(task.value.urgent),
-        parent_destination_id: task.value.parent_destination?.id ?? null,
+        spam: Boolean(task.value.spam),
+        combo: Boolean(task.value.combo),
         specific_hotel: task.value.specific_hotel ?? '',
     });
+    editDestinations.value = destinations.value.map((d) => ({ id: d.id, name: d.name }));
     editErrors.value = {};
     editing.value = true;
 }
@@ -190,7 +211,7 @@ async function saveEdit() {
     editErrors.value = {};
 
     try {
-        await api.put(`/simple-tasks/${task.value.id}`, editForm);
+        await api.put(`/simple-tasks/${task.value.id}`, { ...editForm, parent_destination_ids: editDestinations.value.map((d) => d.id) });
         editing.value = false;
         await load();
     } catch (error) {
@@ -213,6 +234,7 @@ async function saveEdit() {
                 <FullWidthBox :title="`#${task.id} · ${task.customer_name}`" :collapsible="false">
                     <template #actions>
                         <span v-if="task.urgent" class="rounded bg-red-600 px-2 py-0.5 text-xs font-semibold uppercase text-white">Urgent</span>
+                        <span v-if="task.spam" class="rounded bg-gray-700 px-2 py-0.5 text-xs font-semibold uppercase text-white">Spam</span>
                         <span class="text-sm text-gray-500">
                             Assigned to:
                             <span class="font-medium" :class="task.assigned_to ? 'text-gray-900' : 'text-red-600'">{{ task.assigned_to?.name ?? 'Nobody yet' }}</span>
@@ -233,10 +255,14 @@ async function saveEdit() {
                                     </template>
                                 </dd>
                             </div>
-                            <div v-if="task.parent_destination || task.specific_hotel" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div v-if="destinations.length || task.combo || task.specific_hotel" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <dt class="text-xs uppercase text-gray-400">Parent destination</dt>
-                                    <dd class="mt-1 font-medium">{{ task.parent_destination?.name ?? '—' }}</dd>
+                                    <dt class="text-xs uppercase text-gray-400">Destinations</dt>
+                                    <dd class="mt-1 flex flex-wrap items-center gap-1.5">
+                                        <span v-for="d in destinations" :key="d.id" class="rounded-full border border-gray-300 bg-gray-50 px-2.5 py-0.5 font-medium">{{ d.name }}</span>
+                                        <span v-if="! destinations.length" class="font-medium">—</span>
+                                        <span v-if="task.combo" class="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold uppercase text-indigo-700">Combo</span>
+                                    </dd>
                                 </div>
                                 <div>
                                     <dt class="text-xs uppercase text-gray-400">Specific hotel</dt>
@@ -274,17 +300,13 @@ async function saveEdit() {
                         <InputText v-model="editForm.customer_name" label="Customer name *" :error="editErrors.customer_name" />
                         <InputText v-model="editForm.customer_contact" label="Phone / email / username" :error="editErrors.customer_contact" />
                         <Select v-model="editForm.source" label="Source *" :options="sourceOptions" :error="editErrors.source" />
-                        <AsyncSelect
-                            v-model="editForm.parent_destination_id"
-                            label="Parent destination"
-                            :url="getParentDestinationsAutosuggestEndpoint()"
-                            :initial-option="editFormDestination"
-                            placeholder="Search for a destination…"
-                            :error="editErrors.parent_destination_id"
-                        />
                         <InputText v-model="editForm.specific_hotel" label="Specific hotel" placeholder="Optional" :error="editErrors.specific_hotel" />
                         <div class="md:col-span-2">
+                            <DestinationsSection v-model:destinations="editDestinations" v-model:combo="editForm.combo" :errors="editErrors" />
+                        </div>
+                        <div class="flex flex-wrap gap-6 md:col-span-2">
                             <NiceCheckbox v-model="editForm.urgent" label="Urgent" :error="editErrors.urgent" />
+                            <NiceCheckbox v-model="editForm.spam" label="Spam" :error="editErrors.spam" />
                         </div>
                         <div class="md:col-span-2">
                             <Textarea v-model="editForm.description" label="What does the customer want? *" :rows="5" :error="editErrors.description" />
@@ -347,7 +369,17 @@ async function saveEdit() {
                                 <span v-if="s.id === task.status.id" class="text-xs">(current)</span>
                             </button>
                         </div>
-                        <p class="text-xs text-gray-400">Offer sent and Spam finish the request and notify the responsible agents.</p>
+                        <p class="text-xs text-gray-400">Offer sent finishes the request and notifies the responsible agents.</p>
+                        <div class="border-t border-gray-100 pt-3">
+                            <button
+                                type="button"
+                                :disabled="savingSpam"
+                                class="w-full rounded border px-3 py-2 text-left text-sm disabled:opacity-60"
+                                :class="task.spam ? 'border-gray-700 bg-gray-700 text-white hover:bg-gray-800' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+                                @click="toggleSpam"
+                            >{{ task.spam ? 'Marked as spam · click to remove' : 'Mark as spam' }}</button>
+                            <p class="mt-1 text-xs text-gray-400">A flag, like Urgent: the status stays. Marking notifies the responsible agents.</p>
+                        </div>
                     </div>
                 </FullWidthBox>
             </div>

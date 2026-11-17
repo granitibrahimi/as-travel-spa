@@ -22,7 +22,7 @@ import { requestStatusClass } from './statusClass.js';
 const auth = useAuthStore();
 
 const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage } = useListFilters(
-    { q: '', status: 'active', assigned_to: '', mine: false },
+    { q: '', status: 'active', assigned_to: '', spam: '', mine: false },
     async (params, { signal }) => castPaginated((await api.get('/simple-tasks', { params, signal })).data),
 );
 
@@ -68,6 +68,12 @@ const rowActions = (task) => [
                         :options="agentOptions"
                         placeholder="All"
                     />
+                    <Select
+                        v-model="filters.spam"
+                        label="Spam"
+                        :options="[{ value: '0', label: 'Hide spam' }, { value: '1', label: 'Only spam' }]"
+                        placeholder="All"
+                    />
                     <div class="flex items-end pb-2">
                         <NiceCheckbox v-model="filters.mine" label="Assigned to me" />
                     </div>
@@ -86,7 +92,7 @@ const rowActions = (task) => [
                             <th class="border border-gray-300 px-2 py-2">Customer</th>
                             <th class="border border-gray-300 px-2 py-2">Contact</th>
                             <th class="border border-gray-300 px-2 py-2">Source</th>
-                            <th class="border border-gray-300 px-2 py-2">Destination</th>
+                            <th class="border border-gray-300 px-2 py-2">Destinations</th>
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 120px;">Status</th>
                             <th class="border border-gray-300 px-2 py-2">Assigned to</th>
                             <th class="border border-gray-300 px-2 py-2 whitespace-nowrap" style="width: 140px;">Created</th>
@@ -105,11 +111,13 @@ const rowActions = (task) => [
                             <td class="border border-gray-300 px-2 py-2 font-medium">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="text-red-600 hover:underline">{{ task.customer_name }}</RouterLink>
                                 <span v-if="task.urgent" class="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
+                                <span v-if="task.spam" class="ml-2 rounded bg-gray-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Spam</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2">{{ task.customer_contact ?? '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2">{{ task.source.name }}</td>
                             <td class="border border-gray-300 px-2 py-2">
-                                {{ task.parent_destination?.name ?? '—' }}<span v-if="task.specific_hotel" class="text-gray-500"> · {{ task.specific_hotel }}</span>
+                                {{ (task.parent_destinations ?? []).map((d) => d.name).join(', ') || task.parent_destination?.name || '—' }}<span v-if="task.specific_hotel" class="text-gray-500"> · {{ task.specific_hotel }}</span>
+                                <span v-if="task.combo" class="ml-1 rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">Combo</span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <span class="rounded px-2 py-0.5 text-xs font-medium" :class="requestStatusClass(task.status)">{{ task.status.name }}</span>

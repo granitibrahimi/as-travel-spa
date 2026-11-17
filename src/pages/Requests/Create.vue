@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import api, { getParentDestinationsAutosuggestEndpoint } from '../../helpers/api';
+import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castMutation, castResource } from '../../types/responses.js';
 import { useAuthStore } from '../../stores/auth';
@@ -11,13 +11,14 @@ import Button from '../../components/Button.vue';
 import InputText from '../../components/Form/InputText.vue';
 import Select from '../../components/Form/Select.vue';
 import Textarea from '../../components/Form/Textarea.vue';
-import AsyncSelect from '../../components/Form/AsyncSelect.vue';
 import NiceCheckbox from '../../components/Form/NiceCheckbox.vue';
+import DestinationsSection from './DestinationsSection.vue';
 
 const router = useRouter();
 const auth = useAuthStore();
 
-const form = reactive({ customer_name: '', customer_contact: '', source: null, description: '', assigned_to: null, urgent: false, parent_destination_id: null, specific_hotel: '' });
+const form = reactive({ customer_name: '', customer_contact: '', source: null, description: '', assigned_to: null, urgent: false, combo: false, specific_hotel: '' });
+const destinations = ref([]);
 const options = ref({ statuses: [], sources: [], agents: [] });
 const errors = ref({});
 const processing = ref(false);
@@ -39,7 +40,7 @@ async function submit() {
     errors.value = {};
 
     try {
-        const { data } = await api.post('/simple-tasks', form);
+        const { data } = await api.post('/simple-tasks', { ...form, parent_destination_ids: destinations.value.map((d) => d.id) });
         router.push(routeUrl('simpleTasks.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {
@@ -72,15 +73,10 @@ async function submit() {
                         :error="errors.assigned_to"
                     />
                     <p v-else-if="auth.can('simpleTasks.receive')" class="self-end pb-2 text-sm text-gray-500">This request will be assigned to you.</p>
-                    <AsyncSelect
-                        v-model="form.parent_destination_id"
-                        label="Parent destination"
-                        :url="getParentDestinationsAutosuggestEndpoint()"
-                        :initial-option="null"
-                        placeholder="Search for a destination…"
-                        :error="errors.parent_destination_id"
-                    />
                     <InputText v-model="form.specific_hotel" label="Specific hotel" placeholder="Optional" :error="errors.specific_hotel" />
+                    <div class="md:col-span-2">
+                        <DestinationsSection v-model:destinations="destinations" v-model:combo="form.combo" :errors="errors" />
+                    </div>
                     <div class="md:col-span-2">
                         <NiceCheckbox v-model="form.urgent" label="Urgent" :error="errors.urgent" />
                     </div>

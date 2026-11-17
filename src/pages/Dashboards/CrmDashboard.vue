@@ -14,15 +14,18 @@ import { useAuthStore } from '../../stores/auth';
 
 // Status ids from the API's SimpleTaskStatus enum.
 const OFFER_SENT = 3;
-const SPAM = 4;
+const IN_PROGRESS = 5;
+// Not a status: the card action that flags a request as spam.
+const SPAM_FLAG = 'spam';
 const REFRESH_MS = 60_000;
 
 // Board columns (keys from the API): dot colour and the line under the title.
 const COLUMN_STYLE = {
-    old: { dot: 'bg-red-500', hint: 'Waiting since before today, oldest first' },
+    open: { dot: 'bg-red-500', hint: 'Not taken by anyone yet, oldest first' },
+    old: { dot: 'bg-orange-500', hint: 'Waiting since before today, oldest first' },
     today: { dot: 'bg-amber-500', hint: 'Assigned today, oldest first' },
+    in_progress: { dot: 'bg-blue-500', hint: 'You are working on these' },
     offer_sent: { dot: 'bg-green-500', hint: null },
-    spam: { dot: 'bg-gray-400', hint: null },
 };
 
 const auth = useAuthStore();
@@ -52,11 +55,12 @@ async function load({ quiet = false } = {}) {
 // The requests card and board only for users who work on requests.
 const worksOnRequests = computed(() => auth.canAny(['simpleTasks.receive', 'simpleTasks.list', 'simpleTasks.listAll']));
 const requests = computed(() => (worksOnRequests.value ? metrics.value?.requests ?? null : null));
+// The user's own waiting requests (the Open column belongs to everyone).
 const waitingCount = computed(() => (requests.value?.columns ?? [])
-    .filter((column) => ! column.finished)
+    .filter((column) => ! column.finished && column.key !== 'open')
     .reduce((sum, column) => sum + column.total, 0));
 
-// Close a request from its card: Offer sent or Spam, with an optional comment.
+// From a card: take an Open request, start working on one, send the offer, or flag it as spam.
 const move = ref(null); // { task, status, name }
 const moveComment = ref('');
 const moveError = ref('');
@@ -66,11 +70,29 @@ const cardActions = (task, column) => [
     { label: 'View', href: routeUrl('simpleTasks.show', task.id) },
     ...(canChangeStatus.value && ! column.finished
         ? [
-            { label: 'Move to Offer sent', action: () => openMove(task, OFFER_SENT, 'Offer sent') },
-            { label: 'Move to Spam', danger: true, action: () => openMove(task, SPAM, 'Spam') },
+            ...(column.key === 'open'
+                ? [{ label: 'Take it (In progress)', action: () => openMove(task, IN_PROGRESS, 'In progress') }]
+                : column.key !== 'in_progress'
+                    ? [{ label: 'Move to In progress', action: () => openMove(task, IN_PROGRESS, 'In progress') }]
+                    : []),
+            ...(column.key !== 'open' ? [{ label: 'Move to Offer sent', action: () => openMove(task, OFFER_SENT, 'Offer sent') }] : []),
+            ...(task.spam ? [] : [{ label: 'Mark as spam', danger: true, action: () => openMove(task, SPAM_FLAG, 'Spam') }]),
         ]
         : []),
 ];
+
+const moveMessage = computed(() => {
+    if (! move.value) {
+        return '';
+    }
+    if (move.value.status === SPAM_FLAG) {
+        return `${move.value.task.customer_name}: the request keeps its status and gets the Spam flag. The responsible agents are notified.`;
+    }
+    if (move.value.status === IN_PROGRESS) {
+        return `${move.value.task.customer_name}: you are working on it now.${move.value.task.assigned_to ? '' : ' It is assigned to you.'}`;
+    }
+    return `${move.value.task.customer_name}: this finishes the request and notifies the responsible agents.`;
+});
 
 function openMove(task, status, name) {
     move.value = { task, status, name };
@@ -83,11 +105,15 @@ async function confirmMove(offer = null) {
     moveError.value = '';
 
     try {
-        await api.put(`/simple-tasks/${move.value.task.id}/status`, {
-            status: move.value.status,
-            comment: offer ? offer.comment : (moveComment.value.trim() || null),
-            offer_text: offer?.offerText,
-        });
+        if (move.value.status === SPAM_FLAG) {
+            await api.put(`/simple-tasks/${move.value.task.id}/spam`, { spam: true });
+        } else {
+            await api.put(`/simple-tasks/${move.value.task.id}/status`, {
+                status: move.value.status,
+                comment: offer ? offer.comment : (moveComment.value.trim() || null),
+                offer_text: offer?.offerText,
+            });
+        }
         move.value = null;
         await load({ quiet: true });
     } catch (e) {
@@ -157,7 +183,7 @@ const openTask = (event, task) => {
                 />
             </div>
 
-            <div v-if="requests" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div v-if="requests" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
                 <section
                     v-for="column in requests.columns"
                     :key="column.key"
@@ -184,20 +210,28 @@ const openTask = (event, task) => {
                             v-for="task in column.tasks"
                             :key="task.id"
                             class="cursor-pointer rounded-lg border bg-white p-3 shadow-sm hover:border-red-200"
-                            :class="task.urgent ? 'border-red-300' : 'border-gray-200'"
+                            :class="[task.urgent ? 'border-red-300' : 'border-gray-200', task.spam ? 'opacity-60' : '']"
                             @click="openTask($event, task)"
                         >
                             <div class="flex items-start justify-between gap-2">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="font-medium text-gray-900 hover:text-red-600">#{{ task.id }} · {{ task.customer_name }}</RouterLink>
-                                <span v-if="task.urgent" class="ml-1 shrink-0 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
+                                <span class="ml-1 flex shrink-0 gap-1">
+                                    <span v-if="task.urgent" class="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
+                                    <span v-if="task.spam" class="rounded bg-gray-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Spam</span>
+                                </span>
                                 <DropdownMenu :items="cardActions(task, column)" />
                             </div>
 
                             <p class="mt-1 text-xs text-gray-500">
                                 {{ task.source.name }}<template v-if="task.customer_contact"> · {{ task.customer_contact }}</template>
                             </p>
-                            <p v-if="task.parent_destination || task.specific_hotel" class="mt-1 text-xs text-gray-700">
-                                {{ [task.parent_destination?.name, task.specific_hotel].filter(Boolean).join(' · ') }}
+                            <p v-if="task.parent_destinations?.length || task.parent_destination || task.specific_hotel || task.combo" class="mt-1 text-xs text-gray-700">
+                                {{ [(task.parent_destinations ?? []).map((d) => d.name).join(', ') || task.parent_destination?.name, task.specific_hotel].filter(Boolean).join(' · ') }}
+                                <span v-if="task.combo" class="ml-1 rounded bg-indigo-100 px-1 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">Combo</span>
+                            </p>
+                            <p v-if="column.key === 'open' || column.key === 'in_progress'" class="mt-1 text-xs text-gray-400">
+                                <template v-if="task.assigned_to">{{ task.assigned_to.name }}</template>
+                                <template v-else>Not assigned</template>
                             </p>
                             <p v-if="task.description" class="mt-1 line-clamp-2 text-xs text-gray-500">{{ task.description }}</p>
 
@@ -222,15 +256,15 @@ const openTask = (event, task) => {
 
         <ConfirmDialog
             :show="Boolean(move) && move.status !== OFFER_SENT"
-            :title="move ? `Move #${move.task.id} to ${move.name}?` : ''"
-            :message="move ? `${move.task.customer_name}: this finishes the request and notifies the responsible agents.` : ''"
-            :confirm-label="move ? `Move to ${move.name}` : ''"
-            :confirm-variant="move?.status === SPAM ? 'danger' : 'primary'"
+            :title="move ? (move.status === SPAM_FLAG ? `Mark #${move.task.id} as spam?` : `Move #${move.task.id} to ${move.name}?`) : ''"
+            :message="moveMessage"
+            :confirm-label="move ? (move.status === SPAM_FLAG ? 'Mark as spam' : `Move to ${move.name}`) : ''"
+            :confirm-variant="move?.status === SPAM_FLAG ? 'danger' : 'primary'"
             :processing="moving"
             @confirm="confirmMove()"
             @cancel="move = null"
         >
-            <div class="mt-3">
+            <div v-if="move?.status !== SPAM_FLAG" class="mt-3">
                 <InputText v-model="moveComment" label="Comment (optional)" maxlength="200" />
             </div>
             <p v-if="moveError" class="mt-2 text-xs text-red-600">{{ moveError }}</p>

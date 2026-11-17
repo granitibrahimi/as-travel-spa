@@ -5,6 +5,7 @@ export function requestStatusClass(status) {
         2: 'bg-amber-100 text-amber-700',
         3: 'bg-green-100 text-green-700',
         4: 'bg-gray-200 text-gray-600',
+        5: 'bg-blue-100 text-blue-700',
     }[status?.id ?? status] ?? 'bg-gray-100 text-gray-600';
 }
 
@@ -15,5 +16,6 @@ export function requestStatusDotClass(status) {
         2: 'bg-amber-500',
         3: 'bg-green-500',
         4: 'bg-gray-400',
+        5: 'bg-blue-500',
     }[status?.id ?? status] ?? 'bg-gray-400';
 }

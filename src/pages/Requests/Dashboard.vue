@@ -20,6 +20,7 @@ import { flip } from '../../composables/useFlip.js';
 const OPEN = 1;
 const ASSIGNED = 2;
 const OFFER_SENT = 3;
+const IN_PROGRESS = 5;
 
 const REFRESH_MS = 60_000;
 
@@ -328,7 +329,6 @@ const cardActions = (task) => [
         .filter((status) => canMoveTo(task, status))
         .map((status) => ({
             label: status.id === ASSIGNED ? (task.assigned_to ? 'Reassign…' : 'Assign…') : `Move to ${status.name}`,
-            danger: status.name === 'Spam',
             action: () => openMove(task, status),
         })),
 ];
@@ -352,6 +352,9 @@ const dialogMessage = computed(() => {
     }
     if (move.value.status.id === ASSIGNED) {
         return `${move.value.task.customer_name}: the agent gets a notification.`;
+    }
+    if (move.value.status.id === IN_PROGRESS) {
+        return `${move.value.task.customer_name}: you are working on it now.${move.value.task.assigned_to ? '' : ' It is assigned to you.'}`;
     }
     return `${move.value.task.customer_name}: this finishes the request and notifies the responsible agents.`;
 });
@@ -422,7 +425,7 @@ const openTask = (event, task) => {
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="text-sm font-semibold uppercase text-gray-600">Agents</h2>
                     <p class="text-xs text-gray-400">
-                        Waiting = assigned and not finished · Sent/Spam since {{ board.finished_from }}
+                        Waiting = assigned, not finished, not spam · Sent/Spam since {{ board.finished_from }}
                         <template v-if="canAssign"> · Drop a card on an agent to assign it</template>
                     </p>
                 </div>
@@ -508,6 +511,7 @@ const openTask = (event, task) => {
                             @click="openTask($event, task)"
                             :class="[
                                 task.urgent ? 'border-red-300' : 'border-gray-200',
+                                task.spam ? 'opacity-60' : '',
                                 (canAssign || canChangeStatus) ? 'active:cursor-grabbing' : '',
                                 dragging?.id === task.id ? 'opacity-50 ring-2 ring-red-300' : '',
                             ]"
@@ -517,7 +521,10 @@ const openTask = (event, task) => {
                         >
                             <div class="flex items-start justify-between gap-2">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="font-medium text-gray-900 hover:text-red-600">#{{ task.id }} · {{ task.customer_name }}</RouterLink>
-                                <span v-if="task.urgent" class="ml-1 shrink-0 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
+                                <span class="ml-1 flex shrink-0 gap-1">
+                                    <span v-if="task.urgent" class="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
+                                    <span v-if="task.spam" class="rounded bg-gray-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Spam</span>
+                                </span>
                                 <div class="flex items-center gap-1">
                                     <span v-if="canAssign || canChangeStatus" class="select-none text-gray-300" title="Drag to move">⠿</span>
                                     <DropdownMenu :items="cardActions(task)" />
@@ -527,8 +534,9 @@ const openTask = (event, task) => {
                             <p class="mt-1 text-xs text-gray-500">
                                 {{ task.source.name }}<template v-if="task.customer_contact"> · {{ task.customer_contact }}</template>
                             </p>
-                            <p v-if="task.parent_destination || task.specific_hotel" class="mt-1 text-xs text-gray-700">
-                                {{ [task.parent_destination?.name, task.specific_hotel].filter(Boolean).join(' · ') }}
+                            <p v-if="task.parent_destinations?.length || task.parent_destination || task.specific_hotel || task.combo" class="mt-1 text-xs text-gray-700">
+                                {{ [(task.parent_destinations ?? []).map((d) => d.name).join(', ') || task.parent_destination?.name, task.specific_hotel].filter(Boolean).join(' · ') }}
+                                <span v-if="task.combo" class="ml-1 rounded bg-indigo-100 px-1 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">Combo</span>
                             </p>
                             <p v-if="task.description" class="mt-1 line-clamp-2 text-xs text-gray-500">{{ task.description }}</p>
 
@@ -560,7 +568,7 @@ const openTask = (event, task) => {
             :title="dialogTitle"
             :message="dialogMessage"
             :confirm-label="move?.failed ? 'OK' : (move?.status.id === ASSIGNED ? 'Assign' : `Move to ${move?.status.name}`)"
-            :confirm-variant="move?.status.name === 'Spam' ? 'danger' : 'primary'"
+            :confirm-variant="'primary'"
             :processing="moving"
             @confirm="move?.failed ? (move = null) : confirmMove()"
             @cancel="move = null"
