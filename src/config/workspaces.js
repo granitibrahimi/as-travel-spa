@@ -62,10 +62,9 @@ export const workspaces = [
                 ],
             },
             {
-                label: 'AI Chat',
+                label: 'Assistant',
                 items: [
-                    { label: 'Conversations', to: '/ai-chat/conversations', can: 'aiChat.conversations' },
-                    { label: 'Instructions', to: '/ai-chat/instructions', can: 'aiChat.instructions' },
+                    { label: 'Assistant', to: '/assistant', can: 'aiChat.use' },
                 ],
             },
             { separator: true },
@@ -198,6 +197,12 @@ export const workspaces = [
         home: '/',
         groups: [
             {
+                label: 'Assistant',
+                items: [
+                    { label: 'Assistant', to: '/assistant', can: 'aiChat.use' },
+                ],
+            },
+            {
                 label: 'Users',
                 items: [
                     { label: 'Users', to: '/users/users', can: 'users.list' },
@@ -259,6 +264,12 @@ export const workspaces = [
         can: 'workspaces.finance',
         home: '/',
         groups: [
+            {
+                label: 'Assistant',
+                items: [
+                    { label: 'Assistant', to: '/assistant', can: 'aiChat.use' },
+                ],
+            },
             {
                 label: 'Accounts',
                 items: [
@@ -417,6 +428,13 @@ export const workspaces = [
         can: 'workspaces.administration',
         home: '/',
         groups: [
+            {
+                label: 'AI Chat',
+                items: [
+                    { label: 'Conversations', to: '/ai-chat/conversations', can: 'aiChat.conversations' },
+                    { label: 'Instructions', to: '/ai-chat/instructions', can: 'aiChat.instructions' },
+                ],
+            },
             {
                 label: 'Reports',
                 items: [
