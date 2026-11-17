@@ -61,8 +61,7 @@ async function save() {
                 <p v-if="error" class="mt-1 text-xs text-red-600">{{ error }}</p>
                 <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <p class="text-xs text-gray-400">
-                        <span v-if="settings.updated_at">Saved {{ settings.updated_at }} · </span>
-                        Knowledge vector store: {{ settings.vector_store_id ?? 'created on the first publish' }}
+                        <template v-if="settings.updated_at">Saved {{ settings.updated_at }}</template>
                     </p>
                     <div class="flex items-center gap-3">
                         <span v-if="saved" class="text-sm text-green-700">Saved</span>

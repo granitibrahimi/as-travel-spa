@@ -16,6 +16,16 @@ import FullWidthBox from '../../components/FullWidthBox.vue';
 // OpenAI vector store in the background; the assistant keeps answering from
 // the published version until a new one is indexed.
 const entries = ref(null);
+// The OpenAI vector store the published entries live in (null until the first publish creates it).
+const vectorStoreId = ref(null);
+const botSavedAt = ref(null);
+
+async function loadStore() {
+    const { data } = await api.get('/ai-chat/bot-instructions');
+    const settings = castResource(data);
+    vectorStoreId.value = settings?.vector_store_id ?? null;
+    botSavedAt.value = settings?.updated_at ?? null;
+}
 
 const STATUS = {
     draft: { label: 'Draft', cls: 'bg-gray-100 text-gray-600' },
@@ -36,6 +46,7 @@ let timer = null;
 const indexing = computed(() => (entries.value ?? []).some((row) => row.status === 'indexing'));
 
 onMounted(async () => {
+    loadStore();
     await load();
     timer = setInterval(() => {
         if (indexing.value) {
@@ -142,6 +153,11 @@ async function confirmDelete() {
                 <RouterLink to="/ai-chat/bot-instructions" class="rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Bot instructions</RouterLink>
                 <Button size="sm" variant="primary" @click="openEditor()">New entry</Button>
             </template>
+
+            <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                <span>Knowledge vector store: <code class="font-mono text-gray-700">{{ vectorStoreId ?? 'created on the first publish' }}</code></span>
+                <span>Bot instructions: <RouterLink to="/ai-chat/bot-instructions" class="text-red-700 hover:underline">{{ botSavedAt ? `saved ${botSavedAt}` : 'default text' }}</RouterLink></span>
+            </div>
 
             <p class="mb-4 text-sm text-gray-500">
                 Paste policies, FAQs, prices or procedures. When you publish an entry it is uploaded to the assistant's knowledge
