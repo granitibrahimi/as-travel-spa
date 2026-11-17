@@ -1,4 +1,5 @@
 <script setup>
+import SourceIcon from '../Requests/SourceIcon.vue';
 import SpamBadge from '../Requests/SpamBadge.vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
@@ -230,8 +231,9 @@ const openTask = (event, task) => {
                                 <DropdownMenu :items="cardActions(task, column)" />
                             </div>
 
-                            <p class="mt-1 text-xs text-gray-500">
-                                {{ task.source.name }}<template v-if="task.customer_contact"> · {{ task.customer_contact }}</template>
+                            <p class="mt-1 flex items-center gap-2 text-xs text-gray-500">
+                                <SourceIcon :source="task.source" badge />
+                                <span v-if="task.customer_contact" class="truncate">{{ task.customer_contact }}</span>
                             </p>
                             <p v-if="task.parent_destinations?.length || task.parent_destination || task.specific_hotel || task.combo" class="mt-1 text-xs text-gray-700">
                                 <span v-if="task.combo" class="mr-1 rounded bg-indigo-100 px-1 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">Combo</span>
