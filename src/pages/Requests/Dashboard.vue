@@ -542,10 +542,10 @@ const openTask = (event, task) => {
                             <ViewersBadge :viewers="task.viewers ?? []" class="mt-1" />
                             <p class="mt-1 flex items-center gap-2 text-xs text-gray-500">
                                 <SourceIcon :source="task.source" badge />
-                                <TypeBadge :type="task.type" />
                                 <span v-if="task.customer_contact" class="truncate">{{ task.customer_contact }}</span>
                             </p>
-                            <p v-if="task.parent_destinations?.length || task.parent_destination || task.specific_hotel || task.combo" class="mt-1 text-xs text-gray-700">
+                            <p v-if="task.type || task.parent_destinations?.length || task.parent_destination || task.specific_hotel || task.combo" class="mt-1 text-xs text-gray-700">
+                                <TypeBadge :type="task.type" class="mr-1" />
                                 <span v-if="task.combo" class="mr-1 rounded bg-indigo-100 px-1 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">Combo</span>
                                 {{ [(task.parent_destinations ?? []).map((d) => d.name).join(', ') || task.parent_destination?.name, task.specific_hotel].filter(Boolean).join(' · ') }}
                             </p>
