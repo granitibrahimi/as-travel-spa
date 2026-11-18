@@ -16,6 +16,7 @@ import Textarea from '../../components/Form/Textarea.vue';
 import NiceCheckbox from '../../components/Form/NiceCheckbox.vue';
 import Loader from '../../components/Loader.vue';
 import SourceIcon from './SourceIcon.vue';
+import TypeBadge from './TypeBadge.vue';
 import { useRequestViewing } from '../../composables/useRequestViewing.js';
 import AddOfferDialog from './AddOfferDialog.vue';
 import DestinationsSection from './DestinationsSection.vue';
@@ -36,7 +37,7 @@ const statusComment = ref('');
 const savingStatus = ref(false);
 
 const editing = ref(false);
-const editForm = reactive({ customer_name: '', customer_contact: '', source: null, description: '', urgent: false, spam: false, combo: false, specific_hotel: '' });
+const editForm = reactive({ customer_name: '', customer_contact: '', source: null, type: null, description: '', urgent: false, spam: false, combo: false, specific_hotel: '' });
 const editDestinations = ref([]);
 const destinations = computed(() => task.value?.parent_destinations ?? (task.value?.parent_destination ? [task.value.parent_destination] : []));
 const editErrors = ref({});
@@ -66,6 +67,7 @@ const contactHref = computed(() => {
 
 const agentOptions = computed(() => options.value.agents.map((a) => ({ value: a.id, label: a.name })));
 const sourceOptions = computed(() => options.value.sources.map((s) => ({ value: s.id, label: s.name })));
+const typeOptions = computed(() => (options.value.types ?? []).map((t) => ({ value: t.id, label: t.name })));
 
 async function load() {
     const { data } = await api.get(`/simple-tasks/${route.params.id}`);
@@ -184,6 +186,7 @@ function startEdit() {
         customer_name: task.value.customer_name,
         customer_contact: task.value.customer_contact ?? '',
         source: task.value.source.id,
+        type: task.value.type?.id ?? null,
         description: task.value.description ?? '',
         urgent: Boolean(task.value.urgent),
         spam: Boolean(task.value.spam),
@@ -240,6 +243,10 @@ async function saveEdit() {
                             This request is flagged as spam. It keeps its status and doesn't count as waiting.
                         </div>
                         <dl class="space-y-4 text-sm">
+                            <div v-if="task.type">
+                                <dt class="text-xs uppercase text-gray-400">Type</dt>
+                                <dd class="mt-1"><TypeBadge :type="task.type" /></dd>
+                            </div>
                             <div>
                                 <dt class="text-xs uppercase text-gray-400">Source</dt>
                                 <dd class="mt-1 flex flex-wrap items-center gap-2">
@@ -306,6 +313,7 @@ async function saveEdit() {
                         <InputText v-model="editForm.customer_name" label="Customer name *" :error="editErrors.customer_name" />
                         <InputText v-model="editForm.customer_contact" label="Phone / email / username" :error="editErrors.customer_contact" />
                         <Select v-model="editForm.source" label="Source *" :options="sourceOptions" :error="editErrors.source" />
+                        <Select v-model="editForm.type" label="Type *" :options="typeOptions" :error="editErrors.type" />
                         <InputText v-model="editForm.specific_hotel" label="Specific hotel" placeholder="Optional" :error="editErrors.specific_hotel" />
                         <div class="md:col-span-2">
                             <DestinationsSection v-model:destinations="editDestinations" v-model:combo="editForm.combo" :errors="editErrors" />

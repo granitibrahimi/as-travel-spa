@@ -1,5 +1,6 @@
 <script setup>
 import SourceIcon from './SourceIcon.vue';
+import TypeBadge from './TypeBadge.vue';
 import SpamBadge from './SpamBadge.vue';
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
@@ -24,11 +25,13 @@ import { requestStatusClass } from './statusClass.js';
 const auth = useAuthStore();
 
 const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage } = useListFilters(
-    { q: '', status: 'active', assigned_to: '', spam: '', mine: false },
+    { q: '', status: 'active', assigned_to: '', spam: '', type: '', mine: false },
     async (params, { signal }) => castPaginated((await api.get('/simple-tasks', { params, signal })).data),
 );
 
-const options = ref({ statuses: [], sources: [], agents: [] });
+const options = ref({ statuses: [], sources: [], types: [], agents: [] });
+
+const typeOptions = computed(() => (options.value.types ?? []).map((t) => ({ value: String(t.id), label: t.name })));
 
 onMounted(async () => {
     const { data } = await api.get('/simple-tasks/options');
@@ -63,6 +66,7 @@ const rowActions = (task) => [
                 <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
                     <InputText v-model="filters.q" label="Search" placeholder="Customer, contact or #id" />
                     <Select v-model="filters.status" label="Status" :options="statusOptions" placeholder="All" />
+                    <Select v-model="filters.type" label="Type" :options="typeOptions" placeholder="All" />
                     <Select
                         v-if="auth.can('simpleTasks.listAll')"
                         v-model="filters.assigned_to"
@@ -93,6 +97,7 @@ const rowActions = (task) => [
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 60px;">ID</th>
                             <th class="border border-gray-300 px-2 py-2">Customer</th>
                             <th class="border border-gray-300 px-2 py-2">Contact</th>
+                            <th class="border border-gray-300 px-2 py-2">Type</th>
                             <th class="border border-gray-300 px-2 py-2">Source</th>
                             <th class="border border-gray-300 px-2 py-2">Destinations</th>
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 120px;">Status</th>
@@ -103,10 +108,10 @@ const rowActions = (task) => [
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="9" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="10" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No requests found.</td>
+                            <td colspan="10" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No requests found.</td>
                         </tr>
                         <tr v-for="task in (loading ? [] : apiResponse?.data ?? [])" :key="task.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ task.id }}</td>
@@ -116,6 +121,7 @@ const rowActions = (task) => [
                                 <SpamBadge v-if="task.spam" class="ml-2" />
                             </td>
                             <td class="border border-gray-300 px-2 py-2">{{ task.customer_contact ?? '—' }}</td>
+                            <td class="border border-gray-300 px-2 py-2"><TypeBadge :type="task.type" /></td>
                             <td class="border border-gray-300 px-2 py-2"><span class="inline-flex items-center gap-2"><SourceIcon :source="task.source" badge />{{ task.source.name }}</span></td>
                             <td class="border border-gray-300 px-2 py-2">
                                 <span v-if="task.combo" class="mr-1 rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-indigo-700">Combo</span>

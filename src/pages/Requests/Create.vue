@@ -17,13 +17,14 @@ import DestinationsSection from './DestinationsSection.vue';
 const router = useRouter();
 const auth = useAuthStore();
 
-const form = reactive({ customer_name: '', customer_contact: '', source: null, description: '', assigned_to: null, urgent: false, combo: false, specific_hotel: '' });
+const form = reactive({ customer_name: '', customer_contact: '', source: null, type: null, description: '', assigned_to: null, urgent: false, combo: false, specific_hotel: '' });
 const destinations = ref([]);
-const options = ref({ statuses: [], sources: [], agents: [] });
+const options = ref({ statuses: [], sources: [], types: [], agents: [] });
 const errors = ref({});
 const processing = ref(false);
 
 const sourceOptions = computed(() => options.value.sources.map((s) => ({ value: s.id, label: s.name })));
+const typeOptions = computed(() => (options.value.types ?? []).map((t) => ({ value: t.id, label: t.name })));
 const agentOptions = computed(() => options.value.agents.map((a) => ({ value: a.id, label: a.name })));
 
 onMounted(async () => {
@@ -64,6 +65,7 @@ async function submit() {
                     <InputText v-model="form.customer_name" label="Customer name *" :error="errors.customer_name" />
                     <InputText v-model="form.customer_contact" label="Phone / email / username" :error="errors.customer_contact" />
                     <Select v-model="form.source" label="Source *" :options="sourceOptions" :error="errors.source" />
+                    <Select v-model="form.type" label="Type *" :options="typeOptions" :error="errors.type" />
                     <Select
                         v-if="auth.can('simpleTasks.assign')"
                         v-model="form.assigned_to"
