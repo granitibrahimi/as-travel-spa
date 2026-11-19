@@ -46,6 +46,14 @@ export const useAuthStore = defineStore('auth', {
 
             // The tokens endpoint returns a resource envelope ({ data: { token, user } }).
             const payload = castResource(data);
+
+            // Two-factor: no token yet. The login page asks for the code
+            // ({ two_factor: 'code' }) or shows the setup QR code
+            // ({ two_factor: 'setup', qr_code, secret }) and posts again with `code`.
+            if (payload.two_factor) {
+                return payload;
+            }
+
             this.token = payload.token;
             setToken(payload.token);
             this.user = payload.user;
@@ -56,6 +64,8 @@ export const useAuthStore = defineStore('auth', {
             const formOptions = useFormOptionsStore();
             formOptions.hydrate();
             formOptions.sync({ showScreen: !formOptions.loaded });
+
+            return null;
         },
 
         /**

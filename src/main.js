@@ -26,9 +26,12 @@ const notifications = useNotificationsStore();
 const formOptions = useFormOptionsStore();
 
 // A 401 from the API drops the token; send the user back to login.
-setUnauthenticatedHandler(() => {
+setUnauthenticatedHandler((response) => {
     auth.reset();
-    router.push({ name: 'login' });
+    // The session ended because two-factor is now required: the login page says so.
+    router.push(response?.data?.two_factor_setup_required
+        ? { name: 'login', query: { reason: 'two-factor' } }
+        : { name: 'login' });
 });
 
 // A 403 means the action is not permitted; send the user to the 403 page

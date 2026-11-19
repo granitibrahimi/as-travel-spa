@@ -15,6 +15,7 @@ import Loader from '../../../components/Loader.vue';
 import Button from '../../../components/Button.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import AddVacationModal from './AddVacationModal.vue';
+import TwoFactorSetup from '../../../components/TwoFactor/TwoFactorSetup.vue';
 
 const auth = useAuthStore();
 const notifications = useNotificationsStore();
@@ -30,7 +31,66 @@ async function fetchUser() {
     user.value = castResource(data);
 }
 
-onMounted(fetchUser);
+// Two-factor (authenticator app). While it's off the QR code shows straight
+// away: scan it on the user's phone, enter the code, and it's on.
+const twoFactorSetup = ref(null);
+const twoFactorError = ref('');
+const twoFactorProcessing = ref(false);
+const confirmTwoFactorReset = ref(false);
+const resettingTwoFactor = ref(false);
+
+async function loadTwoFactorSetup() {
+    twoFactorSetup.value = null;
+    twoFactorError.value = '';
+
+    if (! auth.can('users.twoFactor') || user.value?.two_factor_enabled) {
+        return;
+    }
+
+    try {
+        const { data } = await api.post(`/users/users/${id}/two-factor`);
+        twoFactorSetup.value = castResource(data);
+    } catch (e) {
+        twoFactorError.value = 'Could not load the QR code.';
+    }
+}
+
+async function confirmTwoFactor(code) {
+    twoFactorProcessing.value = true;
+    twoFactorError.value = '';
+
+    try {
+        await api.post(`/users/users/${id}/two-factor/confirm`, { code });
+        twoFactorSetup.value = null;
+        await fetchUser();
+        notifications.push({ type: 'success', message: 'Two-factor authentication is on. Sign-in now asks for a code from the app.' });
+    } catch (e) {
+        twoFactorError.value = e.response?.data?.errors?.code?.[0] ?? 'Could not confirm the code.';
+    } finally {
+        twoFactorProcessing.value = false;
+    }
+}
+
+async function resetTwoFactor() {
+    resettingTwoFactor.value = true;
+
+    try {
+        await api.delete(`/users/users/${id}/two-factor`);
+        confirmTwoFactorReset.value = false;
+        await fetchUser();
+        await loadTwoFactorSetup();
+        notifications.push({ type: 'success', message: 'Two-factor authentication was reset.' });
+    } catch (e) {
+        notifications.push({ type: 'error', message: 'Could not reset two-factor authentication.' });
+    } finally {
+        resettingTwoFactor.value = false;
+    }
+}
+
+onMounted(async () => {
+    await fetchUser();
+    await loadTwoFactorSetup();
+});
 
 // Enable / disable is a single toggle endpoint on the platform
 // (POST .../toggle-disabled); the label just reflects the current state.
@@ -117,6 +177,40 @@ function onVacationSaved() {
 
             <VacationBalanceBox :user="user" @recalculated="fetchUser" />
 
+            <FullWidthBox title="Two-factor authentication" :collapsible="false">
+                <template #actions>
+                    <Button
+                        v-if="auth.can('users.twoFactor') && user.two_factor_enabled"
+                        size="sm"
+                        variant="danger"
+                        @click="confirmTwoFactorReset = true"
+                    >Reset</Button>
+                </template>
+
+                <p class="flex items-center gap-2 text-sm">
+                    <span
+                        class="inline-block h-2.5 w-2.5 rounded-full"
+                        :class="user.two_factor_enabled ? 'bg-green-500' : 'bg-gray-300'"
+                    />
+                    <span v-if="user.two_factor_enabled" class="font-medium text-gray-900">
+                        On<template v-if="user.two_factor_confirmed_at"> since {{ user.two_factor_confirmed_at }}</template>
+                    </span>
+                    <span v-else class="text-gray-500">Not set up yet. Sign-in shows this QR code to the user too.</span>
+                </p>
+
+                <div v-if="twoFactorSetup" class="mx-auto mt-4 max-w-sm">
+                    <TwoFactorSetup
+                        :qr-code="twoFactorSetup.qr_code"
+                        :secret="twoFactorSetup.secret"
+                        :processing="twoFactorProcessing"
+                        :error="twoFactorError"
+                        submit-label="Confirm and turn on"
+                        @submit="confirmTwoFactor"
+                    />
+                </div>
+                <p v-else-if="twoFactorError" class="mt-3 text-sm text-red-600">{{ twoFactorError }}</p>
+            </FullWidthBox>
+
             <FullWidthBox title="App push notifications" :collapsible="false">
                 <template #actions>
                     <Button
@@ -158,6 +252,17 @@ function onVacationSaved() {
             :processing="resettingPush"
             @confirm="resetPush"
             @cancel="confirmPushReset = false"
+        />
+
+        <ConfirmDialog
+            :show="confirmTwoFactorReset"
+            title="Reset two-factor authentication?"
+            :message="`${user?.name ?? 'This user'} can't use the codes from their current authenticator any more. A new QR code is shown here and at their next sign-in.`"
+            confirm-label="Reset"
+            confirm-variant="danger"
+            :processing="resettingTwoFactor"
+            @confirm="resetTwoFactor"
+            @cancel="confirmTwoFactorReset = false"
         />
 
         <AddVacationModal

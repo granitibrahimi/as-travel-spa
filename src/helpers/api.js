@@ -71,7 +71,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             setToken(null);
-            onUnauthenticated();
+            onUnauthenticated(error.response);
         }
 
         if (error.response?.status === 403) {

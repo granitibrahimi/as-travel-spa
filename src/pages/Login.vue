@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { isDark } from '../helpers/theme';
 import ThemeToggle from '../components/ThemeToggle.vue';
+import TwoFactorSetup from '../components/TwoFactor/TwoFactorSetup.vue';
 
 // Deterministic star field for the night scene: seeded so the sky keeps the
 // same layout across re-renders instead of reshuffling on every theme toggle.
@@ -30,10 +31,17 @@ const form = reactive({ email: '', password: '' });
 const error = ref('');
 const processing = ref(false);
 
+// Two-factor step after the password: 'code' asks for the 6-digit code,
+// 'setup' first shows the QR code to scan (users who haven't set it up yet).
+const twoFactor = ref(null);
+const code = ref('');
+
 // Shown when the previous session ended via the idle auto-logout.
 const idleLogout = ref(route.query.reason === 'idle');
+// Shown when a session ended because two-factor is now required.
+const twoFactorRequired = ref(route.query.reason === 'two-factor');
 
-async function submit() {
+async function submit(withCode = null) {
     if (processing.value) {
         return;
     }
@@ -42,15 +50,41 @@ async function submit() {
     error.value = '';
 
     try {
-        await auth.login(form);
+        const challenge = await auth.login(withCode ? { ...form, code: withCode } : form);
+
+        if (challenge) {
+            twoFactor.value = challenge;
+            code.value = '';
+
+            return;
+        }
+
         router.push(route.query.redirect ? String(route.query.redirect) : { name: 'home' });
     } catch (e) {
         error.value = e.response?.status === 422
             ? (Object.values(e.response.data.errors ?? {})[0]?.[0] ?? 'Invalid credentials.')
-            : 'Something went wrong. Please try again.';
+            : e.response?.status === 429
+                ? 'Too many attempts. Please wait a minute and try again.'
+                : 'Something went wrong. Please try again.';
+        code.value = '';
     } finally {
         processing.value = false;
     }
+}
+
+function onCodeInput(event) {
+    code.value = event.target.value.replace(/\D/g, '').slice(0, 6);
+    event.target.value = code.value;
+
+    if (code.value.length === 6) {
+        submit(code.value);
+    }
+}
+
+function backToPassword() {
+    twoFactor.value = null;
+    error.value = '';
+    form.password = '';
 }
 </script>
 
@@ -127,7 +161,11 @@ async function submit() {
                 You were signed out due to inactivity. Please sign in again.
             </p>
 
-            <form class="space-y-4" @submit.prevent="submit">
+            <p v-if="twoFactorRequired && ! twoFactor" class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                Two-factor authentication is now required. Sign in to set it up.
+            </p>
+
+            <form v-if="! twoFactor" class="space-y-4" @submit.prevent="submit()">
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Email or username</label>
                     <input
@@ -156,6 +194,48 @@ async function submit() {
                 >
                     {{ processing ? 'Signing in…' : 'Sign in' }}
                 </button>
+            </form>
+
+            <!-- First sign-in with two-factor: scan the QR code, then confirm a code. -->
+            <div v-else-if="twoFactor.two_factor === 'setup'" class="space-y-3">
+                <h2 class="text-center text-base font-semibold text-gray-900">Set up two-factor authentication</h2>
+                <TwoFactorSetup
+                    :qr-code="twoFactor.qr_code"
+                    :secret="twoFactor.secret"
+                    :processing="processing"
+                    :error="error"
+                    submit-label="Confirm and sign in"
+                    @submit="submit"
+                />
+                <button type="button" class="w-full text-center text-sm text-gray-500 hover:text-gray-700" @click="backToPassword">Back</button>
+            </div>
+
+            <form v-else class="space-y-4" @submit.prevent="code.length === 6 && submit(code)">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Code from your authenticator app</label>
+                    <input
+                        :value="code"
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        maxlength="6"
+                        placeholder="123456"
+                        autofocus
+                        class="w-full rounded border border-gray-300 px-3 py-2 text-center font-mono text-lg tracking-[0.4em] focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                        @input="onCodeInput"
+                    >
+                </div>
+
+                <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+
+                <button
+                    type="submit"
+                    :disabled="processing || code.length !== 6"
+                    class="w-full rounded bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700 disabled:opacity-60"
+                >
+                    {{ processing ? 'Checking…' : 'Verify' }}
+                </button>
+                <button type="button" class="w-full text-center text-sm text-gray-500 hover:text-gray-700" @click="backToPassword">Back</button>
             </form>
         </div>
     </div>

@@ -81,15 +81,16 @@ const rowActions = (user) => [
                             <th class="border border-gray-300 px-2 py-2">Phone</th>
                             <th class="border border-gray-300 px-2 py-2">Role</th>
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 100px;">Status</th>
+                            <th class="border border-gray-300 px-2 py-2 text-center" style="width: 80px;">2FA</th>
                             <th class="border border-gray-300 px-2 py-2 text-center" style="width: 100px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="9" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No users found.</td>
+                            <td colspan="9" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No users found.</td>
                         </tr>
                         <tr v-for="user in (loading ? [] : apiResponse?.data ?? [])" :key="user.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ user.id }}</td>
@@ -101,6 +102,11 @@ const rowActions = (user) => [
                             <td class="border border-gray-300 px-2 py-2 text-center">
                                 <span class="inline-block rounded px-2 py-0.5 text-xs font-medium" :class="user.disabled ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
                                     {{ user.disabled ? 'Disabled' : 'Active' }}
+                                </span>
+                            </td>
+                            <td class="border border-gray-300 px-2 py-2 text-center">
+                                <span class="inline-block rounded px-2 py-0.5 text-xs font-medium" :class="user.two_factor_enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
+                                    {{ user.two_factor_enabled ? 'On' : 'Off' }}
                                 </span>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-center">
