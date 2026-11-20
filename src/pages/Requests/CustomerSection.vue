@@ -44,7 +44,7 @@ function query() {
 }
 
 watch(
-    () => [props.form.customer_contact, props.form.person.first_name, props.form.person.last_name],
+    () => [props.form.customer_contact, props.form.person.first_name, props.form.person.last_name, props.form.source],
     () => {
         if (linked.value) {
             return;
@@ -64,15 +64,17 @@ async function search() {
 
         return;
     }
-    if (q === lastQuery) {
+    // The source narrows the matches (a person's WhatsApp hides their phone).
+    const key = `${q}|${props.form.source ?? ''}`;
+    if (key === lastQuery) {
         return;
     }
 
-    lastQuery = q;
+    lastQuery = key;
     searching.value = true;
     try {
-        const { data } = await api.get('/simple-tasks/contacts', { params: { q } });
-        if (lastQuery === q) {
+        const { data } = await api.get('/simple-tasks/contacts', { params: { q, source: props.form.source ?? undefined } });
+        if (lastQuery === key) {
             matches.value = castResource(data) ?? [];
         }
     } finally {
