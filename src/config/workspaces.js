@@ -137,6 +137,7 @@ export const workspaces = [
                 items: [
                     { label: 'All Travelers', to: '/customers/travelers', can: 'persons.list' },
                     { label: 'New Traveler', to: '/customers/travelers/create', can: 'persons.create' },
+                    { label: 'Suggested Links', to: '/link-suggestions', can: 'linkSuggestions.review' },
                 ],
             },
             {

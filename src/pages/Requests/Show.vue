@@ -23,6 +23,7 @@ import { useRequestViewing } from '../../composables/useRequestViewing.js';
 import AddOfferDialog from './AddOfferDialog.vue';
 import DestinationsSection from './DestinationsSection.vue';
 import CustomerSection from './CustomerSection.vue';
+import SuggestionsBox from '../../components/LinkSuggestions/SuggestionsBox.vue';
 import { contactFieldsFromTask, emptyContactFields, requestPayload } from './customerContact.js';
 
 const route = useRoute();
@@ -239,6 +240,13 @@ async function saveEdit() {
 
         <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div class="space-y-6 lg:col-span-2">
+                <SuggestionsBox
+                    v-if="! task.contact && ! task.spam"
+                    :params="{ simple_task_id: task.id }"
+                    context="request"
+                    title="Is this the traveler?"
+                    @linked="load"
+                />
                 <FullWidthBox :title="`#${task.id} · ${task.customer_name}`" :collapsible="false">
                     <template #actions>
                         <FromBossBadge :task="task" size="md" />
