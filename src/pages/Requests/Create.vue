@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
@@ -28,6 +28,23 @@ const processing = ref(false);
 const sourceOptions = computed(() => options.value.sources.map((s) => ({ value: s.id, label: s.name })));
 const typeOptions = computed(() => (options.value.types ?? []).map((t) => ({ value: t.id, label: t.name })));
 const agentOptions = computed(() => options.value.agents.map((a) => ({ value: a.id, label: a.name })));
+
+// Agents who handled this traveler's (or their customer's) earlier requests.
+const suggestedAgents = ref([]);
+watch(
+    () => [form.person_contact_reference_id, form.connect_customer ? form.customer_id : null],
+    async ([referenceId, customerId]) => {
+        if (! auth.can('simpleTasks.assign') || (! referenceId && ! customerId)) {
+            suggestedAgents.value = [];
+
+            return;
+        }
+        const { data } = await api.get('/simple-tasks/suggested-agents', {
+            params: { person_contact_reference_id: referenceId ?? undefined, customer_id: customerId ?? undefined },
+        });
+        suggestedAgents.value = castResource(data) ?? [];
+    },
+);
 
 onMounted(async () => {
     const { data } = await api.get('/simple-tasks/options');
@@ -86,6 +103,19 @@ async function submit() {
                         :error="errors.assigned_to"
                     />
                     <p v-else-if="auth.can('simpleTasks.receive')" class="self-end pb-2 text-sm text-gray-500">This request will be assigned to you.</p>
+                    <div v-if="suggestedAgents.length" class="rounded border border-amber-200 bg-amber-50 px-3 py-2 md:col-span-2">
+                        <p class="text-xs font-medium uppercase text-amber-800">Suggested agent</p>
+                        <div class="mt-1 flex flex-wrap gap-2">
+                            <div v-for="agent in suggestedAgents" :key="agent.id" class="flex items-center gap-2 rounded border border-amber-200 bg-white px-2.5 py-1.5 text-sm">
+                                <span>
+                                    <span class="font-medium">{{ agent.name }}</span>
+                                    <span class="ml-1 text-xs text-gray-500">{{ agent.requests }} {{ agent.requests === 1 ? 'request' : 'requests' }} with this customer<template v-if="agent.last_at">, last {{ agent.last_at }}</template></span>
+                                </span>
+                                <span v-if="form.assigned_to === agent.id" class="text-xs font-medium text-green-700">Assigned ✓</span>
+                                <button v-else type="button" class="rounded bg-red-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-red-700" @click="form.assigned_to = agent.id">Assign</button>
+                            </div>
+                        </div>
+                    </div>
                     <InputText v-model="form.specific_hotel" label="Specific hotel" placeholder="Optional" :error="errors.specific_hotel" />
                     <div class="md:col-span-2">
                         <DestinationsSection v-model:destinations="destinations" v-model:combo="form.combo" :errors="errors" />
