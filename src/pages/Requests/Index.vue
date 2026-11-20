@@ -1,4 +1,5 @@
 <script setup>
+import { formatPhone } from '../../helpers/phone.js';
 import SourceIcon from './SourceIcon.vue';
 import TypeBadge from './TypeBadge.vue';
 import SpamBadge from './SpamBadge.vue';
@@ -91,7 +92,7 @@ const rowActions = (task) => [
                                 <span v-if="task.urgent" class="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
                                 <SpamBadge v-if="task.spam" class="ml-2" />
                             </td>
-                            <td class="border border-gray-300 px-2 py-2">{{ task.customer_contact ?? '—' }}</td>
+                            <td class="border border-gray-300 px-2 py-2">{{ task.customer_contact ? formatPhone(task.customer_contact) : '—' }}</td>
                             <td class="border border-gray-300 px-2 py-2"><TypeBadge :type="task.type" /></td>
                             <td class="border border-gray-300 px-2 py-2"><span class="inline-flex items-center gap-2"><SourceIcon :source="task.source" badge />{{ task.source.name }}</span></td>
                             <td class="border border-gray-300 px-2 py-2">

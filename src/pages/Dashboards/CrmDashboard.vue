@@ -1,4 +1,5 @@
 <script setup>
+import { formatPhone } from '../../helpers/phone.js';
 import FromBossBadge from '../Requests/FromBossBadge.vue';
 import ViewersBadge from '../Requests/ViewersBadge.vue';
 import SourceIcon from '../Requests/SourceIcon.vue';
@@ -238,7 +239,7 @@ const openTask = (event, task) => {
                             <ViewersBadge :viewers="task.viewers ?? []" class="mt-1" />
                             <p class="mt-1 flex items-center gap-2 text-xs text-gray-500">
                                 <SourceIcon :source="task.source" badge />
-                                <span v-if="task.customer_contact" class="truncate">{{ task.customer_contact }}</span>
+                                <span v-if="task.customer_contact" class="truncate">{{ formatPhone(task.customer_contact) }}</span>
                             </p>
                             <p v-if="task.type || task.parent_destinations?.length || task.parent_destination || task.specific_hotel || task.combo" class="mt-1 text-xs text-gray-700">
                                 <TypeBadge :type="task.type" class="mr-1" />

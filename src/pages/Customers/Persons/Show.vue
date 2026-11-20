@@ -1,4 +1,5 @@
 <script setup>
+import { formatPhone } from '../../../helpers/phone.js';
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
@@ -10,6 +11,8 @@ import Alert from '../../../components/Alert.vue';
 import Button from '../../../components/Button.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
+import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
+import Select from '../../../components/Form/Select.vue';
 import { castPaginated } from '../../../types/responses.js';
 import { requestStatusClass } from '../../Requests/statusClass.js';
 
@@ -70,9 +73,53 @@ async function confirmDelete() {
 // Requests (CRM /requests) linked to this person through a contact reference.
 const requests = ref([]);
 
-onMounted(async () => {
+// Connect this traveler to a customer (customer_persons) or end a relation.
+const canConnect = computed(() => auth.can('persons.edit') || auth.can('customers.edit'));
+const relationTypes = ref([]);
+const connectForm = ref({ customer_id: null, type: 3 });
+const connectError = ref('');
+const connecting = ref(false);
+const connectKey = ref(0);
+
+async function loadPerson() {
     const { data } = await api.get(`/customers/persons/${id}`);
     person.value = data.data;
+}
+
+async function connectCustomer() {
+    if (connecting.value || ! connectForm.value.customer_id) {
+        return;
+    }
+    connecting.value = true;
+    connectError.value = '';
+    try {
+        await api.post(`/customers/persons/${id}/customers`, connectForm.value);
+        connectForm.value = { customer_id: null, type: connectForm.value.type };
+        connectKey.value++;
+        await loadPerson();
+    } catch (error) {
+        if (error.response?.status !== 422) {
+            throw error;
+        }
+        connectError.value = Object.values(error.response.data.errors ?? {})[0]?.[0] ?? 'Could not connect.';
+    } finally {
+        connecting.value = false;
+    }
+}
+
+async function endRelation(relation) {
+    await api.put(`/customers/persons/${id}/customers/${relation.id}/end`);
+    await loadPerson();
+}
+
+onMounted(async () => {
+    await loadPerson();
+
+    if (canConnect.value) {
+        api.get('/customers/persons/relation-types').then(({ data }) => {
+            relationTypes.value = (data.data ?? data).map((t) => ({ value: t.id, label: t.name }));
+        });
+    }
 
     if (auth.can('simpleTasks.list') || auth.can('simpleTasks.listAll')) {
         const { data: list } = await api.get('/simple-tasks', { params: { person_id: id, per_page: 50 } });
@@ -116,7 +163,7 @@ onMounted(async () => {
                             <tbody>
                                 <tr v-for="reference in person.contact_references" :key="reference.id">
                                     <th class="w-60 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium">{{ reference.type_label }}</th>
-                                    <td class="border border-gray-300 px-2 py-2">{{ reference.reference }}</td>
+                                    <td class="border border-gray-300 px-2 py-2">{{ formatPhone(reference.reference) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -138,6 +185,7 @@ onMounted(async () => {
                                     <th class="border border-gray-300 px-2 py-2">From</th>
                                     <th class="border border-gray-300 px-2 py-2">To</th>
                                     <th class="border border-gray-300 px-2 py-2 text-center">Active</th>
+                                    <th v-if="canConnect" class="border border-gray-300 px-2 py-2" />
                                 </tr>
                             </thead>
                             <tbody>
@@ -163,10 +211,28 @@ onMounted(async () => {
                                             {{ relation.active ? 'Yes' : 'No' }}
                                         </span>
                                     </td>
+                                    <td v-if="canConnect" class="border border-gray-300 px-2 py-2 text-right">
+                                        <button v-if="relation.active" type="button" class="text-xs text-gray-500 hover:text-red-600 hover:underline" @click="endRelation(relation)">Disconnect</button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
+
+                    <form v-if="canConnect" class="mt-4 grid grid-cols-1 items-end gap-3 border-t border-gray-200 pt-4 sm:grid-cols-[1fr_auto]" @submit.prevent="connectCustomer">
+                        <AsyncSelect
+                            class="sm:col-span-2"
+                            :key="connectKey"
+                            v-model="connectForm.customer_id"
+                            url="/customers/customers/autosuggest"
+                            label="Connect to customer"
+                            placeholder="Search customers…"
+                            :min-chars="2"
+                            :error="connectError"
+                        />
+                        <Select v-model="connectForm.type" label="Relation" :options="relationTypes" :placeholder="null" />
+                        <Button type="submit" variant="primary" :disabled="connecting || ! connectForm.customer_id">{{ connecting ? 'Connecting…' : 'Connect' }}</Button>
+                    </form>
                 </FullWidthBox>
             </div>
 
