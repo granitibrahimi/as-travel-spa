@@ -13,13 +13,15 @@ import Select from '../../components/Form/Select.vue';
 import Textarea from '../../components/Form/Textarea.vue';
 import NiceCheckbox from '../../components/Form/NiceCheckbox.vue';
 import DestinationsSection from './DestinationsSection.vue';
+import CustomerSection from './CustomerSection.vue';
+import { emptyContactFields, requestPayload } from './customerContact.js';
 
 const router = useRouter();
 const auth = useAuthStore();
 
-const form = reactive({ customer_name: '', customer_contact: '', source: null, type: null, description: '', assigned_to: null, urgent: false, from_flamur: false, from_vesa: false, combo: false, specific_hotel: '' });
+const form = reactive({ ...emptyContactFields(), source: null, type: null, description: '', assigned_to: null, urgent: false, from_flamur: false, from_vesa: false, combo: false, specific_hotel: '' });
 const destinations = ref([]);
-const options = ref({ statuses: [], sources: [], types: [], agents: [] });
+const options = ref({ statuses: [], sources: [], types: [], agents: [], relation_types: [] });
 const errors = ref({});
 const processing = ref(false);
 
@@ -41,7 +43,10 @@ async function submit() {
     errors.value = {};
 
     try {
-        const { data } = await api.post('/simple-tasks', { ...form, parent_destination_ids: destinations.value.map((d) => d.id) });
+        const { data } = await api.post('/simple-tasks', {
+            ...requestPayload(form, options.value.sources),
+            parent_destination_ids: destinations.value.map((d) => d.id),
+        });
         router.push(routeUrl('simpleTasks.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {
@@ -60,11 +65,17 @@ async function submit() {
 <template>
     <AppLayout title="New request">
         <form class="space-y-6" @submit.prevent="submit">
+            <FullWidthBox title="Customer" :collapsible="false">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Select v-model="form.source" label="Source *" :options="sourceOptions" :error="errors.source" />
+                    </div>
+                    <CustomerSection :form="form" :errors="errors" :sources="options.sources" :relation-types="options.relation_types ?? []" />
+                </div>
+            </FullWidthBox>
+
             <FullWidthBox title="Request details" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <InputText v-model="form.customer_name" label="Customer name *" :error="errors.customer_name" />
-                    <InputText v-model="form.customer_contact" label="Phone / email / username" :error="errors.customer_contact" />
-                    <Select v-model="form.source" label="Source *" :options="sourceOptions" :error="errors.source" />
                     <Select v-model="form.type" label="Type *" :options="typeOptions" :error="errors.type" />
                     <Select
                         v-if="auth.can('simpleTasks.assign')"
