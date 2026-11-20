@@ -53,7 +53,7 @@ const typeOptions = computed(() => (props.options.types ?? []).map((t) => ({ val
         @submit.prevent
     >
         <div :class="compact ? 'min-w-[9rem] flex-1' : 'sm:col-span-2'">
-            <InputText v-model="f.q" type="search" :label="label('Search')" :placeholder="compact ? 'Search name or phone' : 'Customer name or phone'" autocomplete="off" />
+            <InputText v-model="f.q" type="search" :label="label('Search')" :placeholder="compact ? 'Name, phone, destination, hotel' : 'Customer name, phone, destination or hotel'" autocomplete="off" />
         </div>
         <div v-if="has('status')" :class="w('w-36')">
             <Select v-model="f.status" :label="label('Status')" :options="statusOptions" :placeholder="all('statuses')" />
