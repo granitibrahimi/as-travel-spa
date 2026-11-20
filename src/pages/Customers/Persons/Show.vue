@@ -15,6 +15,7 @@ import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 import Select from '../../../components/Form/Select.vue';
 import { castPaginated } from '../../../types/responses.js';
 import { requestStatusClass } from '../../Requests/statusClass.js';
+import SuggestionsBox from '../../../components/LinkSuggestions/SuggestionsBox.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -107,6 +108,17 @@ async function connectCustomer() {
     }
 }
 
+async function loadRequests() {
+    if (auth.can('simpleTasks.list') || auth.can('simpleTasks.listAll')) {
+        const { data: list } = await api.get('/simple-tasks', { params: { person_id: id, per_page: 50 } });
+        requests.value = castPaginated(list).data ?? [];
+    }
+}
+
+async function reloadAfterLink() {
+    await Promise.all([loadPerson(), loadRequests()]);
+}
+
 async function endRelation(relation) {
     await api.put(`/customers/persons/${id}/customers/${relation.id}/end`);
     await loadPerson();
@@ -121,10 +133,7 @@ onMounted(async () => {
         });
     }
 
-    if (auth.can('simpleTasks.list') || auth.can('simpleTasks.listAll')) {
-        const { data: list } = await api.get('/simple-tasks', { params: { person_id: id, per_page: 50 } });
-        requests.value = castPaginated(list).data ?? [];
-    }
+    await loadRequests();
 });
 </script>
 
@@ -235,6 +244,9 @@ onMounted(async () => {
                     </form>
                 </FullWidthBox>
             </div>
+
+            <!-- Suggested customers for this traveler, and requests that may be theirs -->
+            <SuggestionsBox :params="{ person_id: person.id }" context="person" @linked="reloadAfterLink" />
 
             <!-- Requests -->
             <FullWidthBox v-if="requests.length" title="Requests" :collapsible="false">

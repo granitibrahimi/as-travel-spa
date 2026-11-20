@@ -18,6 +18,7 @@ const RequestsDashboard = () => import('../../pages/Requests/Dashboard.vue');
 const RequestsCreate = () => import('../../pages/Requests/Create.vue');
 const RequestsShow = () => import('../../pages/Requests/Show.vue');
 const WhatsappIndex = () => import('../../pages/Whatsapp/Index.vue');
+const LinkSuggestionsIndex = () => import('../../pages/LinkSuggestions/Index.vue');
 
 export default [
     { path: '/whatsapp', name: 'whatsappConversations.list', component: WhatsappIndex },
@@ -32,6 +33,7 @@ export default [
     { path: '/requests/dashboard', name: 'simpleTasks.dashboard', component: RequestsDashboard },
     { path: '/requests/create', name: 'simpleTasks.create', component: RequestsCreate },
     { path: '/requests/:id', name: 'simpleTasks.show', component: RequestsShow },
+    { path: '/link-suggestions', name: 'linkSuggestions.list', component: LinkSuggestionsIndex },
     { path: '/assistant', name: 'aiChat.assistant', component: AiChatAssistant },
     { path: '/ai-chat/conversations', name: 'aiChat.conversations', component: AiChatConversations },
     { path: '/ai-chat/bot-instructions', name: 'aiChat.botInstructions', component: AiChatBotInstructions },
