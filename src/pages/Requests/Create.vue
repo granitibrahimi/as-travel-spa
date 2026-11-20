@@ -17,7 +17,7 @@ import DestinationsSection from './DestinationsSection.vue';
 const router = useRouter();
 const auth = useAuthStore();
 
-const form = reactive({ customer_name: '', customer_contact: '', source: null, type: null, description: '', assigned_to: null, urgent: false, combo: false, specific_hotel: '' });
+const form = reactive({ customer_name: '', customer_contact: '', source: null, type: null, description: '', assigned_to: null, urgent: false, from_flamur: false, from_vesa: false, combo: false, specific_hotel: '' });
 const destinations = ref([]);
 const options = ref({ statuses: [], sources: [], types: [], agents: [] });
 const errors = ref({});
@@ -79,8 +79,10 @@ async function submit() {
                     <div class="md:col-span-2">
                         <DestinationsSection v-model:destinations="destinations" v-model:combo="form.combo" :errors="errors" />
                     </div>
-                    <div class="md:col-span-2">
+                    <div class="flex flex-wrap gap-6 md:col-span-2">
                         <NiceCheckbox v-model="form.urgent" label="Urgent" :error="errors.urgent" />
+                        <NiceCheckbox v-model="form.from_flamur" label="Request from Flamur" :error="errors.from_flamur" />
+                        <NiceCheckbox v-model="form.from_vesa" label="Request from Vesa" :error="errors.from_vesa" />
                     </div>
                     <div class="md:col-span-2">
                         <Textarea v-model="form.description" label="What does the customer want? *" :rows="5" :error="errors.description" />

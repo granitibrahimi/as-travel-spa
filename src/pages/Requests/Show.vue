@@ -1,5 +1,6 @@
 <script setup>
 import SpamBadge from './SpamBadge.vue';
+import FromBossBadge from './FromBossBadge.vue';
 import SpamIcon from './SpamIcon.vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
@@ -37,7 +38,7 @@ const statusComment = ref('');
 const savingStatus = ref(false);
 
 const editing = ref(false);
-const editForm = reactive({ customer_name: '', customer_contact: '', source: null, type: null, description: '', urgent: false, spam: false, combo: false, specific_hotel: '' });
+const editForm = reactive({ customer_name: '', customer_contact: '', source: null, type: null, description: '', urgent: false, from_flamur: false, from_vesa: false, spam: false, combo: false, specific_hotel: '' });
 const editDestinations = ref([]);
 const destinations = computed(() => task.value?.parent_destinations ?? (task.value?.parent_destination ? [task.value.parent_destination] : []));
 const editErrors = ref({});
@@ -189,6 +190,8 @@ function startEdit() {
         type: task.value.type?.id ?? null,
         description: task.value.description ?? '',
         urgent: Boolean(task.value.urgent),
+        from_flamur: Boolean(task.value.from_flamur),
+        from_vesa: Boolean(task.value.from_vesa),
         spam: Boolean(task.value.spam),
         combo: Boolean(task.value.combo),
         specific_hotel: task.value.specific_hotel ?? '',
@@ -229,6 +232,7 @@ async function saveEdit() {
             <div class="space-y-6 lg:col-span-2">
                 <FullWidthBox :title="`#${task.id} · ${task.customer_name}`" :collapsible="false">
                     <template #actions>
+                        <FromBossBadge :task="task" size="md" />
                         <span v-if="task.urgent" class="rounded bg-red-600 px-2 py-0.5 text-xs font-semibold uppercase text-white">Urgent</span>
                         <SpamBadge v-if="task.spam" size="md" />
                         <span class="text-sm text-gray-500">
@@ -320,6 +324,8 @@ async function saveEdit() {
                         </div>
                         <div class="flex flex-wrap gap-6 md:col-span-2">
                             <NiceCheckbox v-model="editForm.urgent" label="Urgent" :error="editErrors.urgent" />
+                            <NiceCheckbox v-model="editForm.from_flamur" label="Request from Flamur" :error="editErrors.from_flamur" />
+                            <NiceCheckbox v-model="editForm.from_vesa" label="Request from Vesa" :error="editErrors.from_vesa" />
                             <NiceCheckbox v-model="editForm.spam" label="Spam" :error="editErrors.spam" />
                         </div>
                         <div class="md:col-span-2">

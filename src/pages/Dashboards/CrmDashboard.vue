@@ -1,4 +1,5 @@
 <script setup>
+import FromBossBadge from '../Requests/FromBossBadge.vue';
 import ViewersBadge from '../Requests/ViewersBadge.vue';
 import SourceIcon from '../Requests/SourceIcon.vue';
 import TypeBadge from '../Requests/TypeBadge.vue';
@@ -221,9 +222,10 @@ const openTask = (event, task) => {
                             v-for="task in column.tasks"
                             :key="task.id"
                             class="cursor-pointer rounded-lg border bg-white p-3 shadow-sm hover:border-red-200"
-                            :class="[task.urgent ? 'border-red-300' : 'border-gray-200', task.spam ? '!border-orange-300 !bg-orange-50' : '']"
+                            :class="[(task.from_flamur || task.from_vesa) ? 'border-2 border-red-600 ring-1 ring-red-200' : task.urgent ? 'border-red-300' : 'border-gray-200', task.spam ? '!border-orange-300 !bg-orange-50' : '']"
                             @click="openTask($event, task)"
                         >
+                            <div v-if="task.from_flamur || task.from_vesa" class="mb-1.5 flex gap-1"><FromBossBadge :task="task" /></div>
                             <div class="flex items-start justify-between gap-2">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="font-medium text-gray-900 hover:text-red-600">#{{ task.id }} · {{ task.customer_name }}</RouterLink>
                                 <span class="ml-1 flex shrink-0 gap-1">

@@ -2,6 +2,7 @@
 import SourceIcon from './SourceIcon.vue';
 import TypeBadge from './TypeBadge.vue';
 import SpamBadge from './SpamBadge.vue';
+import FromBossBadge from './FromBossBadge.vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../helpers/api';
@@ -147,10 +148,16 @@ const rowActions = (task) => [
                         <tr v-else-if="apiResponse.data.length === 0">
                             <td colspan="10" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No requests found.</td>
                         </tr>
-                        <tr v-for="task in (loading ? [] : apiResponse?.data ?? [])" :key="task.id" class="hover:bg-gray-50">
+                        <tr
+                            v-for="task in (loading ? [] : apiResponse?.data ?? [])"
+                            :key="task.id"
+                            class="hover:bg-gray-50"
+                            :class="(task.from_flamur || task.from_vesa) ? 'bg-red-50/60 outline outline-2 -outline-offset-2 outline-red-600' : ''"
+                        >
                             <td class="border border-gray-300 px-2 py-2 text-center font-medium">{{ task.id }}</td>
                             <td class="border border-gray-300 px-2 py-2 font-medium">
                                 <RouterLink :to="routeUrl('simpleTasks.show', task.id)" class="text-red-600 hover:underline">{{ task.customer_name }}</RouterLink>
+                                <span v-if="task.from_flamur || task.from_vesa" class="ml-2 inline-flex gap-1"><FromBossBadge :task="task" /></span>
                                 <span v-if="task.urgent" class="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">Urgent</span>
                                 <SpamBadge v-if="task.spam" class="ml-2" />
                             </td>
