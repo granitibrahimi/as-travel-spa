@@ -88,8 +88,20 @@ const typeOptions = computed(() => (props.options.types ?? []).map((t) => ({ val
         <div v-if="has('mine')" class="flex items-end" :class="compact ? '' : 'pb-2'">
             <NiceCheckbox v-model="f.mine" label="Assigned to me" />
         </div>
-        <div class="flex items-end" :class="compact ? '' : 'pb-0.5'">
-            <Button type="button" @click="$emit('clear')">{{ compact ? 'Clear' : 'Clear filters' }}</Button>
+        <button
+            v-if="compact"
+            type="button"
+            class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded border border-gray-300 bg-white text-gray-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+            title="Clear filters"
+            aria-label="Clear filters"
+            @click="$emit('clear')"
+        >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
+            </svg>
+        </button>
+        <div v-else class="flex items-end pb-0.5">
+            <Button type="button" @click="$emit('clear')">Clear filters</Button>
         </div>
     </form>
 </template>
