@@ -4,7 +4,7 @@ import ViewersBadge from './ViewersBadge.vue';
 import SourceIcon from './SourceIcon.vue';
 import TypeBadge from './TypeBadge.vue';
 import SpamBadge from './SpamBadge.vue';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
@@ -42,9 +42,8 @@ const agentOptions = ref([]);
 const options = ref({ statuses: [], sources: [], types: [], agents: [] });
 
 // Same filters as the list, applied on the server and kept in the URL.
-// `period` is the All / Today / This week switch; a date range replaces it.
 const { filters, applied, apply, clear } = useListFilters(
-    { q: '', status: '', assigned_to: '', source: [], date_from: '', date_to: '', type: '', spam: '', period: '' },
+    { q: '', status: '', assigned_to: '', source: [], date_from: '', date_to: '', type: '', spam: '' },
     async (params, { signal }) => (canSeeBoard.value ? fetchBoard({ params, signal }) : null),
 );
 useLiveFilters(filters, applied, apply);
@@ -57,7 +56,6 @@ const agentFilter = computed(() => {
     }
     return value === 'none' ? 'none' : Number(value);
 });
-const period = computed(() => filters.period || null);
 
 const boardEl = ref(null);
 // Counters only animate once the first load is on screen.
@@ -148,18 +146,7 @@ function unsubscribe() {
     live.value = false;
 }
 
-function setPeriod(value) {
-    // All / Today / This week and a date range exclude each other.
-    filters.period = value ?? '';
-    filters.date_from = '';
-    filters.date_to = '';
-}
 
-watch(() => [filters.date_from, filters.date_to], ([from, to]) => {
-    if (from || to) {
-        filters.period = '';
-    }
-});
 
 function toggleAgent(value) {
     filters.assigned_to = agentFilter.value === value ? '' : String(value);
@@ -400,23 +387,18 @@ const openTask = (event, task) => {
 
 <template>
     <AppLayout title="Requests dashboard" fluid>
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 shadow-lg">
-                <button v-for="option in [
-                            { value: null, label: 'All' },
-                            { value: 'today', label: 'Today' },
-                            { value: 'this_week', label: 'This week' },
-                        ]"
-                        :key="option.label"
-                        type="button"
-                        class="rounded px-4 py-1.5 text-sm font-medium"
-                        :class="period === option.value ? 'bg-red-600 text-white' : 'text-gray-600 hover:bg-gray-50'"
-                        @click="setPeriod(option.value)">
-                    {{ option.label }}
-                </button>
-            </div>
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <RequestFilters
+                v-if="canSeeBoard"
+                compact
+                class="min-w-0 flex-1"
+                :filters="filters"
+                :options="options"
+                :show-agent="auth.can('simpleTasks.listAll')"
+                @clear="clear"
+            />
 
-            <div class="flex items-center gap-2">
+            <div class="flex shrink-0 items-center gap-2 pt-1">
                 <span v-if="lastEvent" :key="lastEvent.at" class="live-event hidden text-xs text-gray-500 md:inline">{{ lastEvent.text }}</span>
                 <span
                     class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
@@ -434,15 +416,6 @@ const openTask = (event, task) => {
                 <RouterLink :to="routeUrl('simpleTasks.list')" class="inline-block rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50">List view</RouterLink>
             </div>
         </div>
-
-        <RequestFilters
-            v-if="canSeeBoard"
-            class="mb-4 rounded-lg border border-gray-200 bg-white p-3"
-            :filters="filters"
-            :options="options"
-            :show-agent="auth.can('simpleTasks.listAll')"
-            @clear="clear"
-        />
 
         <p v-if="! canSeeBoard" class="rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
             You don't have access to the requests board.

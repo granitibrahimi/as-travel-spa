@@ -15,7 +15,15 @@ const props = defineProps({
     options: { type: Object, required: true },
     // Show the Agent filter (needs simpleTasks.listAll).
     showAgent: { type: Boolean, default: false },
+    // One wrapping toolbar row without labels (the board's top bar).
+    compact: { type: Boolean, default: false },
 });
+
+// Label in the grid layout; in the compact row the placeholder says it instead.
+const label = (text) => (props.compact ? '' : text);
+const all = (what) => (props.compact ? `All ${what}` : 'All');
+// Width of a field in the compact row.
+const w = (width) => (props.compact ? width : '');
 
 defineEmits(['clear']);
 
@@ -40,30 +48,47 @@ const typeOptions = computed(() => (props.options.types ?? []).map((t) => ({ val
 </script>
 
 <template>
-    <form class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6" @submit.prevent>
-        <div class="sm:col-span-2">
-            <InputText v-model="f.q" type="search" label="Search" placeholder="Customer name or phone" autocomplete="off" />
+    <form
+        :class="compact ? 'flex flex-wrap items-center gap-2' : 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6'"
+        @submit.prevent
+    >
+        <div :class="compact ? 'w-56' : 'sm:col-span-2'">
+            <InputText v-model="f.q" type="search" :label="label('Search')" :placeholder="compact ? 'Search name or phone' : 'Customer name or phone'" autocomplete="off" />
         </div>
-        <Select v-if="has('status')" v-model="f.status" label="Status" :options="statusOptions" placeholder="All" />
-        <Select v-if="showAgent && has('assigned_to')" v-model="f.assigned_to" label="Agent" :options="agentOptions" placeholder="All" />
-        <CheckboxDropdown v-model="f.source" label="Source" :options="sourceOptions">
-            <template #option="{ option }">
-                <SourceIcon :source="{ id: option.value, name: option.label }" badge />{{ option.label }}
-            </template>
-        </CheckboxDropdown>
-        <Select v-model="f.type" label="Type" :options="typeOptions" placeholder="All" />
-        <DatePicker v-model="f.date_from" label="From" />
-        <DatePicker v-model="f.date_to" label="To" />
-        <Select
-            v-model="f.spam"
-            label="Spam"
-            :options="[{ value: '0', label: 'Hide spam' }, { value: '1', label: 'Only spam' }]"
-            placeholder="All"
-        />
-        <div v-if="has('mine')" class="flex items-end pb-2">
+        <div v-if="has('status')" :class="w('w-40')">
+            <Select v-model="f.status" :label="label('Status')" :options="statusOptions" :placeholder="all('statuses')" />
+        </div>
+        <div v-if="showAgent && has('assigned_to')" :class="w('w-40')">
+            <Select v-model="f.assigned_to" :label="label('Agent')" :options="agentOptions" :placeholder="all('agents')" />
+        </div>
+        <div :class="w('w-44')">
+            <CheckboxDropdown v-model="f.source" :label="label('Source')" :options="sourceOptions" :placeholder="all('sources')">
+                <template #option="{ option }">
+                    <SourceIcon :source="{ id: option.value, name: option.label }" badge />{{ option.label }}
+                </template>
+            </CheckboxDropdown>
+        </div>
+        <div :class="w('w-36')">
+            <Select v-model="f.type" :label="label('Type')" :options="typeOptions" :placeholder="all('types')" />
+        </div>
+        <div :class="w('w-36')">
+            <DatePicker v-model="f.date_from" :label="label('From')" :placeholder="compact ? 'From' : 'dd.mm.yyyy'" />
+        </div>
+        <div :class="w('w-36')">
+            <DatePicker v-model="f.date_to" :label="label('To')" :placeholder="compact ? 'To' : 'dd.mm.yyyy'" />
+        </div>
+        <div :class="w('w-36')">
+            <Select
+                v-model="f.spam"
+                :label="label('Spam')"
+                :options="[{ value: '0', label: 'Hide spam' }, { value: '1', label: 'Only spam' }]"
+                :placeholder="compact ? 'With spam' : 'All'"
+            />
+        </div>
+        <div v-if="has('mine')" class="flex items-end" :class="compact ? '' : 'pb-2'">
             <NiceCheckbox v-model="f.mine" label="Assigned to me" />
         </div>
-        <div class="flex items-end pb-0.5">
+        <div class="flex items-end" :class="compact ? '' : 'pb-0.5'">
             <Button type="button" @click="$emit('clear')">Clear filters</Button>
         </div>
     </form>
