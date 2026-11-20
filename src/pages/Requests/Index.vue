@@ -3,21 +3,17 @@ import SourceIcon from './SourceIcon.vue';
 import TypeBadge from './TypeBadge.vue';
 import SpamBadge from './SpamBadge.vue';
 import FromBossBadge from './FromBossBadge.vue';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castPaginated, castResource } from '../../types/responses.js';
 import { useListFilters } from '../../composables/useListFilters.js';
+import { useLiveFilters } from '../../composables/useLiveFilters.js';
+import RequestFilters from './RequestFilters.vue';
 import { useAuthStore } from '../../stores/auth';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
-import Button from '../../components/Button.vue';
-import InputText from '../../components/Form/InputText.vue';
-import Select from '../../components/Form/Select.vue';
-import NiceCheckbox from '../../components/Form/NiceCheckbox.vue';
-import DatePicker from '../../components/Form/DatePicker.vue';
-import CheckboxDropdown from '../../components/Form/CheckboxDropdown.vue';
 import DropdownMenu from '../../components/DropdownMenu.vue';
 import ApiPagination from '../../components/ApiPagination.vue';
 import Loader from '../../components/Loader.vue';
@@ -32,52 +28,12 @@ const { filters, applied, response: apiResponse, loading, apply, clear, goToPage
     async (params, { signal }) => castPaginated((await api.get('/simple-tasks', { params, signal })).data),
 );
 
-// Filters apply as they change (the search box after a short pause), and the
-// URL follows. Back/Forward also rewrite `filters`, but those match what was
-// just loaded, so they don't trigger a second load here.
-function currentParams() {
-    return Object.fromEntries(Object.entries(filters)
-        .filter(([, value]) => ! (value === '' || value === null || value === false || (Array.isArray(value) && value.length === 0)))
-        .map(([key, value]) => [key, value === true ? 1 : value]));
-}
-
-let searchTimer = null;
-let lastSearch = filters.q;
-
-watch(() => JSON.stringify(currentParams()), (now) => {
-    clearTimeout(searchTimer);
-
-    if (now === JSON.stringify(applied.value)) {
-        lastSearch = filters.q;
-        return;
-    }
-
-    const typing = filters.q !== lastSearch;
-    lastSearch = filters.q;
-    searchTimer = setTimeout(apply, typing ? 300 : 0);
-});
-
-onBeforeUnmount(() => clearTimeout(searchTimer));
-
-const sourceOptions = computed(() => (options.value.sources ?? []).map((s) => ({ value: s.id, label: s.name })));
-
-const typeOptions = computed(() => (options.value.types ?? []).map((t) => ({ value: String(t.id), label: t.name })));
+useLiveFilters(filters, applied, apply);
 
 onMounted(async () => {
     const { data } = await api.get('/simple-tasks/options');
     options.value = castResource(data);
 });
-
-const statusOptions = computed(() => [
-    { value: 'active', label: 'Active (not finished)' },
-    { value: 'finished', label: 'Finished' },
-    ...options.value.statuses.map((s) => ({ value: String(s.id), label: s.name })),
-]);
-
-const agentOptions = computed(() => [
-    { value: 'none', label: 'Not assigned' },
-    ...options.value.agents.map((a) => ({ value: String(a.id), label: a.name })),
-]);
 
 const rowActions = (task) => [
     { label: 'View', href: routeUrl('simpleTasks.show', task.id) },
@@ -91,39 +47,13 @@ const rowActions = (task) => [
                 <RouterLink v-if="auth.can('simpleTasks.dashboard')" :to="routeUrl('simpleTasks.dashboard')" class="rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Board view</RouterLink>
             </template>
 
-            <form class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6" @submit.prevent="apply">
-                <div class="sm:col-span-2">
-                    <InputText v-model="filters.q" type="search" label="Search" placeholder="Customer name or phone" autocomplete="off" />
-                </div>
-                <Select v-model="filters.status" label="Status" :options="statusOptions" placeholder="All" />
-                <Select
-                    v-if="auth.can('simpleTasks.listAll')"
-                    v-model="filters.assigned_to"
-                    label="Agent"
-                    :options="agentOptions"
-                    placeholder="All"
-                />
-                <CheckboxDropdown v-model="filters.source" label="Source" :options="sourceOptions">
-                    <template #option="{ option }">
-                        <SourceIcon :source="{ id: option.value, name: option.label }" badge />{{ option.label }}
-                    </template>
-                </CheckboxDropdown>
-                <Select v-model="filters.type" label="Type" :options="typeOptions" placeholder="All" />
-                <DatePicker v-model="filters.date_from" label="From" />
-                <DatePicker v-model="filters.date_to" label="To" />
-                <Select
-                    v-model="filters.spam"
-                    label="Spam"
-                    :options="[{ value: '0', label: 'Hide spam' }, { value: '1', label: 'Only spam' }]"
-                    placeholder="All"
-                />
-                <div class="flex items-end pb-2">
-                    <NiceCheckbox v-model="filters.mine" label="Assigned to me" />
-                </div>
-                <div class="flex items-end pb-0.5">
-                    <Button type="button" @click="clear">Clear filters</Button>
-                </div>
-            </form>
+            <RequestFilters
+                class="mb-4"
+                :filters="filters"
+                :options="options"
+                :show-agent="auth.can('simpleTasks.listAll')"
+                @clear="clear"
+            />
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">

@@ -4,7 +4,7 @@ import ViewersBadge from './ViewersBadge.vue';
 import SourceIcon from './SourceIcon.vue';
 import TypeBadge from './TypeBadge.vue';
 import SpamBadge from './SpamBadge.vue';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
@@ -20,6 +20,9 @@ import { requestStatusDotClass } from './statusClass.js';
 import AddOfferDialog from './AddOfferDialog.vue';
 import { getEcho } from '../../helpers/echo';
 import { flip } from '../../composables/useFlip.js';
+import { useListFilters } from '../../composables/useListFilters.js';
+import { useLiveFilters } from '../../composables/useLiveFilters.js';
+import RequestFilters from './RequestFilters.vue';
 
 // Status ids from the API's SimpleTaskStatus enum.
 const OPEN = 1;
@@ -35,10 +38,26 @@ const canSeeBoard = computed(() => auth.can('simpleTasks.dashboard'));
 
 const board = ref(null);
 const loading = ref(false);
-const period = ref(null);
-// Board filter: an agent id, 'none' (not assigned), or null (everyone).
-const agentFilter = ref(null);
 const agentOptions = ref([]);
+const options = ref({ statuses: [], sources: [], types: [], agents: [] });
+
+// Same filters as the list, applied on the server and kept in the URL.
+// `period` is the All / Today / This week switch; a date range replaces it.
+const { filters, applied, apply, clear } = useListFilters(
+    { q: '', status: '', assigned_to: '', source: [], date_from: '', date_to: '', type: '', spam: '', period: '' },
+    async (params, { signal }) => (canSeeBoard.value ? fetchBoard({ params, signal }) : null),
+);
+useLiveFilters(filters, applied, apply);
+
+// The agent filter as the agent cards use it: an agent id, 'none', or null (everyone).
+const agentFilter = computed(() => {
+    const value = filters.assigned_to;
+    if (value === '' || value === null || value === undefined) {
+        return null;
+    }
+    return value === 'none' ? 'none' : Number(value);
+});
+const period = computed(() => filters.period || null);
 
 const boardEl = ref(null);
 // Counters only animate once the first load is on screen.
@@ -48,14 +67,15 @@ const animateCounts = ref(false);
  * Load the board. Once it is on screen, cards glide to their new column
  * (FLIP) and new ones pop in; `highlight` flashes the requests that changed.
  */
-async function fetchBoard({ quiet = false, highlight = [] } = {}) {
+async function fetchBoard({ quiet = false, highlight = [], params = null, signal = undefined } = {}) {
     if (! quiet) {
         loading.value = true;
     }
 
     try {
         const { data } = await api.get('/simple-tasks/dashboard', {
-            params: { period: period.value || undefined },
+            params: { ...(params ?? applied.value), page: undefined },
+            signal,
         });
         const next = castResource(data);
 
@@ -129,27 +149,23 @@ function unsubscribe() {
 }
 
 function setPeriod(value) {
-    period.value = value;
-    fetchBoard();
+    // All / Today / This week and a date range exclude each other.
+    filters.period = value ?? '';
+    filters.date_from = '';
+    filters.date_to = '';
 }
+
+watch(() => [filters.date_from, filters.date_to], ([from, to]) => {
+    if (from || to) {
+        filters.period = '';
+    }
+});
 
 function toggleAgent(value) {
-    agentFilter.value = agentFilter.value === value ? null : value;
+    filters.assigned_to = agentFilter.value === value ? '' : String(value);
 }
 
-const columns = computed(() => (board.value?.columns ?? []).map((column) => {
-    const tasks = column.tasks.filter((task) => {
-        if (agentFilter.value === null) {
-            return true;
-        }
-        if (agentFilter.value === 'none') {
-            return ! task.assigned_to;
-        }
-        return task.assigned_to?.id === agentFilter.value;
-    });
-
-    return { ...column, tasks, count: agentFilter.value === null ? column.total : tasks.length };
-}));
+const columns = computed(() => (board.value?.columns ?? []).map((column) => ({ ...column, count: column.total })));
 
 const agents = computed(() => board.value?.agents ?? null);
 const filterName = computed(() => {
@@ -167,7 +183,6 @@ onMounted(async () => {
         return;
     }
 
-    fetchBoard();
     subscribe();
     // Fallback refresh, in case the live connection drops.
     timer = setInterval(() => {
@@ -176,10 +191,9 @@ onMounted(async () => {
         }
     }, REFRESH_MS);
 
-    if (canAssign.value) {
-        const { data } = await api.get('/simple-tasks/options');
-        agentOptions.value = castResource(data).agents.map((agent) => ({ value: agent.id, label: agent.name }));
-    }
+    const { data } = await api.get('/simple-tasks/options');
+    options.value = castResource(data);
+    agentOptions.value = options.value.agents.map((agent) => ({ value: agent.id, label: agent.name }));
 });
 
 onBeforeUnmount(() => {
@@ -421,6 +435,15 @@ const openTask = (event, task) => {
             </div>
         </div>
 
+        <RequestFilters
+            v-if="canSeeBoard"
+            class="mb-4 rounded-lg border border-gray-200 bg-white p-3"
+            :filters="filters"
+            :options="options"
+            :show-agent="auth.can('simpleTasks.listAll')"
+            @clear="clear"
+        />
+
         <p v-if="! canSeeBoard" class="rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
             You don't have access to the requests board.
             <RouterLink :to="routeUrl('simpleTasks.list')" class="text-red-600 hover:underline">Open the list instead</RouterLink>.
@@ -481,7 +504,7 @@ const openTask = (event, task) => {
 
             <p v-if="filterName" class="mb-3 text-sm text-gray-600">
                 Showing requests for <span class="font-medium">{{ filterName }}</span> ·
-                <button type="button" class="text-red-600 hover:underline" @click="agentFilter = null">Show everyone</button>
+                <button type="button" class="text-red-600 hover:underline" @click="filters.assigned_to = ''">Show everyone</button>
             </p>
 
             <div ref="boardEl" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -503,7 +526,7 @@ const openTask = (event, task) => {
                     </h2>
                     <p class="mb-3 text-xs text-gray-400">
                         <template v-if="column.status.finished">
-                            Closed since {{ board.finished_from }}<template v-if="column.total > column.tasks.length && agentFilter === null"> · latest {{ column.tasks.length }} shown</template>
+                            Closed since {{ board.finished_from }}<template v-if="column.total > column.tasks.length"> · latest {{ column.tasks.length }} shown</template>
                         </template>
                         <template v-else>Waiting, oldest first</template>
                     </p>
