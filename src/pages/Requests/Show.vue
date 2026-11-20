@@ -23,6 +23,7 @@ import { useRequestViewing } from '../../composables/useRequestViewing.js';
 import AddOfferDialog from './AddOfferDialog.vue';
 import DestinationsSection from './DestinationsSection.vue';
 import CustomerSection from './CustomerSection.vue';
+import CustomerOverviewDialog from './CustomerOverviewDialog.vue';
 import { contactFieldsFromTask, emptyContactFields, requestPayload } from './customerContact.js';
 
 const route = useRoute();
@@ -41,6 +42,8 @@ const statusComment = ref('');
 const savingStatus = ref(false);
 
 const editing = ref(false);
+// Customer whose overview popup (invoices, requests, persons) is open.
+const overviewCustomer = ref(null);
 const editForm = reactive({ ...emptyContactFields(), source: null, type: null, description: '', urgent: false, from_flamur: false, from_vesa: false, spam: false, combo: false, specific_hotel: '' });
 const editDestinations = ref([]);
 const destinations = computed(() => task.value?.parent_destinations ?? (task.value?.parent_destination ? [task.value.parent_destination] : []));
@@ -280,6 +283,14 @@ async function saveEdit() {
                                     <dd v-if="task.contact?.customers?.length" class="mt-1 space-y-0.5">
                                         <div v-for="customer in task.contact.customers" :key="customer.id">
                                             <RouterLink :to="routeUrl('customers.show', customer.id)" class="font-medium text-red-600 hover:underline">{{ customer.name }}</RouterLink>
+                                            <button
+                                                type="button"
+                                                class="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full align-middle text-blue-700 hover:bg-white"
+                                                title="Invoices, requests and persons of this customer"
+                                                @click="overviewCustomer = customer"
+                                            >
+                                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4Zm3 2v2h8V6H6Zm0 4v2h8v-2H6Zm0 4v1h5v-1H6Z" /></svg>
+                                            </button>
                                             <span v-if="customer.relation" class="ml-1.5 rounded bg-white px-1.5 py-0.5 text-xs text-blue-700">as {{ customer.relation }}</span>
                                         </div>
                                     </dd>
@@ -456,5 +467,6 @@ async function saveEdit() {
         </div>
 
         <AddOfferDialog :show="offerDialog" :task="task" @saved="offerSaved" @cancel="offerDialog = false" />
+        <CustomerOverviewDialog :customer="overviewCustomer" @close="overviewCustomer = null" />
     </AppLayout>
 </template>
