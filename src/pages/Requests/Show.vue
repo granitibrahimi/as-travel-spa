@@ -280,18 +280,19 @@ async function saveEdit() {
                                         <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3h8v14H4V3Zm9 5h3v9h-3V8ZM6 5v2h2V5H6Zm0 4v2h2V9H6Zm0 4v2h2v-2H6Z" /></svg>
                                         {{ (task.contact?.customers?.length ?? 0) > 1 ? 'Customers' : 'Customer' }}
                                     </dt>
-                                    <dd v-if="task.contact?.customers?.length" class="mt-1 space-y-0.5">
-                                        <div v-for="customer in task.contact.customers" :key="customer.id">
+                                    <dd v-if="task.contact?.customers?.length" class="mt-1 space-y-1">
+                                        <div v-for="customer in task.contact.customers" :key="customer.id" class="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                                             <RouterLink :to="routeUrl('customers.show', customer.id)" class="font-medium text-red-600 hover:underline">{{ customer.name }}</RouterLink>
+                                            <span v-if="customer.relation" class="rounded bg-white px-1.5 py-0.5 text-xs text-blue-700">as {{ customer.relation }}</span>
                                             <button
                                                 type="button"
-                                                class="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full align-middle text-blue-700 hover:bg-white"
-                                                title="Invoices, requests and persons of this customer"
+                                                class="ml-auto inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1 text-xs font-medium text-blue-700 shadow-sm hover:bg-blue-100"
+                                                title="Debt, invoices, requests and persons of this customer"
                                                 @click="overviewCustomer = customer"
                                             >
-                                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4Zm3 2v2h8V6H6Zm0 4v2h8v-2H6Zm0 4v1h5v-1H6Z" /></svg>
+                                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 16h14v1.5H3V16Zm1-6h2.5v5H4v-5Zm4.75-4h2.5v9h-2.5V6Zm4.75 2.5H16V15h-2.5V8.5Z" /></svg>
+                                                Stats
                                             </button>
-                                            <span v-if="customer.relation" class="ml-1.5 rounded bg-white px-1.5 py-0.5 text-xs text-blue-700">as {{ customer.relation }}</span>
                                         </div>
                                     </dd>
                                     <dd v-else class="mt-1 text-sm text-gray-400">Not connected to a customer</dd>
