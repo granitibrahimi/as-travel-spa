@@ -2,7 +2,7 @@
 import SourceIcon from './SourceIcon.vue';
 import TypeBadge from './TypeBadge.vue';
 import SpamBadge from './SpamBadge.vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
@@ -15,8 +15,8 @@ import Button from '../../components/Button.vue';
 import InputText from '../../components/Form/InputText.vue';
 import Select from '../../components/Form/Select.vue';
 import NiceCheckbox from '../../components/Form/NiceCheckbox.vue';
-import FiltersButton from '../../components/FiltersButton.vue';
-import FiltersPanel from '../../components/FiltersPanel.vue';
+import DatePicker from '../../components/Form/DatePicker.vue';
+import CheckboxDropdown from '../../components/Form/CheckboxDropdown.vue';
 import DropdownMenu from '../../components/DropdownMenu.vue';
 import ApiPagination from '../../components/ApiPagination.vue';
 import Loader from '../../components/Loader.vue';
@@ -24,12 +24,41 @@ import { requestStatusClass } from './statusClass.js';
 
 const auth = useAuthStore();
 
-const { filters, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage } = useListFilters(
-    { q: '', status: 'active', assigned_to: '', spam: '', type: '', mine: false },
+const options = ref({ statuses: [], sources: [], types: [], agents: [] });
+
+const { filters, applied, response: apiResponse, loading, apply, clear, goToPage } = useListFilters(
+    { q: '', status: 'active', assigned_to: '', source: [], date_from: '', date_to: '', spam: '', type: '', mine: false },
     async (params, { signal }) => castPaginated((await api.get('/simple-tasks', { params, signal })).data),
 );
 
-const options = ref({ statuses: [], sources: [], types: [], agents: [] });
+// Filters apply as they change (the search box after a short pause), and the
+// URL follows. Back/Forward also rewrite `filters`, but those match what was
+// just loaded, so they don't trigger a second load here.
+function currentParams() {
+    return Object.fromEntries(Object.entries(filters)
+        .filter(([, value]) => ! (value === '' || value === null || value === false || (Array.isArray(value) && value.length === 0)))
+        .map(([key, value]) => [key, value === true ? 1 : value]));
+}
+
+let searchTimer = null;
+let lastSearch = filters.q;
+
+watch(() => JSON.stringify(currentParams()), (now) => {
+    clearTimeout(searchTimer);
+
+    if (now === JSON.stringify(applied.value)) {
+        lastSearch = filters.q;
+        return;
+    }
+
+    const typing = filters.q !== lastSearch;
+    lastSearch = filters.q;
+    searchTimer = setTimeout(apply, typing ? 300 : 0);
+});
+
+onBeforeUnmount(() => clearTimeout(searchTimer));
+
+const sourceOptions = computed(() => (options.value.sources ?? []).map((s) => ({ value: s.id, label: s.name })));
 
 const typeOptions = computed(() => (options.value.types ?? []).map((t) => ({ value: String(t.id), label: t.name })));
 
@@ -59,36 +88,41 @@ const rowActions = (task) => [
         <FullWidthBox title="Requests" :collapsible="false">
             <template #actions>
                 <RouterLink v-if="auth.can('simpleTasks.dashboard')" :to="routeUrl('simpleTasks.dashboard')" class="rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50">Board view</RouterLink>
-                <FiltersButton v-model="showFilters" :count="activeCount" />
             </template>
 
-            <FiltersPanel :open="showFilters">
-                <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
-                    <InputText v-model="filters.q" label="Search" placeholder="Customer, contact or #id" />
-                    <Select v-model="filters.status" label="Status" :options="statusOptions" placeholder="All" />
-                    <Select v-model="filters.type" label="Type" :options="typeOptions" placeholder="All" />
-                    <Select
-                        v-if="auth.can('simpleTasks.listAll')"
-                        v-model="filters.assigned_to"
-                        label="Agent"
-                        :options="agentOptions"
-                        placeholder="All"
-                    />
-                    <Select
-                        v-model="filters.spam"
-                        label="Spam"
-                        :options="[{ value: '0', label: 'Hide spam' }, { value: '1', label: 'Only spam' }]"
-                        placeholder="All"
-                    />
-                    <div class="flex items-end pb-2">
-                        <NiceCheckbox v-model="filters.mine" label="Assigned to me" />
-                    </div>
-                    <div class="flex items-end gap-2 md:col-span-4">
-                        <Button type="submit" variant="primary" :loading="loading">Filter</Button>
-                        <Button type="button" @click="clear">Clear</Button>
-                    </div>
-                </form>
-            </FiltersPanel>
+            <form class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6" @submit.prevent="apply">
+                <div class="sm:col-span-2">
+                    <InputText v-model="filters.q" type="search" label="Search" placeholder="Customer name or phone" autocomplete="off" />
+                </div>
+                <Select v-model="filters.status" label="Status" :options="statusOptions" placeholder="All" />
+                <Select
+                    v-if="auth.can('simpleTasks.listAll')"
+                    v-model="filters.assigned_to"
+                    label="Agent"
+                    :options="agentOptions"
+                    placeholder="All"
+                />
+                <CheckboxDropdown v-model="filters.source" label="Source" :options="sourceOptions">
+                    <template #option="{ option }">
+                        <SourceIcon :source="{ id: option.value, name: option.label }" badge />{{ option.label }}
+                    </template>
+                </CheckboxDropdown>
+                <Select v-model="filters.type" label="Type" :options="typeOptions" placeholder="All" />
+                <DatePicker v-model="filters.date_from" label="From" />
+                <DatePicker v-model="filters.date_to" label="To" />
+                <Select
+                    v-model="filters.spam"
+                    label="Spam"
+                    :options="[{ value: '0', label: 'Hide spam' }, { value: '1', label: 'Only spam' }]"
+                    placeholder="All"
+                />
+                <div class="flex items-end pb-2">
+                    <NiceCheckbox v-model="filters.mine" label="Assigned to me" />
+                </div>
+                <div class="flex items-end pb-0.5">
+                    <Button type="button" @click="clear">Clear filters</Button>
+                </div>
+            </form>
 
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse border border-gray-300 text-sm">
