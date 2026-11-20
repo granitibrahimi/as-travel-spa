@@ -1,5 +1,5 @@
 <script setup>
-import { formatPhone } from '../../helpers/phone.js';
+import { formatPhone, normalizePhone } from '../../helpers/phone.js';
 import SpamBadge from './SpamBadge.vue';
 import FromBossBadge from './FromBossBadge.vue';
 import SpamIcon from './SpamIcon.vue';
@@ -65,7 +65,14 @@ const contactHref = computed(() => {
             if (/^\S+@\S+\.\S+$/.test(contact)) {
                 return `mailto:${contact}`;
             }
-            return contact.replace(/[^\d+]/g, '').length >= 6 ? `tel:${contact.replace(/[^\d+]/g, '')}` : null;
+            {
+                // Stored numbers are digits with country code: dial them with "+".
+                const number = normalizePhone(contact);
+                if (/^\d{7,}$/.test(number)) {
+                    return `tel:+${number}`;
+                }
+                return contact.replace(/[^\d+]/g, '').length >= 6 ? `tel:${contact.replace(/[^\d+]/g, '')}` : null;
+            }
     }
 });
 
