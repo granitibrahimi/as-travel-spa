@@ -1,4 +1,5 @@
 <script setup>
+import { formatPhone } from '../../helpers/phone.js';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import api from '../../helpers/api';
@@ -86,8 +87,16 @@ function pick(match) {
     linked.value = match;
     matches.value = [];
     props.form.person_contact_reference_id = match.id;
-    props.form.customer_contact = match.reference;
+    props.form.customer_contact = formatPhone(match.reference);
     props.form.customer_name = match.person?.name ?? props.form.customer_name;
+}
+
+/** Phone sources: show the typed number as +383 44 123 456 once the field is left. */
+function formatContact() {
+    const type = props.sources.find((s) => s.id === props.form.source)?.contact_type;
+    if ([3, 4, 5].includes(type)) {
+        props.form.customer_contact = formatPhone(props.form.customer_contact);
+    }
 }
 
 function unlink() {
@@ -110,7 +119,7 @@ function unlink() {
                     <RouterLink v-if="linked.person" :to="routeUrl('persons.show', linked.person.id)" target="_blank" class="hover:underline">
                         {{ linked.person.name }}
                     </RouterLink>
-                    <span class="ml-1 text-xs font-normal text-gray-500">{{ linked.type.name }} · {{ linked.reference }}</span>
+                    <span class="ml-1 text-xs font-normal text-gray-500">{{ linked.type.name }} · {{ formatPhone(linked.reference) }}</span>
                 </p>
                 <p class="mt-0.5 text-xs text-gray-600">
                     <template v-if="linked.customers.length">
@@ -135,6 +144,7 @@ function unlink() {
                     placeholder="Type to find the customer"
                     autocomplete="off"
                     :error="errors.customer_contact"
+                    @blur="formatContact"
                 />
                 <div class="hidden md:block" />
                 <InputText v-model="form.person.first_name" label="First name *" autocomplete="off" :error="errors['person.first_name'] || errors.customer_name" />
@@ -152,7 +162,7 @@ function unlink() {
                 >
                     <span>
                         <span class="font-medium text-gray-900">{{ match.person?.name ?? '—' }}</span>
-                        <span class="ml-1 text-xs text-gray-500">{{ match.type.name }} · {{ match.reference }}</span>
+                        <span class="ml-1 text-xs text-gray-500">{{ match.type.name }} · {{ formatPhone(match.reference) }}</span>
                         <span v-if="match.customers.length" class="ml-1 text-xs text-gray-500">· {{ match.customers.map((c) => c.name).join(', ') }}</span>
                     </span>
                     <span class="text-xs font-medium text-red-600">Use</span>

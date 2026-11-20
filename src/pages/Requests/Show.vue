@@ -1,4 +1,5 @@
 <script setup>
+import { formatPhone } from '../../helpers/phone.js';
 import SpamBadge from './SpamBadge.vue';
 import FromBossBadge from './FromBossBadge.vue';
 import SpamIcon from './SpamIcon.vue';
@@ -275,8 +276,8 @@ async function saveEdit() {
                                     <span class="font-medium">{{ task.source.name }}</span>
                                     <template v-if="task.customer_contact">
                                         <span class="text-gray-300">·</span>
-                                        <a v-if="contactHref" :href="contactHref" target="_blank" rel="noopener" class="text-red-600 hover:underline">{{ task.customer_contact }}</a>
-                                        <span v-else>{{ task.customer_contact }}</span>
+                                        <a v-if="contactHref" :href="contactHref" target="_blank" rel="noopener" class="text-red-600 hover:underline">{{ formatPhone(task.customer_contact) }}</a>
+                                        <span v-else>{{ formatPhone(task.customer_contact) }}</span>
                                     </template>
                                 </dd>
                             </div>

@@ -1,4 +1,5 @@
 <script setup>
+import { formatPhone } from '../../../helpers/phone.js';
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
@@ -116,7 +117,7 @@ onMounted(async () => {
                             <tbody>
                                 <tr v-for="reference in person.contact_references" :key="reference.id">
                                     <th class="w-60 border border-gray-300 bg-gray-50 px-2 py-2 text-left font-medium">{{ reference.type_label }}</th>
-                                    <td class="border border-gray-300 px-2 py-2">{{ reference.reference }}</td>
+                                    <td class="border border-gray-300 px-2 py-2">{{ formatPhone(reference.reference) }}</td>
                                 </tr>
                             </tbody>
                         </table>
