@@ -4,7 +4,7 @@ import SpamBadge from './SpamBadge.vue';
 import FromBossBadge from './FromBossBadge.vue';
 import SpamIcon from './SpamIcon.vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../helpers/api';
 import { routeUrl } from '../../helpers/route.js';
 import { castResource } from '../../types/responses.js';
@@ -24,6 +24,7 @@ import AddOfferDialog from './AddOfferDialog.vue';
 import DestinationsSection from './DestinationsSection.vue';
 import CustomerSection from './CustomerSection.vue';
 import CustomerOverviewDialog from './CustomerOverviewDialog.vue';
+import DeleteRequestDialog from './DeleteRequestDialog.vue';
 import SuggestionsBox from '../../components/LinkSuggestions/SuggestionsBox.vue';
 import { contactFieldsFromTask, emptyContactFields, requestPayload } from './customerContact.js';
 
@@ -31,6 +32,14 @@ const route = useRoute();
 // Boards show a "working" icon while this request is open here.
 useRequestViewing(() => route.params.id);
 const auth = useAuthStore();
+const router = useRouter();
+
+// Deleting for good (simpleTasks.delete): back to the list afterwards.
+const deleting = ref(null);
+function onDeleted() {
+    deleting.value = null;
+    router.push(routeUrl('simpleTasks.list'));
+}
 
 const task = ref(null);
 const options = ref({ statuses: [], sources: [], agents: [] });
@@ -259,6 +268,7 @@ async function saveEdit() {
                             Assigned to:
                             <span class="font-medium" :class="task.assigned_to ? 'text-gray-900' : 'text-red-600'">{{ task.assigned_to?.name ?? 'Nobody yet' }}</span>
                         </span>
+                        <Button v-if="auth.can('simpleTasks.delete')" size="sm" variant="danger" @click="deleting = task">Delete</Button>
                     </template>
 
                     <template v-if="! editing">
@@ -477,5 +487,6 @@ async function saveEdit() {
 
         <AddOfferDialog :show="offerDialog" :task="task" @saved="offerSaved" @cancel="offerDialog = false" />
         <CustomerOverviewDialog :customer="overviewCustomer" @close="overviewCustomer = null" />
+        <DeleteRequestDialog :task="deleting" @close="deleting = null" @deleted="onDeleted" />
     </AppLayout>
 </template>

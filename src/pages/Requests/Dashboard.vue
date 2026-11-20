@@ -24,6 +24,7 @@ import { flip } from '../../composables/useFlip.js';
 import { useListFilters } from '../../composables/useListFilters.js';
 import { useLiveFilters } from '../../composables/useLiveFilters.js';
 import RequestFilters from './RequestFilters.vue';
+import DeleteRequestDialog from './DeleteRequestDialog.vue';
 
 // Status ids from the API's SimpleTaskStatus enum.
 const OPEN = 1;
@@ -343,7 +344,15 @@ const cardActions = (task) => [
             label: status.id === ASSIGNED ? (task.assigned_to ? 'Reassign…' : 'Assign…') : `Move to ${status.name}`,
             action: () => openMove(task, status),
         })),
+    ...(auth.can('simpleTasks.delete') ? [{ label: 'Delete…', danger: true, action: () => { deleting.value = task; } }] : []),
 ];
+
+const deleting = ref(null);
+
+function onDeleted() {
+    deleting.value = null;
+    fetchBoard({ quiet: true });
+}
 
 const dialogTitle = computed(() => {
     if (! move.value) {
@@ -589,6 +598,7 @@ const openTask = (event, task) => {
             </div>
             <p v-if="moveError" class="mt-2 text-xs text-red-600">{{ moveError }}</p>
         </ConfirmDialog>
+        <DeleteRequestDialog :task="deleting" @close="deleting = null" @deleted="onDeleted" />
     </AppLayout>
 </template>
 

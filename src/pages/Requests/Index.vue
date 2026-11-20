@@ -12,6 +12,7 @@ import { castPaginated, castResource } from '../../types/responses.js';
 import { useListFilters } from '../../composables/useListFilters.js';
 import { useLiveFilters } from '../../composables/useLiveFilters.js';
 import RequestFilters from './RequestFilters.vue';
+import DeleteRequestDialog from './DeleteRequestDialog.vue';
 import { useAuthStore } from '../../stores/auth';
 import AppLayout from '../../layouts/AppLayout.vue';
 import FullWidthBox from '../../components/FullWidthBox.vue';
@@ -24,7 +25,7 @@ const auth = useAuthStore();
 
 const options = ref({ statuses: [], sources: [], types: [], agents: [] });
 
-const { filters, applied, response: apiResponse, loading, apply, clear, goToPage } = useListFilters(
+const { filters, applied, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
     { q: '', status: 'active', assigned_to: '', source: [], date_from: '', date_to: '', spam: '', type: '', mine: false },
     async (params, { signal }) => castPaginated((await api.get('/simple-tasks', { params, signal })).data),
 );
@@ -36,9 +37,17 @@ onMounted(async () => {
     options.value = castResource(data);
 });
 
+const deleting = ref(null);
+
 const rowActions = (task) => [
     { label: 'View', href: routeUrl('simpleTasks.show', task.id) },
+    ...(auth.can('simpleTasks.delete') ? [{ label: 'Delete…', danger: true, action: () => { deleting.value = task; } }] : []),
 ];
+
+function onDeleted() {
+    deleting.value = null;
+    reload();
+}
 </script>
 
 <template>
@@ -123,5 +132,7 @@ const rowActions = (task) => [
                 >+ New request</RouterLink>
             </template>
         </FullWidthBox>
+
+        <DeleteRequestDialog :task="deleting" @close="deleting = null" @deleted="onDeleted" />
     </AppLayout>
 </template>
