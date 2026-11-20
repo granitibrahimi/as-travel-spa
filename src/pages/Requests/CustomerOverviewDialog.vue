@@ -62,6 +62,17 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                 <p v-if="loading" class="px-5 py-8 text-center text-sm text-gray-400">Loading…</p>
 
                 <div v-else-if="data" class="space-y-6 p-5">
+                    <div v-if="data.debt" class="grid grid-cols-2 gap-3 sm:max-w-md">
+                        <div class="rounded border px-3 py-2" :class="data.debt.open_balance > 0 ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-gray-50'">
+                            <p class="text-xs uppercase text-gray-500">Debt (open balance)</p>
+                            <p class="text-lg font-bold tabular-nums" :class="data.debt.open_balance > 0 ? 'text-red-700' : 'text-gray-700'">{{ money(data.debt.open_balance) }}</p>
+                        </div>
+                        <div class="rounded border px-3 py-2" :class="data.debt.overdue_balance > 0 ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-gray-50'">
+                            <p class="text-xs uppercase text-gray-500">Overdue</p>
+                            <p class="text-lg font-bold tabular-nums" :class="data.debt.overdue_balance > 0 ? 'text-amber-700' : 'text-gray-700'">{{ money(data.debt.overdue_balance) }}</p>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <section>
                             <h3 class="mb-2 text-xs font-semibold uppercase text-gray-500">Last invoices</h3>
