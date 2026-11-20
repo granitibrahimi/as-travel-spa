@@ -10,6 +10,8 @@ import Alert from '../../../components/Alert.vue';
 import Button from '../../../components/Button.vue';
 import ConfirmDialog from '../../../components/ConfirmDialog.vue';
 import Loader from '../../../components/Loader.vue';
+import { castPaginated } from '../../../types/responses.js';
+import { requestStatusClass } from '../../Requests/statusClass.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -65,9 +67,17 @@ async function confirmDelete() {
     }
 }
 
+// Requests (CRM /requests) linked to this person through a contact reference.
+const requests = ref([]);
+
 onMounted(async () => {
     const { data } = await api.get(`/customers/persons/${id}`);
     person.value = data.data;
+
+    if (auth.can('simpleTasks.list') || auth.can('simpleTasks.listAll')) {
+        const { data: list } = await api.get('/simple-tasks', { params: { person_id: id, per_page: 50 } });
+        requests.value = castPaginated(list).data ?? [];
+    }
 });
 </script>
 
@@ -159,6 +169,38 @@ onMounted(async () => {
                     </div>
                 </FullWidthBox>
             </div>
+
+            <!-- Requests -->
+            <FullWidthBox v-if="requests.length" title="Requests" :collapsible="false">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead class="bg-gray-50 text-left">
+                            <tr>
+                                <th class="border border-gray-300 px-2 py-2">#</th>
+                                <th class="border border-gray-300 px-2 py-2">Created</th>
+                                <th class="border border-gray-300 px-2 py-2">Type</th>
+                                <th class="border border-gray-300 px-2 py-2">Destinations</th>
+                                <th class="border border-gray-300 px-2 py-2">Status</th>
+                                <th class="border border-gray-300 px-2 py-2">Agent</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="request in requests" :key="request.id" class="hover:bg-gray-50">
+                                <td class="border border-gray-300 px-2 py-2">
+                                    <RouterLink :to="routeUrl('simpleTasks.show', request.id)" class="text-red-600 hover:underline">#{{ request.id }}</RouterLink>
+                                </td>
+                                <td class="border border-gray-300 px-2 py-2">{{ request.created_at }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ request.type?.name ?? '—' }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ (request.parent_destinations ?? []).map((d) => d.name).join(', ') || '—' }}</td>
+                                <td class="border border-gray-300 px-2 py-2">
+                                    <span class="rounded px-2 py-0.5 text-xs font-medium" :class="requestStatusClass(request.status)">{{ request.status?.name }}</span>
+                                </td>
+                                <td class="border border-gray-300 px-2 py-2">{{ request.assigned_to?.name ?? '—' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </FullWidthBox>
 
             <!-- Logs -->
             <FullWidthBox title="Logs" :collapsible="false">

@@ -20,6 +20,8 @@ import TypeBadge from './TypeBadge.vue';
 import { useRequestViewing } from '../../composables/useRequestViewing.js';
 import AddOfferDialog from './AddOfferDialog.vue';
 import DestinationsSection from './DestinationsSection.vue';
+import CustomerSection from './CustomerSection.vue';
+import { contactFieldsFromTask, emptyContactFields, requestPayload } from './customerContact.js';
 
 const route = useRoute();
 // Boards show a "working" icon while this request is open here.
@@ -37,7 +39,7 @@ const statusComment = ref('');
 const savingStatus = ref(false);
 
 const editing = ref(false);
-const editForm = reactive({ customer_name: '', customer_contact: '', source: null, type: null, description: '', urgent: false, spam: false, combo: false, specific_hotel: '' });
+const editForm = reactive({ ...emptyContactFields(), source: null, type: null, description: '', urgent: false, spam: false, combo: false, specific_hotel: '' });
 const editDestinations = ref([]);
 const destinations = computed(() => task.value?.parent_destinations ?? (task.value?.parent_destination ? [task.value.parent_destination] : []));
 const editErrors = ref({});
@@ -183,8 +185,7 @@ async function saveComment() {
 
 function startEdit() {
     Object.assign(editForm, {
-        customer_name: task.value.customer_name,
-        customer_contact: task.value.customer_contact ?? '',
+        ...contactFieldsFromTask(task.value),
         source: task.value.source.id,
         type: task.value.type?.id ?? null,
         description: task.value.description ?? '',
@@ -207,7 +208,7 @@ async function saveEdit() {
     editErrors.value = {};
 
     try {
-        await api.put(`/simple-tasks/${task.value.id}`, { ...editForm, parent_destination_ids: editDestinations.value.map((d) => d.id) });
+        await api.put(`/simple-tasks/${task.value.id}`, { ...requestPayload(editForm, options.value.sources), parent_destination_ids: editDestinations.value.map((d) => d.id) });
         editing.value = false;
         await load();
     } catch (error) {
@@ -243,6 +244,22 @@ async function saveEdit() {
                             This request is flagged as spam. It keeps its status and doesn't count as waiting.
                         </div>
                         <dl class="space-y-4 text-sm">
+                            <div>
+                                <dt class="text-xs uppercase text-gray-400">Customer</dt>
+                                <dd v-if="task.contact" class="mt-1">
+                                    <RouterLink v-if="task.contact.person" :to="routeUrl('persons.show', task.contact.person.id)" class="font-medium text-red-600 hover:underline">{{ task.contact.person.name }}</RouterLink>
+                                    <template v-if="task.contact.customers.length">
+                                        <span class="text-gray-300"> · </span>
+                                        <template v-for="(customer, index) in task.contact.customers" :key="customer.id">
+                                            <span v-if="index">, </span>
+                                            <RouterLink :to="routeUrl('customers.show', customer.id)" class="text-red-600 hover:underline">{{ customer.name }}</RouterLink>
+                                            <span v-if="customer.relation" class="text-xs text-gray-400"> ({{ customer.relation }})</span>
+                                        </template>
+                                    </template>
+                                    <span v-else class="text-xs text-gray-400"> · not connected to a customer</span>
+                                </dd>
+                                <dd v-else class="mt-1 text-gray-500">{{ task.customer_name }} <span class="text-xs text-gray-400">· not linked to Customers yet (Edit to link)</span></dd>
+                            </div>
                             <div v-if="task.type">
                                 <dt class="text-xs uppercase text-gray-400">Type</dt>
                                 <dd class="mt-1"><TypeBadge :type="task.type" /></dd>
@@ -310,9 +327,17 @@ async function saveEdit() {
                     </template>
 
                     <form v-else class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="saveEdit">
-                        <InputText v-model="editForm.customer_name" label="Customer name *" :error="editErrors.customer_name" />
-                        <InputText v-model="editForm.customer_contact" label="Phone / email / username" :error="editErrors.customer_contact" />
                         <Select v-model="editForm.source" label="Source *" :options="sourceOptions" :error="editErrors.source" />
+                        <div class="hidden md:block" />
+                        <div class="md:col-span-2">
+                            <CustomerSection
+                                :form="editForm"
+                                :errors="editErrors"
+                                :sources="options.sources"
+                                :relation-types="options.relation_types ?? []"
+                                :initial-contact="task.contact"
+                            />
+                        </div>
                         <Select v-model="editForm.type" label="Type *" :options="typeOptions" :error="editErrors.type" />
                         <InputText v-model="editForm.specific_hotel" label="Specific hotel" placeholder="Optional" :error="editErrors.specific_hotel" />
                         <div class="md:col-span-2">
