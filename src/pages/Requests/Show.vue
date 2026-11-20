@@ -23,6 +23,7 @@ import { useRequestViewing } from '../../composables/useRequestViewing.js';
 import AddOfferDialog from './AddOfferDialog.vue';
 import DestinationsSection from './DestinationsSection.vue';
 import CustomerSection from './CustomerSection.vue';
+import CustomerOverviewDialog from './CustomerOverviewDialog.vue';
 import { contactFieldsFromTask, emptyContactFields, requestPayload } from './customerContact.js';
 
 const route = useRoute();
@@ -41,6 +42,8 @@ const statusComment = ref('');
 const savingStatus = ref(false);
 
 const editing = ref(false);
+// Customer whose overview popup (invoices, requests, persons) is open.
+const overviewCustomer = ref(null);
 const editForm = reactive({ ...emptyContactFields(), source: null, type: null, description: '', urgent: false, from_flamur: false, from_vesa: false, spam: false, combo: false, specific_hotel: '' });
 const editDestinations = ref([]);
 const destinations = computed(() => task.value?.parent_destinations ?? (task.value?.parent_destination ? [task.value.parent_destination] : []));
@@ -256,21 +259,43 @@ async function saveEdit() {
                             This request is flagged as spam. It keeps its status and doesn't count as waiting.
                         </div>
                         <dl class="space-y-4 text-sm">
-                            <div>
-                                <dt class="text-xs uppercase text-gray-400">Customer</dt>
-                                <dd v-if="task.contact" class="mt-1">
-                                    <RouterLink v-if="task.contact.person" :to="routeUrl('persons.show', task.contact.person.id)" class="font-medium text-red-600 hover:underline">{{ task.contact.person.name }}</RouterLink>
-                                    <template v-if="task.contact.customers.length">
-                                        <span class="text-gray-300"> · </span>
-                                        <template v-for="(customer, index) in task.contact.customers" :key="customer.id">
-                                            <span v-if="index">, </span>
-                                            <RouterLink :to="routeUrl('customers.show', customer.id)" class="text-red-600 hover:underline">{{ customer.name }}</RouterLink>
-                                            <span v-if="customer.relation" class="text-xs text-gray-400"> ({{ customer.relation }})</span>
-                                        </template>
-                                    </template>
-                                    <span v-else class="text-xs text-gray-400"> · not connected to a customer</span>
-                                </dd>
-                                <dd v-else class="mt-1 text-gray-500">{{ task.customer_name }} <span class="text-xs text-gray-400">· not linked to Customers yet (Edit to link)</span></dd>
+                            <!-- Who wrote to us (the person) vs. the customer account they belong to. -->
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div class="rounded border border-gray-200 bg-gray-50 px-3 py-2">
+                                    <dt class="flex items-center gap-1.5 text-xs uppercase text-gray-500">
+                                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H3Z" /></svg>
+                                        Contact person
+                                    </dt>
+                                    <dd v-if="task.contact?.person" class="mt-1">
+                                        <RouterLink :to="routeUrl('persons.show', task.contact.person.id)" class="font-medium text-red-600 hover:underline">{{ task.contact.person.name }}</RouterLink>
+                                        <p class="text-xs text-gray-500">{{ task.contact.type.name }} · {{ formatPhone(task.contact.reference) }}</p>
+                                    </dd>
+                                    <dd v-else class="mt-1">
+                                        <span class="font-medium">{{ task.customer_name }}</span>
+                                        <p class="text-xs text-gray-400">Not saved as a traveler yet (Edit to link)</p>
+                                    </dd>
+                                </div>
+                                <div class="rounded border px-3 py-2" :class="task.contact?.customers?.length ? 'border-blue-200 bg-blue-50' : 'border-dashed border-gray-300'">
+                                    <dt class="flex items-center gap-1.5 text-xs uppercase" :class="task.contact?.customers?.length ? 'text-blue-700' : 'text-gray-500'">
+                                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3h8v14H4V3Zm9 5h3v9h-3V8ZM6 5v2h2V5H6Zm0 4v2h2V9H6Zm0 4v2h2v-2H6Z" /></svg>
+                                        {{ (task.contact?.customers?.length ?? 0) > 1 ? 'Customers' : 'Customer' }}
+                                    </dt>
+                                    <dd v-if="task.contact?.customers?.length" class="mt-1 space-y-0.5">
+                                        <div v-for="customer in task.contact.customers" :key="customer.id">
+                                            <RouterLink :to="routeUrl('customers.show', customer.id)" class="font-medium text-red-600 hover:underline">{{ customer.name }}</RouterLink>
+                                            <button
+                                                type="button"
+                                                class="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full align-middle text-blue-700 hover:bg-white"
+                                                title="Invoices, requests and persons of this customer"
+                                                @click="overviewCustomer = customer"
+                                            >
+                                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4Zm3 2v2h8V6H6Zm0 4v2h8v-2H6Zm0 4v1h5v-1H6Z" /></svg>
+                                            </button>
+                                            <span v-if="customer.relation" class="ml-1.5 rounded bg-white px-1.5 py-0.5 text-xs text-blue-700">as {{ customer.relation }}</span>
+                                        </div>
+                                    </dd>
+                                    <dd v-else class="mt-1 text-sm text-gray-400">Not connected to a customer</dd>
+                                </div>
                             </div>
                             <div v-if="task.type">
                                 <dt class="text-xs uppercase text-gray-400">Type</dt>
@@ -442,5 +467,6 @@ async function saveEdit() {
         </div>
 
         <AddOfferDialog :show="offerDialog" :task="task" @saved="offerSaved" @cancel="offerDialog = false" />
+        <CustomerOverviewDialog :customer="overviewCustomer" @close="overviewCustomer = null" />
     </AppLayout>
 </template>
