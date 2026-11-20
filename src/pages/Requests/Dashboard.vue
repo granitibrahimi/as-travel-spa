@@ -41,9 +41,10 @@ const loading = ref(false);
 const agentOptions = ref([]);
 const options = ref({ statuses: [], sources: [], types: [], agents: [] });
 
-// Same filters as the list, applied on the server and kept in the URL.
+// Filters (a subset of the list's), applied on the server and kept in the URL.
+// The agent filter is set from the agent cards, not a dropdown.
 const { filters, applied, apply, clear } = useListFilters(
-    { q: '', status: '', assigned_to: '', source: [], date_from: '', date_to: '', type: '', spam: '' },
+    { q: '', status: '', assigned_to: '', source: [], date_from: '', date_to: '' },
     async (params, { signal }) => (canSeeBoard.value ? fetchBoard({ params, signal }) : null),
 );
 useLiveFilters(filters, applied, apply);
@@ -394,12 +395,11 @@ const openTask = (event, task) => {
                 class="min-w-0 flex-1"
                 :filters="filters"
                 :options="options"
-                :show-agent="auth.can('simpleTasks.listAll')"
                 @clear="clear"
             />
 
             <div class="flex shrink-0 items-center gap-2 pt-1">
-                <span v-if="lastEvent" :key="lastEvent.at" class="live-event hidden text-xs text-gray-500 md:inline">{{ lastEvent.text }}</span>
+                <span v-if="lastEvent" :key="lastEvent.at" class="live-event hidden text-xs text-gray-500 2xl:inline">{{ lastEvent.text }}</span>
                 <span
                     class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
                     :class="live ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'"
