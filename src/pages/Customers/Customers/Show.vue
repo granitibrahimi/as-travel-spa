@@ -12,6 +12,7 @@ import ApiPagination from '../../../components/ApiPagination.vue';
 import CustomerDetails from '../../../components/CustomerDetails.vue';
 import CustomerActions from './Actions.vue';
 import CustomerDepartments from './Departments.vue';
+import CustomerPersons from './Persons.vue';
 import ProInvoiceActions from '../ProInvoices/Actions.vue';
 import Loader from '../../../components/Loader.vue';
 import {useAuthStore} from '../../../stores/auth.js';
@@ -270,6 +271,8 @@ watch(filters, () => {
             />
 
             <CustomerDepartments v-if="showDepartments" :customer="customer"/>
+
+            <CustomerPersons v-if="customer && auth.can('customers.show')" :customer="customer"/>
 
             <FullWidthBox v-if="canViewProInvoices && (! proInvoices || proInvoices.data.length > 0)" title="Pro Invoices" :collapsible="false">
                 <div class="overflow-x-auto">
