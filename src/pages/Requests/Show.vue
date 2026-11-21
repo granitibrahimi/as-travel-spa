@@ -24,6 +24,7 @@ import AddOfferDialog from './AddOfferDialog.vue';
 import DestinationsSection from './DestinationsSection.vue';
 import CustomerSection from './CustomerSection.vue';
 import CustomerOverviewDialog from './CustomerOverviewDialog.vue';
+import PersonOverviewDialog from './PersonOverviewDialog.vue';
 import DeleteRequestDialog from './DeleteRequestDialog.vue';
 import SuggestionsBox from '../../components/LinkSuggestions/SuggestionsBox.vue';
 import { contactFieldsFromTask, emptyContactFields, requestPayload } from './customerContact.js';
@@ -54,6 +55,7 @@ const savingStatus = ref(false);
 const editing = ref(false);
 // Customer whose overview popup (invoices, requests, persons) is open.
 const overviewCustomer = ref(null);
+const overviewPerson = ref(null);
 const editForm = reactive({ ...emptyContactFields(), source: null, type: null, description: '', urgent: false, from_flamur: false, from_vesa: false, spam: false, combo: false, specific_hotel: '' });
 const editDestinations = ref([]);
 const destinations = computed(() => task.value?.parent_destinations ?? (task.value?.parent_destination ? [task.value.parent_destination] : []));
@@ -284,9 +286,20 @@ async function saveEdit() {
                                         <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H3Z" /></svg>
                                         Contact person
                                     </dt>
-                                    <dd v-if="task.contact?.person" class="mt-1">
-                                        <RouterLink :to="routeUrl('persons.show', task.contact.person.id)" class="font-medium text-red-600 hover:underline">{{ task.contact.person.name }}</RouterLink>
-                                        <p class="text-xs text-gray-500">{{ task.contact.type.name }} · {{ formatPhone(task.contact.reference) }}</p>
+                                    <dd v-if="task.contact?.person" class="mt-1 flex flex-wrap items-start gap-x-1.5 gap-y-1">
+                                        <div>
+                                            <RouterLink :to="routeUrl('persons.show', task.contact.person.id)" class="font-medium text-red-600 hover:underline">{{ task.contact.person.name }}</RouterLink>
+                                            <p class="text-xs text-gray-500">{{ task.contact.type.name }} · {{ formatPhone(task.contact.reference) }}</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="ml-auto inline-flex items-center gap-1.5 rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-100"
+                                            title="Requests of this traveler and their customers"
+                                            @click="overviewPerson = task.contact.person"
+                                        >
+                                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 16h14v1.5H3V16Zm1-6h2.5v5H4v-5Zm4.75-4h2.5v9h-2.5V6Zm4.75 2.5H16V15h-2.5V8.5Z" /></svg>
+                                            Stats
+                                        </button>
                                     </dd>
                                     <dd v-else class="mt-1">
                                         <span class="font-medium">{{ task.customer_name }}</span>
@@ -487,6 +500,7 @@ async function saveEdit() {
 
         <AddOfferDialog :show="offerDialog" :task="task" @saved="offerSaved" @cancel="offerDialog = false" />
         <CustomerOverviewDialog :customer="overviewCustomer" @close="overviewCustomer = null" />
+        <PersonOverviewDialog :person="overviewPerson" @close="overviewPerson = null" />
         <DeleteRequestDialog :task="deleting" @close="deleting = null" @deleted="onDeleted" />
     </AppLayout>
 </template>
