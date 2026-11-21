@@ -14,7 +14,7 @@ const props = defineProps({
     processing: { type: Boolean, default: false },
     // Disables the confirm button (and Enter) until the slot's form is valid.
     confirmDisabled: { type: Boolean, default: false },
-    // 'md' (default) or 'lg' for dialogs holding a longer form.
+    // 'md' (default), 'lg' for dialogs holding a longer form, 'xl' for side-by-side columns.
     size: { type: String, default: 'md' },
 });
 
@@ -64,7 +64,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                     role="dialog"
                     aria-modal="true"
                     class="confirm-dialog-card relative w-full rounded-lg bg-white p-6 shadow-xl"
-                    :class="[size === 'lg' ? 'max-h-[90vh] max-w-2xl overflow-y-auto' : 'max-w-md', { 'pointer-events-none opacity-75': processing }]"
+                    :class="[{ lg: 'max-h-[90vh] max-w-2xl overflow-y-auto', xl: 'max-h-[90vh] max-w-6xl overflow-y-auto' }[size] ?? 'max-w-md', { 'pointer-events-none opacity-75': processing }]"
                 >
                     <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
                     <p v-if="message" class="mt-2 text-sm text-gray-600">{{ message }}</p>
