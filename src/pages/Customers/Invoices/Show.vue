@@ -445,7 +445,7 @@ async function confirmUnlink() {
                                         </th>
                                         <th class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">Sold value
                                         </th>
-                                        <th class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">Buying
+                                        <th v-if="invoice.can_see_buying_value" class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">Buying
                                             value
                                         </th>
                                         <th class="border border-gray-300 bg-gray-50 px-3 py-2 font-medium">Bill</th>
@@ -454,7 +454,7 @@ async function confirmUnlink() {
                                     </thead>
                                     <tbody>
                                     <tr v-if="order.persons.length === 0">
-                                        <td colspan="7"
+                                        <td :colspan="invoice.can_see_buying_value ? 7 : 6"
                                             class="border border-gray-300 px-3 py-4 text-center text-gray-400">No
                                             persons.
                                         </td>
@@ -489,7 +489,7 @@ async function confirmUnlink() {
                                         <td class="border border-gray-300 px-3 py-2 tabular-nums">
                                             {{ money(person.sold_value) }}
                                         </td>
-                                        <td class="border border-gray-300 px-3 py-2 tabular-nums">
+                                        <td v-if="invoice.can_see_buying_value" class="border border-gray-300 px-3 py-2 tabular-nums">
                                             {{ money(person.buying_value) }}
                                         </td>
                                         <td class="border border-gray-300 px-3 py-2">
