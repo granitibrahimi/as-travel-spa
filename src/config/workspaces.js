@@ -71,7 +71,7 @@ export const workspaces = [
             {
                 label: 'Invoices',
                 items: [
-                    { label: 'Invoices', to: '/customers/invoices', can: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
+                    { label: 'Invoices', to: '/customers/invoices', can: ['customerInvoices.listAll', 'customerInvoices.listOwn', 'customerInvoices.viewAllWithoutAQP'] },
                 ],
             },
             {
@@ -104,7 +104,7 @@ export const workspaces = [
                     { label: 'Customers List', to: '/customers/customers', can: 'customers.list' },
                     { label: 'New Customer', to: '/customers/customers/create', can: 'customers.create' },
                     { label: 'Merge Customers', to: '/customers/customers/merge', can: 'customers.merge' },
-                    { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
+                    { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn', 'customerInvoices.viewAllWithoutAQP'] },
                     { label: 'Pro Invoices', to: '/customers/pro-invoices', can: 'customerProInvoices.list' },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },
@@ -308,7 +308,7 @@ export const workspaces = [
                     { label: 'All Customers', to: '/customers/customers', can: 'customers.list' },
                     { label: 'New Customer', to: '/customers/customers/create', can: 'customers.create' },
                     { label: 'Merge Customers', to: '/customers/customers/merge', can: 'customers.merge' },
-                    { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn'] },
+                    { label: 'All Invoices', to: '/customers/invoices', canAny: ['customerInvoices.listAll', 'customerInvoices.listOwn', 'customerInvoices.viewAllWithoutAQP'] },
                     { label: 'Pro Invoices', to: '/customers/pro-invoices', can: 'customerProInvoices.list' },
                     { label: 'Due Invoices', to: '/customers/invoices/due', canAny: ['customerInvoices.listAllDue', 'customerInvoices.listOwnDue'] },
                     { label: 'Credit Notes', to: '/customers/credit-notes', canAny: ['customerCreditNotes.listAll', 'customerCreditNotes.listOwn'] },

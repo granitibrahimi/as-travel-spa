@@ -86,7 +86,7 @@ const groups = computed(() => {
 
     const pages = [
         ...(props.showViewAction
-            ? [{ label: 'View', to: routeUrl('customerInvoices.show', invoice.id), canAny: ['customerInvoices.show', 'customerInvoices.showOwn'] }]
+            ? [{ label: 'View', to: routeUrl('customerInvoices.show', invoice.id), canAny: ['customerInvoices.show', 'customerInvoices.showOwn', 'customerInvoices.viewAllWithoutAQP'] }]
             : []),
         ...(customerId.value
             ? [{ label: 'Reconcile', to: routeUrl('customers.reconcile', customerId.value), can: 'customers.reconcile' }]
