@@ -21,6 +21,7 @@ import SourceIcon from './SourceIcon.vue';
 import TypeBadge from './TypeBadge.vue';
 import { useRequestViewing } from '../../composables/useRequestViewing.js';
 import AddOfferDialog from './AddOfferDialog.vue';
+import PrepareOfferDialog from './PrepareOfferDialog.vue';
 import DestinationsSection from './DestinationsSection.vue';
 import CustomerSection from './CustomerSection.vue';
 import CustomerOverviewDialog from './CustomerOverviewDialog.vue';
@@ -142,9 +143,12 @@ async function saveAssignee() {
 
 // Offers are added one by one (several per request); closing is a status.
 const offerDialog = ref(false);
+// Same, but the pasted text is formatted with AI first.
+const prepareOfferDialog = ref(false);
 
 async function offerSaved() {
     offerDialog.value = false;
+    prepareOfferDialog.value = false;
     await load();
 }
 
@@ -366,7 +370,10 @@ async function saveEdit() {
                             <div>
                                 <dt class="flex items-center justify-between text-xs uppercase text-gray-400">
                                     <span>{{ task.offers.length }} {{ task.offers.length === 1 ? 'offer' : 'offers' }} sent</span>
-                                    <Button v-if="auth.can('simpleTasks.changeStatus')" size="sm" variant="primary" @click="offerDialog = true">+ Add offer</Button>
+                                    <span v-if="auth.can('simpleTasks.changeStatus')" class="flex gap-2 normal-case">
+                                        <Button size="sm" @click="prepareOfferDialog = true">✨ Prepare offer</Button>
+                                        <Button size="sm" variant="primary" @click="offerDialog = true">+ Add offer</Button>
+                                    </span>
                                 </dt>
                                 <dd v-if="task.offers.length" class="mt-2 space-y-2">
                                     <div v-for="(offer, index) in task.offers" :key="offer.id ?? 'legacy'" class="rounded border border-green-200 bg-green-50 p-3">
@@ -499,6 +506,7 @@ async function saveEdit() {
         </div>
 
         <AddOfferDialog :show="offerDialog" :task="task" @saved="offerSaved" @cancel="offerDialog = false" />
+        <PrepareOfferDialog :show="prepareOfferDialog" :task="task" @saved="offerSaved" @cancel="prepareOfferDialog = false" />
         <CustomerOverviewDialog :customer="overviewCustomer" @close="overviewCustomer = null" />
         <PersonOverviewDialog :person="overviewPerson" @close="overviewPerson = null" />
         <DeleteRequestDialog :task="deleting" @close="deleting = null" @deleted="onDeleted" />
