@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import api from '../../helpers/api';
 import ConfirmDialog from '../../components/ConfirmDialog.vue';
 import Textarea from '../../components/Form/Textarea.vue';
+import Button from '../../components/Button.vue';
 
 /**
  * "Prepare offer": the agent pastes the raw offer (from a supplier, a booking
@@ -81,6 +82,31 @@ function confirm() {
     return step.value === 'paste' ? format() : save();
 }
 
+// Copy as is: WhatsApp reads *bold* and _italic_ itself.
+const copied = ref(false);
+let copiedTimer = null;
+
+async function copy() {
+    try {
+        await navigator.clipboard.writeText(offerText.value.trim());
+        copied.value = true;
+        clearTimeout(copiedTimer);
+        copiedTimer = setTimeout(() => (copied.value = false), 2000);
+    } catch {
+        error.value = 'Could not copy. Select the text and copy it by hand.';
+    }
+}
+
+function escapeHtml(text) {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// How WhatsApp will show it: *bold*, _italic_, ~strike~.
+const preview = computed(() => escapeHtml(offerText.value.trim())
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/gm, '$1<strong>$2</strong>')
+    .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?:;])/gm, '$1<em>$2</em>')
+    .replace(/(^|[\s(])~([^~\n]+)~(?=$|[\s).,!?:;])/gm, '$1<del>$2</del>'));
+
 function backToRaw() {
     step.value = 'paste';
     error.value = '';
@@ -105,11 +131,21 @@ function backToRaw() {
             <Textarea v-model="rawText" label="Raw offer text *" :rows="10" placeholder="Paste the offer text here…" />
             <p v-if="processing" class="mt-2 text-xs text-gray-500">Formatting with AI, this can take a few seconds…</p>
         </div>
-        <div v-else class="mt-4 space-y-2">
-            <Textarea v-model="offerText" label="Offer for the customer *" :rows="12" />
-            <div class="flex flex-wrap gap-4 text-xs">
-                <button type="button" class="text-blue-600 hover:underline" :disabled="processing" @click="backToRaw">← Edit the raw text</button>
-                <button type="button" class="text-blue-600 hover:underline" :disabled="processing" @click="format">Format again</button>
+        <div v-else class="mt-4 space-y-3">
+            <Textarea v-model="offerText" label="Offer for the customer *" :rows="10" />
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap gap-4 text-xs">
+                    <button type="button" class="text-blue-600 hover:underline" :disabled="processing" @click="backToRaw">← Edit the raw text</button>
+                    <button type="button" class="text-blue-600 hover:underline" :disabled="processing" @click="format">Format again</button>
+                </div>
+                <Button size="sm" :disabled="! ready" @click="copy">{{ copied ? '✓ Copied' : 'Copy for WhatsApp' }}</Button>
+            </div>
+            <div>
+                <p class="mb-1 text-xs uppercase text-gray-400">WhatsApp preview</p>
+                <div class="rounded-lg bg-[#e5ddd5] p-3">
+                    <!-- eslint-disable-next-line vue/no-v-html -- escaped above, only b/i/del added -->
+                    <div class="ml-auto max-w-md whitespace-pre-line break-words rounded-lg bg-[#d9fdd3] px-3 py-2 text-sm text-gray-900 shadow-sm" v-html="preview" />
+                </div>
             </div>
             <details class="text-xs text-gray-500">
                 <summary class="cursor-pointer">Original text</summary>

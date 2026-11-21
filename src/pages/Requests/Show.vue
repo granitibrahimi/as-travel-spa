@@ -22,6 +22,7 @@ import TypeBadge from './TypeBadge.vue';
 import { useRequestViewing } from '../../composables/useRequestViewing.js';
 import AddOfferDialog from './AddOfferDialog.vue';
 import PrepareOfferDialog from './PrepareOfferDialog.vue';
+import CopyButton from '../../components/CopyButton.vue';
 import DestinationsSection from './DestinationsSection.vue';
 import CustomerSection from './CustomerSection.vue';
 import CustomerOverviewDialog from './CustomerOverviewDialog.vue';
@@ -377,7 +378,10 @@ async function saveEdit() {
                                 </dt>
                                 <dd v-if="task.offers.length" class="mt-2 space-y-2">
                                     <div v-for="(offer, index) in task.offers" :key="offer.id ?? 'legacy'" class="rounded border border-green-200 bg-green-50 p-3">
-                                        <p class="mb-1 text-xs text-gray-500">Offer {{ index + 1 }}<template v-if="offer.user"> · {{ offer.user }}</template><template v-if="offer.created_at"> · {{ offer.created_at }}</template></p>
+                                        <p class="mb-1 flex items-center justify-between gap-2 text-xs text-gray-500">
+                                            <span>Offer {{ index + 1 }}<template v-if="offer.user"> · {{ offer.user }}</template><template v-if="offer.created_at"> · {{ offer.created_at }}</template></span>
+                                            <CopyButton :value="offer.offer_text" />
+                                        </p>
                                         <p class="whitespace-pre-line text-gray-800">{{ offer.offer_text }}</p>
                                     </div>
                                 </dd>

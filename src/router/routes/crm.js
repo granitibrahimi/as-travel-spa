@@ -8,6 +8,7 @@ const TaskOfferManage = () => import('../../pages/Tasks/OfferManage.vue');
 const TaskOfferShow = () => import('../../pages/Tasks/OfferShow.vue');
 const AiChatAssistant = () => import('../../pages/AiChat/Assistant.vue');
 const AiChatBotInstructions = () => import('../../pages/AiChat/BotInstructions.vue');
+const AiChatOfferInstructions = () => import('../../pages/AiChat/OfferInstructions.vue');
 const AiChatConversations = () => import('../../pages/AiChat/Conversations.vue');
 const AiChatInstructions = () => import('../../pages/AiChat/Instructions.vue');
 const SupportIndex = () => import('../../pages/Support/Index.vue');
@@ -37,6 +38,7 @@ export default [
     { path: '/assistant', name: 'aiChat.assistant', component: AiChatAssistant },
     { path: '/ai-chat/conversations', name: 'aiChat.conversations', component: AiChatConversations },
     { path: '/ai-chat/bot-instructions', name: 'aiChat.botInstructions', component: AiChatBotInstructions },
+    { path: '/ai-chat/offer-instructions', name: 'aiChat.offerInstructions', component: AiChatOfferInstructions },
     { path: '/ai-chat/instructions', name: 'aiChat.instructions', component: AiChatInstructions },
     { path: '/support', name: 'supportTickets.list', component: SupportIndex },
     { path: '/support/create', name: 'supportTickets.create', component: SupportCreate },
