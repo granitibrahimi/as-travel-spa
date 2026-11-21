@@ -40,7 +40,7 @@ function onInvoiceDeleted() {
 
 <template>
     <AppLayout title="Invoices" fluid>
-        <FullWidthBox v-if="auth.canAny(['customerInvoices.listAll', 'customerInvoices.listOwn', 'customerInvoices.viewAllWithoutAQP'])" title="Invoices" :collapsible="false">
+        <FullWidthBox v-if="auth.canAny(['customerInvoices.listAll', 'customerInvoices.listOwn'])" title="Invoices" :collapsible="false">
             <template #actions>
                 <FiltersButton v-model="showFilters" :count="activeCount" />
             </template>
