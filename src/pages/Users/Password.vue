@@ -39,15 +39,7 @@ async function submit() {
     processing.value = true;
 
     try {
-        const { status } = await api.post('/users/password', form);
-
-        // Quirk of the platform endpoint: a wrong old password comes back as a
-        // 2xx (204) with an error body rather than a 422, so axios treats it as
-        // success. Surface it as a field error instead of a success toast.
-        if (status === 204) {
-            errors.value = { old_password: 'Old password doesn’t match.' };
-            return;
-        }
+        await api.post('/users/users/password', form);
 
         notifications.push({ type: 'success', message: 'Password updated successfully.' });
         form.old_password = '';
@@ -58,8 +50,8 @@ async function submit() {
             errors.value = Object.fromEntries(
                 Object.entries(error.response.data.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
             );
-        } else {
-            throw error;
+        } else if (error.response?.status !== 403) {
+            notifications.push({ type: 'error', message: 'Password could not be updated. Please try again.' });
         }
     } finally {
         processing.value = false;
