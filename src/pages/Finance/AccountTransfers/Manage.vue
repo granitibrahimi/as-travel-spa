@@ -4,7 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { castResource, castMutation } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
-import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
+import { useFormOptionsStore, toAccountOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -21,7 +21,7 @@ const id = route.params.id ?? null;
 const isEdit = Boolean(id);
 
 const formOptions = useFormOptionsStore();
-const accounts = computed(() => toOptions(formOptions.accounts));
+const accounts = computed(() => toAccountOptions(formOptions.accounts));
 const errors = ref({});
 const processing = ref(false);
 const ready = ref(false);

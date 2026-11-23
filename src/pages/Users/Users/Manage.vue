@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { routeUrl } from '../../../helpers/route.js';
-import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
+import { useFormOptionsStore, toOptions, toAccountOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -30,7 +30,7 @@ const form = reactive({
 });
 const formOptions = useFormOptionsStore();
 const roles = computed(() => toOptions(formOptions.userRoles));
-const cashAccounts = computed(() => toOptions(formOptions.cashAccounts));
+const cashAccounts = computed(() => toAccountOptions(formOptions.cashAccounts));
 const errors = ref({});
 const processing = ref(false);
 const ready = ref(false);

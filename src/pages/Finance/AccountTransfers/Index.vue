@@ -5,7 +5,7 @@ import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castPaginated } from '../../../types/responses.js';
 import { useAuthStore } from '../../../stores/auth.js';
-import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
+import { useFormOptionsStore, toAccountOptions } from '../../../stores/formOptions.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useListFilters } from '../../../composables/useListFilters.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -24,7 +24,7 @@ import Loader from '../../../components/Loader.vue';
 
 const auth = useAuthStore();
 const formOptions = useFormOptionsStore();
-const accounts = computed(() => toOptions(formOptions.accounts));
+const accounts = computed(() => toAccountOptions(formOptions.accounts));
 
 const {
     filters,

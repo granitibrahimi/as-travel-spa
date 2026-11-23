@@ -42,6 +42,20 @@ export const toOptions = (list) => toArray(list).map((option) => ({
 }));
 
 
+// Account dropdowns: like toOptions, but the label leads with the account
+// number ("1010 Cash on hand") so accounts can be told apart and searched by
+// number. Lists whose names already carry the number (bill_accounts) have no
+// `number` field and pass through unchanged.
+export const toAccountOptions = (list) => toArray(list).map((option) => {
+    const name = option.label ?? option.name;
+    const number = option.number != null && option.number !== '' ? String(option.number) : '';
+
+    return {
+        value: option.value ?? option.id,
+        label: number && ! String(name).trim().startsWith(number) ? `${number} ${name}` : name,
+    };
+});
+
 const STORAGE_KEY = 'as.formOptions';
 
 // How long a cached snapshot is considered fresh. Within this window the boot

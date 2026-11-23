@@ -5,7 +5,7 @@ import { money } from '../../../helpers/money.js';
 import api from '../../../helpers/api.js';
 import { castResource, castMutation } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
-import { useFormOptionsStore, toOptions } from '../../../stores/formOptions.js';
+import { useFormOptionsStore, toOptions, toAccountOptions } from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -23,7 +23,7 @@ const isEdit = Boolean(id);
 
 const formOptions = useFormOptionsStore();
 const paymentMethods = computed(() => toOptions(formOptions.paymentMethods));
-const accounts = computed(() => toOptions(formOptions.accounts));
+const accounts = computed(() => toAccountOptions(formOptions.accounts));
 const taxTypes = computed(() => toOptions(formOptions.taxTypes));
 const errors = ref({});
 const processing = ref(false);
