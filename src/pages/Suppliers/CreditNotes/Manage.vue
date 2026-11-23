@@ -14,7 +14,7 @@ import {routeUrl} from '../../../helpers/route.js';
 import {todayApiDate} from '../../../helpers/date.js';
 import {money} from '../../../helpers/money';
 import {castResource, castMutation} from '../../../types/responses.js';
-import {useFormOptionsStore, toOptions} from '../../../stores/formOptions.js';
+import {useFormOptionsStore, toOptions, toAccountOptions} from '../../../stores/formOptions.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -45,7 +45,7 @@ const form = reactive({
 });
 
 const formOptions = useFormOptionsStore();
-const accounts = computed(() => toOptions(formOptions.billAccounts));
+const accounts = computed(() => toAccountOptions(formOptions.expenseAndAssetAccounts));
 const taxTypes = computed(() => toOptions(formOptions.taxTypes));
 const supplierName = ref('');
 const genId = ref('');
