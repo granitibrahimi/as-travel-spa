@@ -87,7 +87,7 @@ const rowActions = (transfer) => [
 
             <FiltersPanel :open="showFilters">
                 <form class="grid grid-cols-1 gap-3 md:grid-cols-3" @submit.prevent="apply">
-                    <InputText v-model="filters.q" label="Search" placeholder="Transfer ID…" />
+                    <InputText v-model="filters.q" label="Search" placeholder="ID, AT number or note…" />
                     <SearchSelect v-model="filters.from_account_id" :options="accounts" placeholder="Any account" label="From account" />
                     <SearchSelect v-model="filters.to_account_id" :options="accounts" placeholder="Any account" label="To account" />
                     <DateInput v-model="filters.date_from" label="Date from" />
@@ -118,10 +118,10 @@ const rowActions = (transfer) => [
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No transfers found.</td>
+                            <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No transfers found.</td>
                         </tr>
                         <tr v-for="transfer in (loading ? [] : apiResponse?.data ?? [])" :key="transfer.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 font-mono text-xs">
