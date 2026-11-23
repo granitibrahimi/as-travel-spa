@@ -43,7 +43,7 @@ export const toOptions = (list) => toArray(list).map((option) => ({
 
 
 // Account dropdowns: like toOptions, but the label leads with the account
-// number ("1010 Cash on hand") so accounts can be told apart and searched by
+// number ("1010 | Cash on hand") so accounts can be told apart and searched by
 // number. Lists whose names already carry the number (bill_accounts) have no
 // `number` field and pass through unchanged.
 export const toAccountOptions = (list) => toArray(list).map((option) => {
@@ -52,7 +52,7 @@ export const toAccountOptions = (list) => toArray(list).map((option) => {
 
     return {
         value: option.value ?? option.id,
-        label: number && ! String(name).trim().startsWith(number) ? `${number} ${name}` : name,
+        label: number && ! String(name).trim().startsWith(number) ? `${number} | ${name}` : name,
     };
 });
 
