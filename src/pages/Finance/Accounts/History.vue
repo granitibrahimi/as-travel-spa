@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import api from '../../../helpers/api.js';
 import { downloadFile } from '../../../helpers/download.js';
@@ -27,7 +27,7 @@ const downloading = ref(false);
 // platform-wide d.m.Y convention — see AGENTS.md), so they are plain native
 // date inputs rather than the DateInput component.
 const { filters, applied, response: apiResponse, loading, showFilters, activeCount, apply, clear, goToPage } = useListFilters(
-    { q: '', type: null, date_from: '', date_to: '' },
+    { q: '', type: null, created_by: null, date_from: '', date_to: '' },
     async (params, { signal }) => castPaginated((await api.get(`/finance/accounts/${accountId}/transactions`, { params, signal })).data),
 );
 
@@ -54,6 +54,19 @@ const TYPE_OPTIONS = [
 ];
 
 const typeSelectOptions = TYPE_OPTIONS.map((t) => ({ value: t.slug, label: t.label }));
+
+// "Created by" filter: only the users who created a document with lines on
+// this account (each line's author is the author of its source document).
+const creatorOptions = ref([]);
+
+onMounted(async () => {
+    try {
+        const { data } = await api.get(`/finance/accounts/${accountId}/transactions/creators`);
+        creatorOptions.value = (data.data ?? []).map((u) => ({ value: u.id, label: u.name }));
+    } catch {
+        creatorOptions.value = [];
+    }
+});
 const routeByLabel = Object.fromEntries(TYPE_OPTIONS.map((t) => [t.label, t.route]));
 
 // A row's `reference_url` is the platform API path (not a usable SPA route) —
@@ -117,12 +130,13 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
             </template>
 
             <FiltersPanel :open="showFilters">
-                <form class="grid grid-cols-1 gap-3 md:grid-cols-4" @submit.prevent="apply">
+                <form class="grid grid-cols-1 gap-3 md:grid-cols-5" @submit.prevent="apply">
                     <InputText v-model="filters.q" label="Search" placeholder="Notes, reference # or amount…" />
                     <Select v-model="filters.type" :options="typeSelectOptions" label="Type" placeholder="All types" />
+                    <Select v-model="filters.created_by" :options="creatorOptions" label="Created by" placeholder="All users" />
                     <InputText v-model="filters.date_from" type="date" label="From" />
                     <InputText v-model="filters.date_to" type="date" label="To" />
-                    <div class="flex items-end gap-2 md:col-span-4">
+                    <div class="flex items-end gap-2 md:col-span-5">
                         <Button type="submit" variant="primary" :loading="loading">Filter</Button>
                         <Button type="button" @click="clear">Clear</Button>
                     </div>
@@ -152,6 +166,7 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                             <th class="border border-gray-300 px-2 py-2" style="width: 230px;">Type</th>
                             <th class="border border-gray-300 px-2 py-2" style="width: 220px;">Payee / Split</th>
                             <th class="border border-gray-300 px-2 py-2">Notes</th>
+                            <th class="border border-gray-300 px-2 py-2" style="width: 150px;">Created by</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Debit</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 120px;">Credit</th>
                             <th class="border border-gray-300 px-2 py-2 text-right" style="width: 140px;">Balance</th>
@@ -159,10 +174,10 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                     </thead>
                     <tbody>
                         <tr v-if="loading || ! apiResponse">
-                            <td colspan="7" class="border border-gray-300 px-2 py-2"><Loader /></td>
+                            <td colspan="8" class="border border-gray-300 px-2 py-2"><Loader /></td>
                         </tr>
                         <tr v-else-if="apiResponse.data.length === 0">
-                            <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No transactions found.</td>
+                            <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No transactions found.</td>
                         </tr>
                         <tr v-for="row in (loading ? [] : apiResponse?.data ?? [])" :key="row.id" class="hover:bg-gray-50">
                             <td class="border border-gray-300 px-2 py-2 whitespace-nowrap">{{ row.on_date }}</td>
@@ -189,6 +204,7 @@ const closingBalance = computed(() => apiResponse.value?.extra?.closing_balance 
                                 </div>
                             </td>
                             <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ row.notes }}</td>
+                            <td class="border border-gray-300 px-2 py-2 text-gray-600">{{ row.created_by?.name ?? '' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ row.debit ? money(row.debit) : '' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ row.credit ? money(row.credit) : '' }}</td>
                             <td class="border border-gray-300 px-2 py-2 text-right tabular-nums font-medium">{{ money(row.balance) }}</td>
