@@ -463,6 +463,7 @@ export const workspaces = [
                     { label: 'Employee Ranking', to: '/statistics/ranking', can: 'statistics.ranking' },
                     { label: 'Customers', to: '/statistics/customers', can: 'statistics.customers' },
                     { label: 'All Counts', to: '/statistics/all-counts', can: 'statistics.allCounts' },
+                    { label: 'Top Online Credentials', to: '/statistics/online-credentials', can: 'statistics.onlineCredentials' },
                 ],
             },
             {
