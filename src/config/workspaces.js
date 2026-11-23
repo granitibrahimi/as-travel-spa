@@ -387,10 +387,17 @@ export const workspaces = [
                 ],
             },
             {
-                label: 'Bank Statements',
+                label: 'Barazimi i Bankave',
                 items: [
-                    { label: 'All Bank Statements', to: '/finance/bank-statements', can: 'bankStatements.list' },
-                    { label: 'Import Bank Statement', to: '/finance/bank-statements/import', can: 'bankStatements.create' },
+                    { label: 'All Bank Reconciliations', to: '/finance/bank-reconciliation', can: 'bankStatements.list' },
+                    { label: 'Import Bank Statement', to: '/finance/bank-reconciliation/import', can: 'bankStatements.create' },
+                ],
+            },
+            {
+                label: 'Barazimi i Kartelave',
+                items: [
+                    { label: 'All Card Reconciliations', to: '/finance/card-reconciliation', can: 'bankStatements.list' },
+                    { label: 'Import Card Statement', to: '/finance/card-reconciliation/import', can: 'bankStatements.create' },
                 ],
             },
             {
