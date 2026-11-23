@@ -1,6 +1,6 @@
 <script setup>
 // Create or edit a supplier credit note. Credit notes are 1-1 with supplier
-// bills (mirrors Suppliers/Bills/Create.vue), minus the fields the credit-note
+// bills (mirrors Suppliers/Bills/Manage.vue), minus the fields the credit-note
 // endpoint doesn't take: no `gen_id` (auto-generated server-side) and no
 // `due_date`.
 //

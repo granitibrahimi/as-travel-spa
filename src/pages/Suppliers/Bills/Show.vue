@@ -28,8 +28,9 @@ const showDelete = ref(false);
 const deleting = ref(false);
 const documentsBox = ref(null);
 
-// Reconcile/Delete/QB/Journal — the ⋯ dropdown. Edit is left out for now: its
-// SPA page doesn't exist yet (see conversation). Reconcile reuses the
+// Edit/Reconcile/Delete/QB/Journal — the ⋯ dropdown. Edit only shows for bills
+// not created from a customer invoice (can_edit); a bill with payments still
+// opens the form, which explains why it can't be saved yet. Reconcile reuses the
 // supplier-level Reconcile page (no bill-specific one exists) — same link/
 // permission as SupplierDetails' own "Reconcile" and Suppliers/Show.vue.
 // Bills created from a customer invoice can't be deleted here (same rule as
@@ -37,6 +38,9 @@ const documentsBox = ref(null);
 // name convention as Customers/Payments/Actions.vue). Journal slug confirmed
 // against the backend (AccountTransactionType::SUPPLIER_BILL->slug() === 'supplier-bill').
 const actions = computed(() => (bill.value ? [
+    ...(auth.can('supplierBills.edit') && bill.value.can_edit
+        ? [{ label: 'Edit', to: routeUrl('supplierBills.edit', bill.value.id) }]
+        : []),
     ...(auth.can('suppliers.reconcile') && bill.value.supplier?.id
         ? [{ label: 'Reconcile', to: routeUrl('suppliers.reconcile', bill.value.supplier.id) }]
         : []),

@@ -7,7 +7,7 @@ const SupplierBillsIndex = () => import('../../pages/Suppliers/Bills/Index.vue')
 const SupplierBillShow = () => import('../../pages/Suppliers/Bills/Show.vue');
 const SupplierCreditNoteShow = () => import('../../pages/Suppliers/CreditNotes/Show.vue');
 const SuppliersStatements = () => import('../../pages/Suppliers/Suppliers/Statements.vue');
-const SupplierBillsCreate = () => import('../../pages/Suppliers/Bills/Create.vue');
+const SupplierBillsManage = () => import('../../pages/Suppliers/Bills/Manage.vue');
 const SupplierCreditNotesIndex = () => import('../../pages/Suppliers/CreditNotes/Index.vue');
 const SupplierCreditNotesManage = () => import('../../pages/Suppliers/CreditNotes/Manage.vue');
 const SupplierCreditNoteChangeSupplier = () => import('../../pages/Suppliers/CreditNotes/ChangeSupplier.vue');
@@ -45,9 +45,9 @@ export default [
 
     // Bills
     { path: '/suppliers/bills', name: 'supplierBills.list', component: SupplierBillsIndex },
-    { path: '/suppliers/bills/:supplierId/create', name: 'supplierBills.create', component: SupplierBillsCreate },
+    { path: '/suppliers/bills/:supplierId/create', name: 'supplierBills.create', component: SupplierBillsManage },
     { path: '/suppliers/bills/:id', name: 'supplierBills.show', component: SupplierBillShow },
-    { path: '/suppliers/bills/:id/edit', name: 'supplierBills.edit', component: SupplierCreditNoteShow },
+    { path: '/suppliers/bills/:id/edit', name: 'supplierBills.edit', component: SupplierBillsManage },
 
     // CreditNotes
     { path: '/suppliers/credit-notes', name: 'supplierCreditNotes.list', component: SupplierCreditNotesIndex },
