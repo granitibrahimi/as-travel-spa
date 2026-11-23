@@ -6,6 +6,7 @@ const ReportMonthConcentration = () => import('../../pages/Statistics/MonthConce
 const ReportRanking = () => import('../../pages/Statistics/EmployeeRanking.vue');
 const ReportCustomers = () => import('../../pages/Statistics/Customers.vue');
 const ReportAllCounts = () => import('../../pages/Statistics/AllCounts.vue');
+const ReportOnlineCredentials = () => import('../../pages/Statistics/OnlineCredentials.vue');
 
 export default [
     { path: '/statistics/count-invoices', name: 'statistics.countInvoices', component: ReportCountInvoices },
@@ -15,5 +16,6 @@ export default [
     { path: '/statistics/month-concentration', name: 'statistics.monthConcentration', component: ReportMonthConcentration },
     { path: '/statistics/ranking', name: 'statistics.ranking', component: ReportRanking },
     { path: '/statistics/customers', name: 'statistics.customers', component: ReportCustomers },
-    { path: '/statistics/all-counts', name: 'statistics.allCounts', component: ReportAllCounts }
+    { path: '/statistics/all-counts', name: 'statistics.allCounts', component: ReportAllCounts },
+    { path: '/statistics/online-credentials', name: 'statistics.onlineCredentials', component: ReportOnlineCredentials }
 ];
