@@ -42,6 +42,7 @@ async function confirmDelete() {
 
 const rowActions = (expense) => [
     ...(auth.can('expenses.show') ? [{ label: 'View', href: routeUrl('expenses.show', expense.id) }] : []),
+    ...(auth.can('accountTransactions.journal') ? [{ label: 'Journal', href: `/finance/account-transactions/journal/expense/${expense.id}` }] : []),
     ...(auth.can('expenses.edit') ? [{ label: 'Edit', href: routeUrl('expenses.edit', expense.id) }] : []),
     ...(auth.can('expenses.delete') ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = expense) }] : []),
 ];

@@ -28,8 +28,16 @@ onMounted(async () => {
         <FullWidthBox :title="title" :collapsible="false">
             <Loader v-if="! expense" />
             <template v-else>
-                <div v-if="auth.can('expenses.edit')" class="mb-4 flex gap-2">
+                <div v-if="auth.can('expenses.edit') || auth.can('accountTransactions.journal')" class="mb-4 flex gap-2">
                     <RouterLink
+                        v-if="auth.can('accountTransactions.journal')"
+                        :to="`/finance/account-transactions/journal/expense/${expense.id}`"
+                        class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
+                    >
+                        Journal
+                    </RouterLink>
+                    <RouterLink
+                        v-if="auth.can('expenses.edit')"
                         :to="routeUrl('expenses.edit', expense.id)"
                         class="inline-block rounded border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
                     >
