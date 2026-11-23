@@ -17,6 +17,9 @@ const ExpensesShow = () => import('../../pages/Finance/Expenses/Show.vue');
 const BankDepositsIndex = () => import('../../pages/Finance/BankDeposits/Index.vue');
 const BankDepositsCreate = () => import('../../pages/Finance/BankDeposits/Create.vue');
 const BankDepositsShow = () => import('../../pages/Finance/BankDeposits/Show.vue');
+const BankStatementsIndex = () => import('../../pages/Finance/BankStatements/Index.vue');
+const BankStatementsCreate = () => import('../../pages/Finance/BankStatements/Create.vue');
+const BankStatementsShow = () => import('../../pages/Finance/BankStatements/Show.vue');
 const BspSyncIndex = () => import('../../pages/Finance/BspSync/Index.vue');
 const BspSyncPay = () => import('../../pages/Finance/BspSync/Pay.vue');
 const BspOperationalCalendarIndex = () => import('../../pages/Finance/BspOperationalCalendar/Index.vue');
@@ -68,6 +71,9 @@ export default [
     { path: '/finance/bank-deposits', name: 'bankDeposits.list', component: BankDepositsIndex },
     { path: '/finance/bank-deposits/create', name: 'bankDeposits.create', component: BankDepositsCreate },
     { path: '/finance/bank-deposits/:id', name: 'bankDeposits.show', component: BankDepositsShow },
+    { path: '/finance/bank-statements', name: 'bankStatements.list', component: BankStatementsIndex },
+    { path: '/finance/bank-statements/import', name: 'bankStatements.create', component: BankStatementsCreate },
+    { path: '/finance/bank-statements/:id', name: 'bankStatements.show', component: BankStatementsShow },
     { path: '/finance/bsp-sync', name: 'bspSync.index', component: BspSyncIndex },
     { path: '/finance/bsp-sync/:hash/pay', name: 'bspSync.pay', component: BspSyncPay },
     { path: '/finance/bsp-operational-calendar', name: 'bspOperationalCalendar.index', component: BspOperationalCalendarIndex },

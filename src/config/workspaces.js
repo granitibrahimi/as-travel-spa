@@ -387,6 +387,13 @@ export const workspaces = [
                 ],
             },
             {
+                label: 'Bank Statements',
+                items: [
+                    { label: 'All Bank Statements', to: '/finance/bank-statements', can: 'bankStatements.list' },
+                    { label: 'Import Bank Statement', to: '/finance/bank-statements/import', can: 'bankStatements.create' },
+                ],
+            },
+            {
                 label: 'BSP',
                 items: [
                     { label: 'Create Payment', to: '/finance/bsp-sync', can: 'supplierPayments.create' },
