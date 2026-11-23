@@ -23,15 +23,19 @@ const wrapperRef = ref(null);
 const dropdownStyle = ref({});
 let blurTimer = null;
 
+// Lowercase and collapse spaces, dashes, dots, slashes and pipes into one
+// space, so "1020 15" finds "1020-15 | Cash" (and "1020-15" still does).
+const normalize = (value) => String(value).toLowerCase().replace(/[\s\-_.\/|]+/g, ' ').trim();
+
 const results = computed(() => {
-    const term = search.value.trim().toLowerCase();
+    const term = normalize(search.value);
 
     // Show the full list when nothing is typed or the current selection is shown.
     if (!term || search.value === selectedLabel.value) {
         return props.options;
     }
 
-    return props.options.filter((option) => String(option.label).toLowerCase().includes(term));
+    return props.options.filter((option) => normalize(option.label).includes(term));
 });
 
 // The dropdown is teleported to <body> (so parent overflow can't clip it), which
