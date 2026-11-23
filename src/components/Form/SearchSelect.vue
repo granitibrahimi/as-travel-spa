@@ -13,7 +13,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'change']);
 
-const initialLabel = props.options.find((option) => option.value === props.modelValue)?.label ?? '';
+// Option values can come back as strings (keyed lists like bill_accounts) while
+// the bound id is a number, so compare loosely.
+const sameValue = (a, b) => a !== null && a !== undefined && b !== null && b !== undefined && String(a) === String(b);
+const labelFor = (value) => props.options.find((option) => sameValue(option.value, value))?.label ?? '';
+
+const initialLabel = labelFor(props.modelValue);
 const search = ref(initialLabel);
 const selectedLabel = ref(initialLabel);
 const open = ref(false);
@@ -61,6 +66,17 @@ watch(open, (isOpen) => {
     } else {
         window.removeEventListener('scroll', updatePosition, true);
         window.removeEventListener('resize', updatePosition);
+    }
+});
+
+// Show the label when the value is set from outside (e.g. an edit form filled
+// after load) or the options arrive after mount.
+watch([() => props.modelValue, () => props.options], () => {
+    const label = labelFor(props.modelValue);
+
+    if (props.modelValue !== null && label && label !== selectedLabel.value) {
+        selectedLabel.value = label;
+        search.value = label;
     }
 });
 
