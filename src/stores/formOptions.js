@@ -126,6 +126,10 @@ export const useFormOptionsStore = defineStore('formOptions', {
         destinations: (state) => state.data.destinations ?? [],
         accountClassifications: (state) => state.data.account_classifications ?? [],
         accounts: (state) => state.data.accounts ?? [],
+        // Expense + asset accounts (what bills and supplier credit notes post to),
+        // taken from the same list as Journals so they read "number | name".
+        expenseAndAssetAccounts: (state) => (state.data.accounts ?? [])
+            .filter((account) => [1, 3].includes(Number(account.classification?.id))),
         billAccounts: (state) => state.data.bill_accounts ?? [],
         taxTypes: (state) => state.data.tax_types ?? [],
         paymentMethodTypes: (state) => state.data.payment_method_types ?? [],
