@@ -22,9 +22,12 @@ import SearchSelect from "../../../components/Form/SearchSelect.vue";
 const route = useRoute();
 const router = useRouter();
 
-const supplierId = route.params.supplierId;
+// /suppliers/bills/:id/edit edits that bill; /suppliers/bills/:supplierId/create makes a new one.
+const editId = route.params.id ?? null;
+const isEdit = Boolean(editId);
+const supplierId = ref(route.params.supplierId ?? null);
 // ?copy=<bill id>: pre-fill the form from that bill (Copy Bill on the bill page).
-const copyFrom = route.query.copy;
+const copyFrom = isEdit ? null : route.query.copy;
 
 // A blank line-item row. The bill total is the sum of its entries.
 const newEntry = () => ({account_id: null, amount: null, description: '', tax_type_id: null});
@@ -46,6 +49,9 @@ const errors = ref({});
 const processing = ref(false);
 const loaded = ref(false);
 const copiedFrom = ref(null);
+// Edit only: why the backend will refuse the save (bill from an invoice, or with payments).
+const editBlocked = ref(null);
+const invoice = ref(null);
 
 const total = computed(() =>
     form.entries.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0),
@@ -66,9 +72,45 @@ function removeRow(index) {
     }
 }
 
+async function loadForEdit() {
+    const {data} = await api.get(`/suppliers/bills/${editId}`);
+    const bill = castResource(data);
+    supplierId.value = bill.supplier?.id;
+    supplier.value = bill.supplier;
+    invoice.value = bill.customer_invoice;
+
+    if (!bill.can_edit) {
+        editBlocked.value = 'This bill was created from an invoice. Edit it from the invoice instead.';
+    } else if (bill.edit_blocked_reason) {
+        editBlocked.value = bill.edit_blocked_reason;
+    }
+
+    Object.assign(form, {
+        gen_id: bill.gen_id ?? '',
+        reference: bill.reference ?? '',
+        on_date: bill.on_date ?? form.on_date,
+        due_date: bill.due_date ?? '',
+        notes: bill.notes ?? '',
+        entries: bill.lines.length
+            ? bill.lines.map((line) => ({
+                account_id: line.account_id,
+                amount: line.amount,
+                description: line.description ?? '',
+                tax_type_id: line.tax_type_id,
+            }))
+            : [newEntry()],
+    });
+}
+
 onMounted(async () => {
+    if (isEdit) {
+        await loadForEdit();
+        loaded.value = true;
+        return;
+    }
+
     const [{data}, copy] = await Promise.all([
-        api.get(`/suppliers/suppliers/${supplierId}`),
+        api.get(`/suppliers/suppliers/${supplierId.value}`),
         copyFrom ? api.get(`/suppliers/bills/${copyFrom}/copy`) : null,
     ]);
     supplier.value = castResource(data);
@@ -99,7 +141,9 @@ async function submit() {
     const payload = {...form};
 
     try {
-        const {data} = await api.post(`/suppliers/suppliers/${supplierId}/bills`, payload);
+        const {data} = isEdit
+            ? await api.put(`/suppliers/bills/${editId}`, payload)
+            : await api.post(`/suppliers/suppliers/${supplierId.value}/bills`, payload);
         router.push(routeUrl('supplierBills.show', castMutation(data).id));
     } catch (error) {
         if (error.response?.status === 422) {
@@ -114,17 +158,33 @@ async function submit() {
     }
 }
 
-const cancelTo = routeUrl('suppliers.show', supplierId);
+const cancelTo = computed(() => (isEdit
+    ? routeUrl('supplierBills.show', editId)
+    : routeUrl('suppliers.show', supplierId.value)));
+
+const pageTitle = computed(() => (isEdit
+    ? `Edit Bill ${form.gen_id}`
+    : 'New Bill for ' + (supplier.value?.full_name ?? '')));
 </script>
 
 <template>
-    <AppLayout :title="'New Bill for ' + supplier?.full_name" fluid>
+    <AppLayout :title="pageTitle" fluid>
         <Loader v-if="! loaded"/>
         <form v-else class="space-y-6" @submit.prevent="submit">
             <p v-if="copiedFrom" class="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
                 Copied from
                 <RouterLink :to="routeUrl('supplierBills.show', copiedFrom)" class="font-medium underline">bill #{{ copiedFrom }}</RouterLink>
                 — review the details, then create the bill. Payments and reconciliation aren't copied.
+            </p>
+            <p v-if="editBlocked" class="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                {{ editBlocked }}
+                <RouterLink v-if="invoice" :to="routeUrl('customerInvoices.show', invoice.id)" class="font-medium underline">Open invoice {{ invoice.gen_id }}</RouterLink>
+            </p>
+            <p v-if="errors.bill" class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {{ errors.bill }}
+            </p>
+            <p v-if="isEdit && supplier" class="text-sm text-gray-600">
+                Supplier: <RouterLink :to="routeUrl('suppliers.show', supplier.id)" class="font-medium text-red-600 hover:underline">{{ supplier.full_name ?? supplier.name }}</RouterLink>
             </p>
             <FullWidthBox title="Bill details" :collapsible="false">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -207,8 +267,8 @@ const cancelTo = routeUrl('suppliers.show', supplierId);
                 <RouterLink :to="cancelTo" class="rounded border border-gray-300 px-4 py-1.5 text-sm hover:bg-gray-50">
                     Cancel
                 </RouterLink>
-                <Button type="submit" variant="primary" :disabled="processing || ! loaded">
-                    {{ processing ? 'Saving…' : 'Create Bill' }}
+                <Button type="submit" variant="primary" :disabled="processing || ! loaded || !! editBlocked">
+                    {{ processing ? 'Saving…' : (isEdit ? 'Save Bill' : 'Create Bill') }}
                 </Button>
             </footer>
         </form>

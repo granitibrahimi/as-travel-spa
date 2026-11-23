@@ -46,11 +46,14 @@ async function confirmDelete() {
     }
 }
 
-// Bills created from a customer invoice can't be deleted here (same rule as
+// Bills created from a customer invoice can't be edited or deleted here (same rule as
 // the Alert on Bills/Show.vue) — confirmed via `customer_invoice_id` on the
 // list endpoint. QB uses `qb_link`, also confirmed on the list endpoint.
 const rowActions = (bill) => [
     ...(auth.can('supplierBills.show') ? [{ label: 'View', href: routeUrl('supplierBills.show', bill.id) }] : []),
+    ...(auth.can('supplierBills.edit') && !bill.customer_invoice_id
+        ? [{ label: 'Edit', href: routeUrl('supplierBills.edit', bill.id) }]
+        : []),
     ...(auth.can('supplierBills.delete') && !bill.customer_invoice_id
         ? [{ label: 'Delete', danger: true, action: () => (toDelete.value = bill) }]
         : []),
