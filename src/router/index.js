@@ -15,6 +15,7 @@ import flights from './routes/flights';
 import statistics from './routes/statistics';
 import crm from './routes/crm';
 import users from './routes/users';
+import packages from './routes/packages';
 
 const NotFound = () => import('../pages/NotFound.vue');
 
@@ -28,6 +29,7 @@ const routes = [
     ...flights,
     ...statistics,
     ...crm,
+    ...packages,
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
 ];
 

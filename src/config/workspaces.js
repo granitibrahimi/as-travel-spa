@@ -131,6 +131,15 @@ export const workspaces = [
                     { label: 'New Offer', to: '/offers/create', can: 'staticOffers.create' },
                 ],
             },
+            {
+                label: 'Packages',
+                items: [
+                    { label: 'Package Search', to: '/packages/search', can: 'packagePrices.search' },
+                    { label: 'Hotel Contracts', to: '/packages/contracts', can: 'hotelContracts.list' },
+                    { label: 'Charters', to: '/packages/charters', can: 'packageCharters.list' },
+                    { label: 'Transfers', to: '/packages/transfers', can: 'packageTransfers.list' },
+                ],
+            },
 
             {
                 label: 'Travelers',
