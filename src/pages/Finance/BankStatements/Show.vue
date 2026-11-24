@@ -49,6 +49,9 @@ onMounted(() => {
 });
 
 const lines = computed(() => (statement.value?.lines ?? []).filter((line) => show.value === 'all' || (show.value === 'open' ? line.status !== 'matched' : line.status === 'matched')));
+// Totals of the rows shown, per column (In/Out, or Payments/Charges for a card).
+const shownIn = computed(() => Math.round(lines.value.filter((line) => line.amount > 0).reduce((sum, line) => sum + line.amount, 0) * 100) / 100);
+const shownOut = computed(() => Math.round(-lines.value.filter((line) => line.amount < 0).reduce((sum, line) => sum + line.amount, 0) * 100) / 100);
 const statusClass = { matched: '', partly: 'bg-amber-50', unmatched: 'bg-red-50/60' };
 const openCount = computed(() => (statement.value ? statement.value.unmatched_count + statement.value.partly_count : 0));
 
@@ -304,6 +307,18 @@ async function destroy() {
                                 </td>
                             </tr>
                         </tbody>
+                        <tfoot v-if="lines.length">
+                            <tr class="bg-gray-50 font-semibold">
+                                <td :colspan="canEdit ? 3 : 2" class="border border-gray-300 px-2 py-2 text-right">
+                                    Total{{ show === 'all' ? '' : ' of the rows shown' }} ({{ lines.length }} rows)
+                                </td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(shownIn) }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(shownOut) }}</td>
+                                <td :colspan="(isCard ? 0 : 1) + 1 + (canEdit ? 1 : 0)" class="border border-gray-300 px-2 py-2 text-left text-xs font-normal text-gray-600">
+                                    Net {{ money(Math.round((shownIn - shownOut) * 100) / 100) }}
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </FullWidthBox>
