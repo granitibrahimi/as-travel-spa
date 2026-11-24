@@ -81,7 +81,19 @@ async function unmatch(line) {
     await load();
 }
 
-// Matching one row by hand: tick the postings it stands for.
+// Rows ticked to match together, e.g. a month of 0.10 fees booked as one payment.
+const selected = ref([]);
+const selectedLines = computed(() => (statement.value?.lines ?? []).filter((line) => selected.value.includes(line.id)));
+const selectedTotal = computed(() => Math.round(selectedLines.value.reduce((sum, line) => sum + line.amount, 0) * 100) / 100);
+const allShownSelected = computed(() => lines.value.length > 0 && lines.value.every((line) => selected.value.includes(line.id)));
+
+function toggleAllShown(event) {
+    const ids = lines.value.map((line) => line.id);
+    selected.value = event.target.checked ? [...new Set([...selected.value, ...ids])] : selected.value.filter((lineId) => ! ids.includes(lineId));
+}
+
+// Matching rows by hand: tick the postings they stand for.
+// `matching` is { lines, amount, date }: one row, or several matched together.
 const matching = ref(null);
 const search = ref('');
 const candidates = ref([]);
@@ -89,14 +101,30 @@ const picked = ref([]);
 const matchError = ref('');
 const loadingCandidates = ref(false);
 const saving = ref(false);
-const pickedTotal = computed(() => Math.round(candidates.value.filter((row) => picked.value.includes(row.key)).reduce((sum, row) => sum + row.amount, 0) * 100) / 100);
+const pickedTotal = computed(() => Math.round(candidates.value.filter((row) => picked.value.includes(row.key)).reduce((sum, row) => sum + row.remaining, 0) * 100) / 100);
 const pickedFits = computed(() => matching.value && Math.abs(pickedTotal.value - matching.value.amount) < 0.005);
+// Ticked more than the rows (same direction): the rest stays on the posting for rows of a later statement.
+const pickedRest = computed(() => {
+    if (! matching.value || pickedFits.value || Math.sign(pickedTotal.value) !== Math.sign(matching.value.amount) || Math.abs(pickedTotal.value) < Math.abs(matching.value.amount)) {
+        return null;
+    }
 
-function openMatch(line) {
-    matching.value = line;
+    return Math.round((pickedTotal.value - matching.value.amount) * 100) / 100;
+});
+
+function openMatch(rows) {
+    const list = Array.isArray(rows) ? rows : [rows];
+    const total = Math.round(list.reduce((sum, line) => sum + line.amount, 0) * 100) / 100;
+    matching.value = {
+        lines: list,
+        amount: total,
+        title: list.length === 1 ? `Match ${money(total)} of ${list[0].date}` : `Match ${list.length} rows, ${money(total)} in all`,
+        subtitle: list.length === 1 ? [list[0].counterparty, list[0].description, list[0].reference].filter(Boolean).join(' · ') : `${list[0].date} – ${list[list.length - 1].date}`,
+        hasMatches: list.some((line) => line.matches.length),
+    };
     search.value = '';
     candidates.value = [];
-    picked.value = line.matches.filter((match) => ! match.missing).map((match) => match.key);
+    picked.value = [...new Set(list.flatMap((line) => line.matches.filter((match) => ! match.missing).map((match) => match.key)))];
     matchError.value = '';
     loadCandidates();
 }
@@ -105,8 +133,9 @@ async function loadCandidates() {
     loadingCandidates.value = true;
 
     try {
-        const params = { q: search.value || undefined, days: search.value ? 366 : undefined };
-        const rows = castResource((await api.get(`/finance/bank-statement-lines/${matching.value.id}/candidates`, { params })).data);
+        const [first, ...others] = matching.value.lines;
+        const params = { q: search.value || undefined, days: search.value ? 366 : undefined, lines: others.length ? others.map((line) => line.id) : undefined };
+        const rows = castResource((await api.get(`/finance/bank-statement-lines/${first.id}/candidates`, { params })).data);
         const list = Array.isArray(rows) ? rows : [];
         // Keep what is ticked in view when a search no longer lists it.
         const keep = candidates.value.filter((row) => picked.value.includes(row.key) && ! list.some((other) => other.key === row.key));
@@ -121,8 +150,9 @@ async function saveMatch() {
     saving.value = true;
 
     try {
-        await api.put(`/finance/bank-statement-lines/${matching.value.id}/matches`, { postings: picked.value });
+        await api.put(`/finance/bank-statements/${id}/matches`, { lines: matching.value.lines.map((line) => line.id), postings: picked.value });
         closeMatch();
+        selected.value = [];
         await load();
     } catch (error) {
         if (error.response?.status === 422) {
@@ -209,11 +239,20 @@ async function destroy() {
                 </template>
                 <p v-if="canEdit && openCount" class="mb-2 text-xs text-gray-500">
                     For a row not found in the app, use its menu to match it by hand or to create the missing entry (opens in a new tab). Then click Refresh.
+                    Several rows booked as one entry (e.g. a month of bank fees in one payment): tick them and click Match ticked rows.
                 </p>
+                <div v-if="canEdit && selected.length" class="mb-2 flex flex-wrap items-center gap-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm">
+                    <span>{{ selected.length }} rows ticked, {{ money(selectedTotal) }} in all</span>
+                    <Button type="button" size="sm" variant="primary" @click="openMatch(selectedLines)">Match ticked rows</Button>
+                    <button type="button" class="text-gray-600 hover:underline" @click="selected = []">Clear</button>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase text-gray-500">
+                                <th v-if="canEdit" class="border border-gray-300 px-2 py-2 text-center" style="width: 36px;">
+                                    <input type="checkbox" class="accent-red-600" :checked="allShownSelected" title="Tick all rows shown" @change="toggleAllShown">
+                                </th>
                                 <th class="border border-gray-300 px-2 py-2" style="width: 100px;">Date</th>
                                 <th class="border border-gray-300 px-2 py-2">Description</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right" style="width: 110px;">{{ tool.inLabel }}</th>
@@ -225,9 +264,12 @@ async function destroy() {
                         </thead>
                         <tbody>
                             <tr v-if="! lines.length">
-                                <td colspan="7" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No rows.</td>
+                                <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No rows.</td>
                             </tr>
                             <tr v-for="line in lines" :key="line.id" :class="statusClass[line.status]">
+                                <td v-if="canEdit" class="border border-gray-300 px-2 py-2 text-center">
+                                    <input v-model="selected" type="checkbox" :value="line.id" class="accent-red-600">
+                                </td>
                                 <td class="border border-gray-300 px-2 py-2">{{ line.date }}</td>
                                 <td class="border border-gray-300 px-2 py-2">
                                     {{ line.description ?? '—' }}
@@ -247,6 +289,9 @@ async function destroy() {
                                         <a v-else-if="postingLink(match)" :href="postingLink(match)" target="_blank" class="ml-1 font-medium text-red-700 hover:underline">{{ match.label }}</a>
                                         <span v-else class="ml-1 font-medium">{{ match.label }}</span>
                                         <span class="text-xs text-gray-500"> {{ match.date }} · {{ money(match.amount) }}</span>
+                                        <span v-if="match.shared_lines > 1 || (match.posting_amount !== null && Math.abs(match.posting_amount - match.amount) >= 0.005)" class="text-xs text-gray-500">
+                                            of {{ money(match.posting_amount) }}<span v-if="match.shared_lines > 1">, shared by {{ match.shared_lines }} rows</span>
+                                        </span>
                                         <span v-if="match.payee?.name" class="text-xs text-gray-700"> · {{ match.payee.name }}</span>
                                         <span v-if="match.automatic" class="ml-1 rounded bg-gray-100 px-1 text-[10px] uppercase text-gray-500" title="Matched automatically">auto</span>
                                     </span>
@@ -291,7 +336,10 @@ async function destroy() {
                                     <span v-else>{{ posting.payee?.name ?? '' }}</span>
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 text-xs text-gray-600">{{ posting.notes }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(posting.amount) }}</td>
+                                <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">
+                                    {{ money(posting.remaining ?? posting.amount) }}
+                                    <span v-if="posting.remaining !== undefined && Math.abs(posting.remaining - posting.amount) >= 0.005" class="block text-xs text-gray-500">left of {{ money(posting.amount) }}</span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -299,16 +347,17 @@ async function destroy() {
             </FullWidthBox>
         </div>
 
-        <SideOverlay :show="Boolean(matching)" :title="matching ? `Match ${money(matching.amount)} of ${matching.date}` : ''" :subtitle="matching ? [matching.counterparty, matching.description, matching.reference].filter(Boolean).join(' · ') : ''" @close="closeMatch">
+        <SideOverlay :show="Boolean(matching)" :title="matching?.title ?? ''" :subtitle="matching?.subtitle ?? ''" @close="closeMatch">
             <div v-if="matching" class="space-y-4 text-sm">
                 <form class="flex gap-2" @submit.prevent="loadCandidates">
                     <InputText v-model="search" placeholder="Number, payee, reference or amount…" class="flex-1" />
                     <Button type="submit" :loading="loadingCandidates">Search</Button>
                 </form>
                 <p class="text-xs text-gray-500">
-                    Postings on {{ statement.account.number }} {{ statement.account.name }} not matched to another row,
-                    {{ search ? 'within a year of the row' : 'within 30 days of the row' }}, the same amount first.
-                    Tick several when one row covers more postings. Nothing fits? Close this and create it from the row's menu.
+                    Postings on {{ statement.account.number }} {{ statement.account.name }} not yet fully matched,
+                    {{ search ? 'within a year' : 'within 30 days' }} of {{ matching.lines.length > 1 ? 'the rows' : 'the row' }}, the closest amount first.
+                    Tick several when the rows cover more postings. One posting can also cover several rows: tick the rows on the page first.
+                    Nothing fits? Close this and create it from the row's menu.
                 </p>
 
                 <div class="max-h-[28rem] overflow-y-auto rounded border border-gray-200">
@@ -319,16 +368,22 @@ async function destroy() {
                             <span class="text-gray-500"> {{ row.document }} · {{ row.date }}</span>
                             <span class="block text-xs text-gray-600">{{ [row.payee?.name, row.reference, row.notes].filter(Boolean).join(' · ') }}</span>
                         </span>
-                        <span class="tabular-nums" :class="Math.abs(row.amount - matching.amount) < 0.005 ? 'font-semibold text-green-700' : ''">{{ money(row.amount) }}</span>
+                        <span class="text-right tabular-nums" :class="Math.abs(row.remaining - matching.amount) < 0.005 ? 'font-semibold text-green-700' : ''">
+                            {{ money(row.remaining) }}
+                            <span v-if="Math.abs(row.remaining - row.amount) >= 0.005" class="block text-xs font-normal text-gray-500">left of {{ money(row.amount) }}</span>
+                        </span>
                     </label>
                     <p v-if="loadingCandidates && ! candidates.length" class="px-2 py-3"><Loader /></p>
                     <p v-else-if="! candidates.length" class="px-2 py-3 text-gray-400">Nothing found. Try a search, or create the entry from the row's menu.</p>
                 </div>
 
-                <p :class="pickedFits ? 'text-green-700' : 'text-gray-600'">Ticked {{ money(pickedTotal) }} of {{ money(matching.amount) }}</p>
+                <p :class="pickedFits || pickedRest !== null ? 'text-green-700' : 'text-gray-600'">
+                    Ticked {{ money(pickedTotal) }} of {{ money(matching.amount) }}
+                    <span v-if="pickedRest !== null" class="block text-xs text-gray-600">{{ money(pickedRest) }} stays on the posting for rows of a later statement.</span>
+                </p>
                 <Alert v-if="matchError" type="danger">{{ matchError }}</Alert>
                 <div class="flex gap-2">
-                    <Button type="button" variant="primary" :loading="saving" :disabled="! picked.length && ! matching.matches.length" @click="saveMatch">Save match</Button>
+                    <Button type="button" variant="primary" :loading="saving" :disabled="! picked.length && ! matching.hasMatches" @click="saveMatch">Save match</Button>
                     <Button type="button" @click="closeMatch">Cancel</Button>
                 </div>
             </div>
