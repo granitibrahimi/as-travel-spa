@@ -7,11 +7,15 @@ const PackageChartersIndex = () => import('../../pages/Packages/Charters/Index.v
 const PackageChartersManage = () => import('../../pages/Packages/Charters/Manage.vue');
 const PackageTransfersIndex = () => import('../../pages/Packages/Transfers/Index.vue');
 const PackageTransfersManage = () => import('../../pages/Packages/Transfers/Manage.vue');
+const HotelAvailabilityIndex = () => import('../../pages/Packages/Availability/Index.vue');
+const HotelAvailabilityShow = () => import('../../pages/Packages/Availability/Show.vue');
 
 export default [
     { path: '/packages/search', name: 'packages.search', component: PackageSearch },
     { path: '/packages/contracts', name: 'hotelContracts.list', component: HotelContractsIndex },
     { path: '/packages/contracts/:id', name: 'hotelContracts.show', component: HotelContractsShow },
+    { path: '/packages/stop-sales', name: 'hotelAvailability.list', component: HotelAvailabilityIndex },
+    { path: '/packages/stop-sales/:id', name: 'hotelAvailability.show', component: HotelAvailabilityShow },
     { path: '/packages/charters', name: 'packageCharters.list', component: PackageChartersIndex },
     { path: '/packages/charters/create', name: 'packageCharters.create', component: PackageChartersManage },
     { path: '/packages/charters/:id/edit', name: 'packageCharters.edit', component: PackageChartersManage },

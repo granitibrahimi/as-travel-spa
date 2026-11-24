@@ -72,6 +72,8 @@ function openHeader() {
             valid_from: c.valid_from, valid_to: c.valid_to, infant_age_max: c.infant_age_max, child_age_max: c.child_age_max,
             infants_free: c.infants_free, booking_fee: c.booking_fee, booking_fee_per: c.booking_fee_per,
             commission_percent: c.commission_percent, rounding: c.rounding, active: c.active, notes: c.notes ?? '',
+            taxes: JSON.parse(JSON.stringify(c.taxes ?? [])),
+            short_stay_supplements: JSON.parse(JSON.stringify(c.short_stay_supplements ?? [])),
         },
     };
 }
@@ -85,7 +87,7 @@ async function save() {
         if (kind === 'header') {
             await api.put(`/hotel-contracts/${id}`, form);
         } else {
-            const base = `/hotel-contracts/${id}/${SECTIONS[kind].url}`;
+            const base = `/hotel-contracts/${id}/${kind === 'stop' ? 'stop-sales' : SECTIONS[kind].url}`;
             await (rowId ? api.put(`${base}/${rowId}`, form) : api.post(base, form));
         }
         editor.value = null;
@@ -112,7 +114,8 @@ async function confirmDelete() {
     if (deleting.value) return;
     deleting.value = true;
     try {
-        await api.delete(`/hotel-contracts/${id}/${SECTIONS[toDelete.value.kind].url}/${toDelete.value.row.id}`);
+        const url = toDelete.value.kind === 'stop' ? 'stop-sales' : SECTIONS[toDelete.value.kind].url;
+        await api.delete(`/hotel-contracts/${id}/${url}/${toDelete.value.row.id}`);
         toDelete.value = null;
         await load();
     } finally {
@@ -123,6 +126,7 @@ async function confirmDelete() {
 const editorTitle = computed(() => {
     if (! editor.value) return '';
     if (editor.value.kind === 'header') return 'Edit contract';
+    if (editor.value.kind === 'stop') return 'New stop sale';
     return `${editor.value.id ? 'Edit' : 'New'} ${SECTIONS[editor.value.kind].title.toLowerCase()}`;
 });
 const typeOptions = computed(() => (contract.value?.special_offer_types ?? []).map((t) => ({ value: t.id, label: t.name })));
@@ -130,6 +134,32 @@ const channelOptions = [{ value: 'B2C', label: 'B2C' }, { value: 'B2B', label: '
 const feePerOptions = [{ value: 'booking', label: 'Per booking' }, { value: 'pax', label: 'Per person' }, { value: 'night', label: 'Per night' }];
 const roundingOptions = [{ value: 'nearest_1', label: 'Nearest 1 €' }, { value: 'nearest_5', label: 'Nearest 5 €' }, { value: 'none', label: 'Cents' }];
 const pad2 = (v) => (v === null || v === undefined ? '—' : `${v}%`);
+
+// contract currency (e.g. USD for the Maldives)
+function cur(value) {
+    const c = contract.value?.currency ?? 'EUR';
+    if (c === 'EUR') return money(value);
+    return `${Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${c}`;
+}
+const blocks = computed(() => [...new Set((contract.value?.periods ?? []).flatMap((p) => [...Object.keys(p.min_stay ?? {}), ...Object.keys(p.release_days ?? {})]))]);
+const isUnit = (room) => Array.isArray(room.unit_rates);
+const occupancyText = (room) => (room.max_occupancy ?? []).map((o) => `${o.adults}A${o.children ? ` + ${o.children}C` : ''}`).join(' or ') || '—';
+const taxText = (t) => `${t.name}: ${cur(t.amount)} per person${t.per === 'night' ? ' per night' : ' per stay'}${Number(t.min_age) > 0 ? ` from age ${t.min_age}` : ''}`;
+const perOptions = [{ value: 'night', label: 'Per night' }, { value: 'stay', label: 'Per stay' }];
+
+// ---------------------------------------------------------------- stop sales
+const statusLabel = { sold_out: 'Sold out', on_request: 'On request' };
+const statusOptions = [{ value: 'sold_out', label: 'Sold out (cannot be sold)' }, { value: 'on_request', label: 'On request' }];
+const stopSaleRoomOptions = computed(() => [{ value: '', label: 'All rooms' }, ...roomOptions.value]);
+const showPastStopSales = ref(false);
+const todayIso = new Date().toISOString().slice(0, 10);
+const toIso = (dmy) => (dmy ? dmy.split('.').reverse().join('-') : '');
+const visibleStopSales = computed(() => (contract.value?.stop_sales ?? []).filter((s) => showPastStopSales.value || toIso(s.date_to) >= todayIso));
+
+function openStopSale() {
+    errors.value = {};
+    editor.value = { kind: 'stop', id: null, form: { room_code: '', date_from: '', date_to: '', status: 'sold_out', notes: '' } };
+}
 </script>
 
 <template>
@@ -147,8 +177,19 @@ const pad2 = (v) => (v === null || v === undefined ? '—' : `${v}%`);
                     <div><div class="text-xs uppercase text-gray-500">Status</div>{{ contract.active ? 'Active' : 'Inactive' }}</div>
                     <div><div class="text-xs uppercase text-gray-500">Board</div>{{ contract.board ?? '—' }}</div>
                     <div><div class="text-xs uppercase text-gray-500">Ages</div>Infant 0-{{ contract.infant_age_max }}, child to {{ contract.child_age_max }}<span v-if="contract.infants_free">, infants free</span></div>
-                    <div><div class="text-xs uppercase text-gray-500">Supplier fee</div>{{ money(contract.booking_fee) }} {{ feePerOptions.find((o) => o.value === contract.booking_fee_per)?.label.toLowerCase() }}</div>
+                    <div><div class="text-xs uppercase text-gray-500">Supplier fee</div>{{ cur(contract.booking_fee) }} {{ feePerOptions.find((o) => o.value === contract.booking_fee_per)?.label.toLowerCase() }}</div>
                     <div><div class="text-xs uppercase text-gray-500">Agent commission (B2B)</div>{{ contract.commission_percent }}%</div>
+                    <div><div class="text-xs uppercase text-gray-500">Currency</div>{{ contract.currency }}<span v-if="contract.currency !== 'EUR'" class="text-xs text-gray-500"> (shown in EUR in the search, ECB daily rate)</span></div>
+                    <div>
+                        <div class="text-xs uppercase text-gray-500">Taxes (at cost, after markup)</div>
+                        <div v-for="(t, i) in contract.taxes" :key="i">{{ taxText(t) }}</div>
+                        <span v-if="! contract.taxes.length">—</span>
+                    </div>
+                    <div>
+                        <div class="text-xs uppercase text-gray-500">Short stay supplement</div>
+                        <div v-for="(s, i) in contract.short_stay_supplements" :key="i">{{ s.nights }} nights: {{ cur(s.amount) }} per room per night</div>
+                        <span v-if="! contract.short_stay_supplements.length">—</span>
+                    </div>
                 </div>
                 <p v-if="contract.notes" class="mt-3 whitespace-pre-line text-sm text-gray-600">{{ contract.notes }}</p>
             </FullWidthBox>
@@ -277,7 +318,45 @@ const pad2 = (v) => (v === null || v === undefined ? '—' : `${v}%`);
                 </div>
             </FullWidthBox>
 
-            <FullWidthBox title="Rooms and rates (per room, per night)" class="mt-6" default-collapsed>
+            <FullWidthBox title="Stop sales and on request dates" class="mt-6">
+                <template #actions>
+                    <RouterLink :to="routeUrl('hotelAvailability.list')" class="mr-3 text-xs text-red-600 hover:underline">Upload availability chart</RouterLink>
+                    <Button v-if="canEdit" size="sm" variant="primary" @click="openStopSale">+ Add</Button>
+                </template>
+                <label class="mb-2 flex items-center gap-2 text-xs text-gray-600"><input v-model="showPastStopSales" type="checkbox"> Show past dates</label>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="text-left text-xs uppercase text-gray-500">
+                                <th class="border border-gray-300 px-2 py-2">Room</th>
+                                <th class="border border-gray-300 px-2 py-2">Dates</th>
+                                <th class="border border-gray-300 px-2 py-2">Status</th>
+                                <th class="border border-gray-300 px-2 py-2">Source</th>
+                                <th v-if="canEdit" class="border border-gray-300 px-2 py-2 text-center" style="width: 80px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="visibleStopSales.length === 0"><td colspan="5" class="border border-gray-300 px-2 py-3 text-center text-gray-400">No stop sales.</td></tr>
+                            <tr v-for="row in visibleStopSales" :key="row.id">
+                                <td class="border border-gray-300 px-2 py-2">{{ row.room_code ? roomName(row.room_code) : 'All rooms' }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ row.date_from === row.date_to ? row.date_from : `${row.date_from} – ${row.date_to}` }}</td>
+                                <td class="border border-gray-300 px-2 py-2">
+                                    <span :class="row.status === 'sold_out' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'" class="rounded px-2 py-0.5 text-xs">{{ statusLabel[row.status] }}</span>
+                                </td>
+                                <td class="border border-gray-300 px-2 py-2 text-xs text-gray-600">
+                                    <RouterLink v-if="row.upload_id" :to="routeUrl('hotelAvailability.show', row.upload_id)" class="text-red-600 hover:underline">Availability chart</RouterLink>
+                                    <span v-else>Manual{{ row.notes ? `: ${row.notes}` : '' }}</span>
+                                </td>
+                                <td v-if="canEdit" class="border border-gray-300 px-2 py-2 text-center">
+                                    <button type="button" class="text-xs text-gray-500 hover:underline" @click="toDelete = { kind: 'stop', row: { ...row, code: `${row.room_code ? roomName(row.room_code) : 'All rooms'} ${row.date_from}` } }">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </FullWidthBox>
+
+            <FullWidthBox :title="`Rooms and rates (per room, per night, ${contract.currency})`" class="mt-6" default-collapsed>
                 <div class="mb-3 overflow-x-auto">
                     <table class="border-collapse border border-gray-300 text-xs">
                         <thead>
@@ -288,16 +367,45 @@ const pad2 = (v) => (v === null || v === undefined ? '—' : `${v}%`);
                         </thead>
                         <tbody>
                             <tr><td class="border border-gray-300 px-2 py-1">Dates</td><td v-for="p in contract.periods" :key="p.code" class="border border-gray-300 px-2 py-1 text-center">{{ p.from_label }} – {{ p.to_label }}</td></tr>
-                            <tr><td class="border border-gray-300 px-2 py-1">Min stay / release (rooms)</td><td v-for="p in contract.periods" :key="p.code" class="border border-gray-300 px-2 py-1 text-center">{{ p.min_stay.pure ?? '—' }} n / {{ p.release_days.pure ?? '—' }} d</td></tr>
-                            <tr><td class="border border-gray-300 px-2 py-1">Min stay / release (villas)</td><td v-for="p in contract.periods" :key="p.code" class="border border-gray-300 px-2 py-1 text-center">{{ p.min_stay.edition ?? '—' }} n / {{ p.release_days.edition ?? '—' }} d</td></tr>
+                            <tr v-for="block in blocks" :key="block">
+                                <td class="border border-gray-300 px-2 py-1">Min stay / release ({{ block }})</td>
+                                <td v-for="p in contract.periods" :key="p.code" class="border border-gray-300 px-2 py-1 text-center">{{ p.min_stay?.[block] ?? '—' }} n / {{ p.release_days?.[block] ?? '—' }} d</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
                 <div v-for="room in contract.rooms" :key="room.code" class="border-b py-2 last:border-0">
                     <button type="button" class="text-sm font-medium text-gray-800 hover:text-red-600" @click="openRoom = openRoom === room.code ? null : room.code">
-                        {{ openRoom === room.code ? '▾' : '▸' }} {{ room.name }} <span class="text-xs text-gray-500">({{ room.rates.length }} occupancies)</span>
+                        {{ openRoom === room.code ? '▾' : '▸' }} {{ room.name }}
+                        <span v-if="isUnit(room)" class="text-xs text-gray-500">(per room for {{ room.base_pax }}, max {{ occupancyText(room) }})</span>
+                        <span v-else class="text-xs text-gray-500">({{ room.rates.length }} occupancies)</span>
+                        <span v-if="room.on_request" class="ml-1 rounded bg-yellow-100 px-1.5 text-xs text-yellow-800">on request</span>
                     </button>
-                    <div v-if="openRoom === room.code" class="mt-2 overflow-x-auto">
+                    <div v-if="openRoom === room.code && isUnit(room)" class="mt-2 overflow-x-auto">
+                        <table class="border-collapse border border-gray-300 text-xs">
+                            <thead>
+                                <tr class="text-left uppercase text-gray-500">
+                                    <th class="border border-gray-300 px-2 py-1">Per night</th>
+                                    <th v-for="p in contract.periods" :key="p.code" class="border border-gray-300 px-2 py-1 text-right">{{ p.code }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border border-gray-300 px-2 py-1">Room for 1-{{ room.base_pax }} persons</td>
+                                    <td v-for="(price, k) in room.unit_rates" :key="k" class="border border-gray-300 px-2 py-1 text-right">{{ price === null ? '—' : cur(price) }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-gray-300 px-2 py-1">Extra adult</td>
+                                    <td v-for="(p, k) in contract.periods" :key="k" class="border border-gray-300 px-2 py-1 text-right">{{ cur(Array.isArray(room.extra_adult) ? room.extra_adult[k] : room.extra_adult) }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-gray-300 px-2 py-1">Extra child</td>
+                                    <td v-for="(p, k) in contract.periods" :key="k" class="border border-gray-300 px-2 py-1 text-right">{{ cur(Array.isArray(room.extra_child) ? room.extra_child[k] : room.extra_child) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div v-else-if="openRoom === room.code" class="mt-2 overflow-x-auto">
                         <table class="border-collapse border border-gray-300 text-xs">
                             <thead>
                                 <tr class="text-left uppercase text-gray-500">
@@ -308,7 +416,7 @@ const pad2 = (v) => (v === null || v === undefined ? '—' : `${v}%`);
                             <tbody>
                                 <tr v-for="(rate, i) in room.rates" :key="i">
                                     <td class="border border-gray-300 px-2 py-1">{{ rate.label }}</td>
-                                    <td v-for="(price, k) in rate.per_night" :key="k" class="border border-gray-300 px-2 py-1 text-right">{{ price === null ? '—' : money(price) }}</td>
+                                    <td v-for="(price, k) in rate.per_night" :key="k" class="border border-gray-300 px-2 py-1 text-right">{{ price === null ? '—' : cur(price) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -335,14 +443,47 @@ const pad2 = (v) => (v === null || v === undefined ? '—' : `${v}%`);
                         <DatePicker v-model="editor.form.valid_to" label="Valid to *" :error="errors.valid_to" />
                         <InputNumber v-model="editor.form.infant_age_max" label="Infant up to age" :error="errors.infant_age_max" />
                         <InputNumber v-model="editor.form.child_age_max" label="Child up to age" :error="errors.child_age_max" />
-                        <InputNumber v-model="editor.form.booking_fee" label="Supplier fee €" :error="errors.booking_fee" />
+                        <InputNumber v-model="editor.form.booking_fee" :label="`Supplier fee (${contract.currency})`" :error="errors.booking_fee" />
                         <Select v-model="editor.form.booking_fee_per" :options="feePerOptions" label="Fee" :placeholder="null" />
                         <InputNumber v-model="editor.form.commission_percent" label="Agent commission % (B2B)" :error="errors.commission_percent" />
                         <Select v-model="editor.form.rounding" :options="roundingOptions" label="Round selling price" :placeholder="null" />
                     </div>
+                    <div>
+                        <div class="mb-1 text-sm font-medium text-gray-700">Taxes per person (added at cost after markup, never discounted)</div>
+                        <div v-for="(t, i) in editor.form.taxes" :key="i" class="mb-2 rounded border border-gray-200 p-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <InputText v-model="t.name" label="Name" :error="errors[`taxes.${i}.name`]" />
+                                <InputNumber v-model="t.amount" :label="`Amount (${contract.currency})`" :error="errors[`taxes.${i}.amount`]" />
+                                <Select v-model="t.per" :options="perOptions" label="Charged" :placeholder="null" />
+                                <InputNumber v-model="t.min_age" label="From age" />
+                            </div>
+                            <button type="button" class="mt-1 text-xs text-gray-500 hover:text-red-600" @click="editor.form.taxes.splice(i, 1)">Remove</button>
+                        </div>
+                        <button type="button" class="text-xs text-red-600 hover:underline" @click="editor.form.taxes.push({ name: 'Green Tax', amount: null, per: 'night', min_age: 2 })">+ Add tax</button>
+                    </div>
+                    <div>
+                        <div class="mb-1 text-sm font-medium text-gray-700">Short stay supplement (per room per night, only for exactly that many nights, not discounted)</div>
+                        <div v-for="(s, i) in editor.form.short_stay_supplements" :key="i" class="mb-2 grid grid-cols-12 items-end gap-2">
+                            <div class="col-span-4"><InputNumber v-model="s.nights" label="Nights" :error="errors[`short_stay_supplements.${i}.nights`]" /></div>
+                            <div class="col-span-6"><InputNumber v-model="s.amount" :label="`Amount (${contract.currency})`" :error="errors[`short_stay_supplements.${i}.amount`]" /></div>
+                            <button type="button" class="col-span-2 pb-2 text-xs text-gray-500 hover:text-red-600" @click="editor.form.short_stay_supplements.splice(i, 1)">✕</button>
+                        </div>
+                        <button type="button" class="text-xs text-red-600 hover:underline" @click="editor.form.short_stay_supplements.push({ nights: 3, amount: null })">+ Add supplement</button>
+                    </div>
                     <NiceCheckbox v-model="editor.form.infants_free" label="Infants free when the room has no infant rate" />
                     <NiceCheckbox v-model="editor.form.active" label="Active (used in the search)" />
                     <Textarea v-model="editor.form.notes" label="Notes" />
+                </template>
+
+                <template v-else-if="editor.kind === 'stop'">
+                    <Select v-model="editor.form.room_code" :options="stopSaleRoomOptions" label="Room" :placeholder="null" :error="errors.room_code" />
+                    <div class="grid grid-cols-2 gap-3">
+                        <DatePicker v-model="editor.form.date_from" label="From *" :error="errors.date_from" />
+                        <DatePicker v-model="editor.form.date_to" label="To *" :error="errors.date_to" />
+                    </div>
+                    <Select v-model="editor.form.status" :options="statusOptions" label="Status *" :placeholder="null" :error="errors.status" />
+                    <InputText v-model="editor.form.notes" label="Note" :error="errors.notes" />
+                    <p class="text-xs text-gray-500">Stop sales added here are kept when a newer availability chart is applied.</p>
                 </template>
 
                 <template v-else-if="editor.kind === 'eb'">

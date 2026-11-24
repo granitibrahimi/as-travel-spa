@@ -136,6 +136,7 @@ export const workspaces = [
                 items: [
                     { label: 'Package Search', to: '/packages/search', can: 'packagePrices.search' },
                     { label: 'Hotel Contracts', to: '/packages/contracts', can: 'hotelContracts.list' },
+                    { label: 'Stop Sales', to: '/packages/stop-sales', can: 'hotelContracts.list' },
                     { label: 'Charters', to: '/packages/charters', can: 'packageCharters.list' },
                     { label: 'Transfers', to: '/packages/transfers', can: 'packageTransfers.list' },
                 ],

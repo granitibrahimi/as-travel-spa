@@ -122,6 +122,8 @@ const paxLabel = (pax) => [
 const roomKey = (hotel, room) => `${hotel.contract.id}-${room.room_code}`;
 const toggleNights = (key) => { openNights.value = { ...openNights.value, [key]: ! openNights.value[key] }; };
 const nightDiscounts = (night) => [night.eb ? `${night.eb.code} ${pct(night.eb.pct)}` : null, ...night.spo.map((s) => `${s.code} ${pct(s.pct)}`)].filter(Boolean).join(' + ') || '—';
+// nightly rates stay in the contract currency (e.g. USD); totals are in EUR
+const inContract = (hotel, v) => (hotel.contract_currency && hotel.contract_currency !== 'EUR' ? `${Number(v ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${hotel.contract_currency}` : money(v));
 const showNet = computed(() => Boolean(result.value?.can_view_net));
 const isB2B = computed(() => result.value?.channel === 'B2B');
 const colCount = computed(() => 5 + (isB2B.value ? 1 : 0) + (showNet.value ? 4 : 0));
@@ -203,6 +205,10 @@ const colCount = computed(() => 5 + (isB2B.value ? 1 : 0) + (showNet.value ? 4 :
                     </div>
                 </div>
 
+                <div v-if="hotel.exchange_rate" class="mb-3 text-xs text-gray-500">
+                    Contract in {{ hotel.exchange_rate.currency }}, prices in EUR: 1 EUR = {{ hotel.exchange_rate.rate }} {{ hotel.exchange_rate.currency }} (ECB {{ hotel.exchange_rate.date }}). Charter and transfer are in EUR.
+                </div>
+
                 <div v-if="hotel.error" class="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ hotel.error }}</div>
 
                 <div v-else class="overflow-x-auto">
@@ -233,6 +239,9 @@ const colCount = computed(() => 5 + (isB2B.value ? 1 : 0) + (showNet.value ? 4 :
                                         <div class="font-medium">{{ room.room_name }}</div>
                                         <div v-if="room.on_request" class="text-xs font-medium text-amber-700">On request</div>
                                         <div v-for="reason in room.reasons" :key="reason" class="text-xs text-gray-500">{{ reason }}</div>
+                                        <div v-for="tax in room.taxes" :key="tax.name" class="text-xs text-gray-500">
+                                            incl. {{ tax.name }} {{ money(tax.total) }} ({{ tax.persons }} pers.{{ tax.per === 'night' ? ` × ${result.nights} nights` : '' }}, at cost)
+                                        </div>
                                         <div v-if="room.eb_payment_deadline" class="text-xs text-gray-500">
                                             EB payment by {{ room.eb_payment_deadline.split('-').reverse().join('.') }}<span v-if="room.eb_prepayment_pct"> ({{ pct(room.eb_prepayment_pct) }} prepayment)</span>
                                         </div>
@@ -269,14 +278,14 @@ const colCount = computed(() => 5 + (isB2B.value ? 1 : 0) + (showNet.value ? 4 :
                                                 <tr v-for="night in room.nights" :key="night.date">
                                                     <td class="pr-4">{{ night.date.split('-').reverse().join('.') }}</td>
                                                     <td class="pr-4">{{ night.period }}</td>
-                                                    <td v-if="showNet" class="pr-4 text-right">{{ money(night.base) }}</td>
-                                                    <td class="pr-4">{{ nightDiscounts(night) }}</td>
-                                                    <td v-if="showNet" class="text-right">{{ money(night.net) }}</td>
+                                                    <td v-if="showNet" class="pr-4 text-right">{{ inContract(hotel, night.base) }}</td>
+                                                    <td class="pr-4">{{ nightDiscounts(night) }}<span v-if="night.supplement && showNet"> + short stay {{ inContract(hotel, night.supplement) }}</span></td>
+                                                    <td v-if="showNet" class="text-right">{{ inContract(hotel, night.net) }}</td>
                                                 </tr>
                                             </tbody>
                                         </table>
                                         <div v-if="showNet" class="mt-2 text-xs text-gray-600">
-                                            Hotel {{ money(room.hotel_net) }} + fee {{ money(room.booking_fees) }} + charter {{ money(room.charter_net) }} + transfer {{ money(room.transfer_net) }} = {{ money(room.total_net) }} net
+                                            Hotel {{ money(room.hotel_net) }}<span v-if="hotel.exchange_rate"> ({{ inContract(hotel, room.hotel_net_original) }})</span> + fee {{ money(room.booking_fees) }} + charter {{ money(room.charter_net) }} + transfer {{ money(room.transfer_net) }} = {{ money(room.total_net - (room.tax_total ?? 0)) }} net<span v-if="room.tax_total"> · + taxes {{ money(room.tax_total) }} at cost</span>
                                             <span v-if="room.rate_label"> · rate row: {{ room.rate_label }}</span>
                                         </div>
                                     </td>
