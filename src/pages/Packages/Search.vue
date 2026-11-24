@@ -205,6 +205,9 @@ const colCount = computed(() => 5 + (isB2B.value ? 1 : 0) + (showNet.value ? 4 :
                     </div>
                 </div>
 
+                <div v-if="hotel.contract.status === 'draft'" class="mb-3 rounded bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-900">
+                    DRAFT contract ({{ hotel.contract.code }}): only testers see it. Do not send these prices to clients until it is live.
+                </div>
                 <div v-if="hotel.exchange_rate" class="mb-3 text-xs text-gray-500">
                     Contract in {{ hotel.exchange_rate.currency }}, prices in EUR: 1 EUR = {{ hotel.exchange_rate.rate }} {{ hotel.exchange_rate.currency }} (ECB {{ hotel.exchange_rate.date }}). Charter and transfer are in EUR.
                 </div>
