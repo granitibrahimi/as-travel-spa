@@ -6,6 +6,7 @@ import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import DateInput from '../../../components/Form/DateInput.vue';
 import Select from '../../../components/Form/Select.vue';
+import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 import MultiSearchSelect from '../../../components/Form/MultiSearchSelect.vue';
 import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
 import CustomerInvoicesReport from '../../../components/CustomerInvoicesReport.vue';
@@ -15,7 +16,7 @@ import { downloadFile } from '../../../helpers/download.js';
 import { toOptions, useFormOptionsStore } from '../../../stores/formOptions.js';
 import { useNotificationsStore } from '../../../stores/notifications.js';
 
-// GET /customers/invoices/report?from=d.m.Y&to=d.m.Y[&agents[]=…&ticket_arrangement=…
+// GET /customers/invoices/report?from=d.m.Y&to=d.m.Y[&agents[]=…&customer_id=…&ticket_arrangement=…
 //   &customer_types[]=…&parent_destinations[]=…&bonus_only=1&bonus_category=…] →
 // { data: { items: [...], totals: { sales, purchase, svc } } }; useReport's
 // castResource() unwraps the `data` envelope, so `data.value` here is
@@ -38,6 +39,11 @@ const list = (value) => (value === undefined || value === null ? [] : [].concat(
 const from = ref(route.query.from || todayApiDate());
 const to = ref(route.query.to || todayApiDate());
 const agents = ref(list(route.query.agents));
+// customer_name rides along in the URL only so a reload / Back can show the
+// picked customer in the search box without another request.
+const customerId = ref(route.query.customer_id ? Number(route.query.customer_id) : null);
+const customerName = ref(route.query.customer_name || '');
+const customerInitialOption = customerId.value ? { id: customerId.value, name: customerName.value || `#${customerId.value}` } : null;
 const ticketArrangement = ref(route.query.ticket_arrangement || null);
 const customerTypes = ref(list(route.query.customer_types));
 const parentDestinations = ref(list(route.query.parent_destinations));
@@ -61,6 +67,7 @@ function filters() {
         from: from.value || undefined,
         to: to.value || undefined,
         agents: agents.value.length ? agents.value : undefined,
+        customer_id: customerId.value || undefined,
         ticket_arrangement: ticketArrangement.value || undefined,
         customer_types: customerTypes.value.length ? customerTypes.value : undefined,
         parent_destinations: parentDestinations.value.length ? parentDestinations.value : undefined,
@@ -72,7 +79,13 @@ function filters() {
 function apply() {
     const params = filters();
 
-    router.replace({ query: { ...params, bonus_label: bonusCategory.value ? bonusLabel.value || undefined : undefined } });
+    router.replace({
+        query: {
+            ...params,
+            customer_name: customerId.value ? customerName.value || undefined : undefined,
+            bonus_label: bonusCategory.value ? bonusLabel.value || undefined : undefined,
+        },
+    });
     load(params);
 }
 
@@ -114,6 +127,15 @@ onMounted(apply);
                     <DateInput v-model="to" label="To" :error="errors.to" />
                     <Select v-model="ticketArrangement" label="Type" :options="ticketArrangementOptions" placeholder="All" :error="errors.ticket_arrangement" />
                     <MultiSearchSelect v-model="agents" label="Agents" :options="agentOptions" placeholder="All agents" />
+                    <AsyncSelect
+                        v-model="customerId"
+                        url="customers/customers/autosuggest"
+                        label="Customer"
+                        placeholder="All customers"
+                        :initial-option="customerInitialOption"
+                        :error="errors.customer_id"
+                        @change="customerName = $event?.label ?? ''"
+                    />
                     <MultiSearchSelect v-model="customerTypes" label="Customer types" :options="customerTypeOptions" placeholder="All customer types" />
                     <MultiSearchSelect v-model="parentDestinations" class="sm:col-span-2" label="Parent destinations" :options="parentDestinationOptions" placeholder="All parent destinations" />
                     <div class="flex items-end pb-1.5">
