@@ -5,6 +5,7 @@ import api from '../../../helpers/api.js';
 import { castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { money } from '../../../helpers/money.js';
+import { downloadFile } from '../../../helpers/download.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
 import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
@@ -31,6 +32,36 @@ async function load() {
     contract.value = castResource((await api.get(`/hotel-contracts/${id}`)).data);
 }
 onMounted(load);
+
+// ---------------------------------------------------------------- JSON import of SPO, early booking, stop sales
+const jsonFile = ref(null);
+const jsonInput = ref(null);
+const jsonImporting = ref(false);
+const jsonResult = ref(null); // { ok, message }
+const downloadOffersExample = () => downloadFile('/hotel-contract-uploads/json-example/offers', { fallbackName: 'example-offers-stop-sales.json' });
+async function importJson() {
+    if (! jsonFile.value || jsonImporting.value) return;
+    jsonImporting.value = true;
+    jsonResult.value = null;
+    const body = new FormData();
+    body.append('file', jsonFile.value);
+    try {
+        const { data } = await api.post(`/hotel-contracts/${id}/import-json`, body);
+        jsonResult.value = { ok: true, message: data.message };
+        jsonFile.value = null;
+        if (jsonInput.value) jsonInput.value.value = '';
+        await load();
+    } catch (error) {
+        if (error.response?.status === 422) {
+            const errs = error.response.data.errors;
+            jsonResult.value = { ok: false, message: errs ? Object.values(errs).flat().join(' ') : error.response.data.message };
+        } else {
+            throw error;
+        }
+    } finally {
+        jsonImporting.value = false;
+    }
+}
 
 const canEdit = computed(() => Boolean(contract.value?.can_edit));
 const roomName = (code) => contract.value?.room_options.find((r) => r.code === code)?.name ?? code;
@@ -265,6 +296,20 @@ function openStopSale() {
                     </div>
                 </div>
                 <p v-if="contract.notes" class="mt-3 whitespace-pre-line text-sm text-gray-600">{{ contract.notes }}</p>
+            </FullWidthBox>
+
+            <FullWidthBox v-if="canEdit" title="Import special offers and stop sales (JSON)" class="mt-6" :default-collapsed="true">
+                <p class="mb-2 text-xs text-gray-500">
+                    A JSON with "spo", "early_booking" and / or "stop_sales" lists
+                    (<button type="button" class="text-red-600 hover:underline" @click="downloadOffersExample">example</button>).
+                    An offer or early booking with an existing code is updated, the same stop sale twice is skipped. If one row is wrong nothing is imported.
+                    Room codes of this contract: <span class="font-mono">{{ (contract.room_options ?? []).map((r) => r.code).join(', ') }}</span>
+                </p>
+                <div class="flex flex-wrap items-center gap-3">
+                    <input ref="jsonInput" type="file" accept=".json,.txt,application/json" class="text-sm" @change="jsonFile = $event.target.files[0] ?? null">
+                    <Button size="sm" variant="primary" :disabled="! jsonFile || jsonImporting" @click="importJson">{{ jsonImporting ? 'Importing…' : 'Import' }}</Button>
+                    <span v-if="jsonResult" class="text-sm" :class="jsonResult.ok ? 'text-green-700' : 'text-red-600'">{{ jsonResult.message }}</span>
+                </div>
             </FullWidthBox>
 
             <FullWidthBox title="Early booking" class="mt-6">
