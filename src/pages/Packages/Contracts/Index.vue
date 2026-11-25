@@ -2,7 +2,7 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import api from '../../../helpers/api.js';
-import { castMutation, castPaginated } from '../../../types/responses.js';
+import { castPaginated } from '../../../types/responses.js';
 import { useListFilters } from '../../../composables/useListFilters.js';
 import { routeUrl } from '../../../helpers/route.js';
 import { useAuthStore } from '../../../stores/auth.js';
@@ -15,7 +15,6 @@ import DropdownMenu from '../../../components/DropdownMenu.vue';
 import ApiPagination from '../../../components/ApiPagination.vue';
 import Loader from '../../../components/Loader.vue';
 import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
-import InputText from '../../../components/Form/InputText.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -27,33 +26,7 @@ const { filters, response: apiResponse, loading, apply, clear, goToPage, reload 
     async (params, { signal }) => castPaginated((await api.get('/hotel-contracts', { params, signal })).data),
 );
 
-const importForm = reactive({ hotel_id: null, supplier_id: null, code: '', file: null });
-const importErrors = ref({});
-const importing = ref(false);
-const fileInput = ref(null);
-
-async function importContract() {
-    if (importing.value) return;
-    importing.value = true;
-    importErrors.value = {};
-    try {
-        const body = new FormData();
-        if (importForm.hotel_id) body.append('hotel_id', importForm.hotel_id);
-        if (importForm.supplier_id) body.append('supplier_id', importForm.supplier_id);
-        if (importForm.code) body.append('code', importForm.code);
-        if (importForm.file) body.append('file', importForm.file);
-        const { id } = castMutation((await api.post('/hotel-contracts', body)).data);
-        router.push(routeUrl('hotelContracts.show', id));
-    } catch (error) {
-        if (error.response?.status === 422) {
-            importErrors.value = Object.fromEntries(Object.entries(error.response.data.errors ?? {}).map(([k, v]) => [k, v[0]]));
-        } else {
-            throw error;
-        }
-    } finally {
-        importing.value = false;
-    }
-}
+const downloadJsonExample = (example) => downloadFile(`/hotel-contract-uploads/json-example/${example}`, { fallbackName: `example-contract-${example}.json` });
 
 // ---------------------------------------------------------------- contract files read by AI
 const aiForm = reactive({ hotel_id: null, supplier_id: null, file: null });
@@ -185,23 +158,29 @@ const rowActions = (contract) => [
             <ApiPagination v-if="apiResponse" :paginator="apiResponse.pagination" class="mt-4" @page="goToPage" />
         </FullWidthBox>
 
-        <FullWidthBox v-if="auth.can('hotelContracts.edit')" title="Upload a contract (PDF or Excel)" class="mt-6">
+        <FullWidthBox v-if="auth.can('hotelContracts.edit')" title="Upload a contract (PDF, Excel or JSON)" class="mt-6">
             <p class="mb-3 text-sm text-gray-600">
                 AI reads the contract (rates per period, rooms, child ages, early booking, special offers, taxes) and creates it as a
                 <strong>draft</strong>: only users with the "see draft contracts" permission find it in Package Search. Check the prices,
                 add the markup, then switch it to live on the contract page. A file with several boards becomes one contract per board.
                 If the contract has terms the system cannot calculate yet, nothing is imported.
             </p>
+            <p class="mb-3 text-sm text-gray-600">
+                <strong>JSON prepared by hand:</strong> it is imported right away as a draft, without AI. Examples of the format:
+                <button type="button" class="text-red-600 hover:underline" @click="downloadJsonExample('lujo')">rates per occupancy (Lujo)</button>,
+                <button type="button" class="text-red-600 hover:underline" @click="downloadJsonExample('maldives')">per villa + extra person, taxes (Maldives)</button>.
+                One contract per file, or several as a list.
+            </p>
             <form class="grid grid-cols-1 gap-4 md:grid-cols-4" @submit.prevent="sendContractFile">
                 <AsyncSelect v-model="aiForm.hotel_id" :url="hotelsUrl" label-key="title" label="Hotel *" placeholder="Search hotel…" :error="aiErrors.hotel_id" />
                 <AsyncSelect v-model="aiForm.supplier_id" url="/suppliers/suppliers/autosuggest" label="Supplier" placeholder="Search supplier…" :error="aiErrors.supplier_id" />
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Contract file (PDF, Excel) *</label>
-                    <input ref="aiFileInput" type="file" accept=".pdf,.xlsx,.xls,.csv,.ods,.png,.jpg,.jpeg" class="block w-full text-sm" @change="(e) => (aiForm.file = e.target.files[0] ?? null)">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Contract file (PDF, Excel, JSON) *</label>
+                    <input ref="aiFileInput" type="file" accept=".pdf,.xlsx,.xls,.csv,.ods,.png,.jpg,.jpeg,.json" class="block w-full text-sm" @change="(e) => (aiForm.file = e.target.files[0] ?? null)">
                     <p v-if="aiErrors.file" class="mt-1 text-xs text-red-600">{{ aiErrors.file }}</p>
                 </div>
                 <div class="md:col-span-4">
-                    <Button type="submit" variant="primary" :disabled="aiSending">{{ aiSending ? 'Uploading…' : 'Upload and read' }}</Button>
+                    <Button type="submit" variant="primary" :disabled="aiSending">{{ aiSending ? 'Uploading…' : 'Upload' }}</Button>
                 </div>
             </form>
 
@@ -212,7 +191,7 @@ const rowActions = (contract) => [
                         <span class="text-xs text-gray-500">{{ u.hotel?.title }} · {{ u.created_at }} · {{ u.user }}</span>
                         <span v-if="u.status === 'processing'" class="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">Reading… (a few minutes)</span>
                         <span class="ml-auto flex gap-3 text-xs">
-                            <button v-if="u.status === 'blocked' || u.status === 'failed'" type="button" class="text-red-600 hover:underline" @click="readAgain(u)">Read again</button>
+                            <button v-if="(u.status === 'blocked' || u.status === 'failed') && !/\.(json|txt)$/i.test(u.original_name)" type="button" class="text-red-600 hover:underline" @click="readAgain(u)">Read again</button>
                             <button v-if="u.status !== 'processing'" type="button" class="text-gray-500 hover:underline" @click="removeUpload(u)">Remove</button>
                         </span>
                     </div>
@@ -226,29 +205,9 @@ const rowActions = (contract) => [
                             <li v-for="(x, i) in u.unsupported" :key="i"><strong>{{ x.feature }}</strong>: {{ x.detail }}</li>
                         </ul>
                     </div>
-                    <div v-if="u.status === 'failed'" class="mt-1 text-red-800">Could not be read: {{ u.error }}</div>
+                    <div v-if="u.status === 'failed'" class="mt-1 text-red-800">Not imported: {{ u.error }}</div>
                 </div>
             </div>
-        </FullWidthBox>
-
-        <FullWidthBox v-if="auth.can('hotelContracts.edit')" title="Import a contract JSON (developers)" class="mt-6" default-collapsed>
-            <p class="mb-3 text-sm text-gray-600">
-                Upload the contract JSON (rooms, rates per period, early booking, special offers and markups, as in the Lujo pricing tool).
-                Room rates are taken as they are; early booking, special offers and markups can be edited afterwards.
-            </p>
-            <form class="grid grid-cols-1 gap-4 md:grid-cols-4" @submit.prevent="importContract">
-                <AsyncSelect v-model="importForm.hotel_id" :url="hotelsUrl" label-key="title" label="Hotel *" placeholder="Search hotel…" :error="importErrors.hotel_id" />
-                <AsyncSelect v-model="importForm.supplier_id" url="/suppliers/suppliers/autosuggest" label="Supplier" placeholder="Search supplier…" :error="importErrors.supplier_id" />
-                <InputText v-model="importForm.code" label="Code (default: from the file)" :error="importErrors.code" />
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Contract file (.json) *</label>
-                    <input ref="fileInput" type="file" accept=".json,application/json" class="block w-full text-sm" @change="(e) => (importForm.file = e.target.files[0] ?? null)">
-                    <p v-if="importErrors.file" class="mt-1 text-xs text-red-600">{{ importErrors.file }}</p>
-                </div>
-                <div class="md:col-span-4">
-                    <Button type="submit" variant="primary" :disabled="importing">Import contract</Button>
-                </div>
-            </form>
         </FullWidthBox>
 
         <ConfirmDialog
