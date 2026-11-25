@@ -48,7 +48,57 @@ onMounted(() => {
     }
 });
 
-const lines = computed(() => (statement.value?.lines ?? []).filter((line) => show.value === 'all' || (show.value === 'open' ? line.status !== 'matched' : line.status === 'matched')));
+// Instant search over the rows: description, counterparty, reference, details, date,
+// the amount (1234.5, 1234,50, 1.234,50 and -1234.5 all find a row of 1,234.50)
+// and the "In the app" column (matched entry, payee, its amount). Every word must match.
+const rowSearch = ref('');
+const searchTerms = computed(() => rowSearch.value.trim().toLowerCase().split(/\s+/).filter(Boolean));
+
+function amountTerm(term) {
+    const raw = term.replace(/[€\s+-]/g, '');
+    if (! /^\d[\d.,]*$/.test(raw)) {
+        return null;
+    }
+    const lastSep = Math.max(raw.lastIndexOf('.'), raw.lastIndexOf(','));
+    // A separator followed by 1-2 digits is the decimal one; the rest are thousands separators.
+    if (lastSep !== -1 && raw.length - lastSep - 1 <= 2) {
+        return `${raw.slice(0, lastSep).replace(/[.,]/g, '')}.${raw.slice(lastSep + 1)}`;
+    }
+    return raw.replace(/[.,]/g, '');
+}
+
+function amountMatches(amount, term) {
+    if (amount === null || amount === undefined) {
+        return false;
+    }
+    const fixed = Math.abs(Number(amount)).toFixed(2);
+    // "1234.5" finds 1234.50; "1234" finds 1234.xx; "34.5" finds 1234.50.
+    return term.includes('.') ? fixed.includes(term) || fixed === Number(term).toFixed(2) : fixed.split('.')[0].includes(term);
+}
+
+const lineText = (line) => [
+    line.date, line.description, line.counterparty, line.reference, line.details,
+    ...(line.matches ?? []).flatMap((match) => [match.label, match.document, match.payee?.name, match.date, match.reference_id]),
+].filter((value) => value !== null && value !== undefined).join(' ').toLowerCase();
+
+function lineMatchesSearch(line) {
+    if (! searchTerms.value.length) {
+        return true;
+    }
+    const text = lineText(line);
+    return searchTerms.value.every((term) => {
+        if (text.includes(term)) {
+            return true;
+        }
+        const number = amountTerm(term);
+        return number !== null && [line.amount, ...(line.matches ?? []).flatMap((match) => [match.amount, match.posting_amount])].some((amount) => amountMatches(amount, number));
+    });
+}
+
+const lines = computed(() => (statement.value?.lines ?? [])
+    .filter((line) => show.value === 'all' || (show.value === 'open' ? line.status !== 'matched' : line.status === 'matched'))
+    .filter(lineMatchesSearch));
+const filtered = computed(() => show.value !== 'all' || searchTerms.value.length > 0);
 // Totals of the rows shown, per column (In/Out, or Payments/Charges for a card).
 const shownIn = computed(() => Math.round(lines.value.filter((line) => line.amount > 0).reduce((sum, line) => sum + line.amount, 0) * 100) / 100);
 const shownOut = computed(() => Math.round(-lines.value.filter((line) => line.amount < 0).reduce((sum, line) => sum + line.amount, 0) * 100) / 100);
@@ -238,6 +288,7 @@ async function destroy() {
 
             <FullWidthBox v-if="statement" title="Statement rows" :collapsible="false">
                 <template #actions>
+                    <InputText v-model="rowSearch" type="search" placeholder="Search description, amount, in the app…" autocomplete="off" class="w-72" />
                     <Select v-model="show" :options="[{ value: 'all', label: 'All rows' }, { value: 'open', label: 'Not found / partly' }, { value: 'matched', label: 'Matched' }]" :placeholder="null" />
                 </template>
                 <p v-if="canEdit && openCount" class="mb-2 text-xs text-gray-500">
@@ -267,7 +318,7 @@ async function destroy() {
                         </thead>
                         <tbody>
                             <tr v-if="! lines.length">
-                                <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">No rows.</td>
+                                <td colspan="8" class="border border-gray-300 px-2 py-4 text-center text-gray-400">{{ rowSearch.trim() ? `No rows match "${rowSearch.trim()}".` : 'No rows.' }}</td>
                             </tr>
                             <tr v-for="line in lines" :key="line.id" :class="statusClass[line.status]">
                                 <td v-if="canEdit" class="border border-gray-300 px-2 py-2 text-center">
@@ -310,7 +361,7 @@ async function destroy() {
                         <tfoot v-if="lines.length">
                             <tr class="bg-gray-50 font-semibold">
                                 <td :colspan="canEdit ? 3 : 2" class="border border-gray-300 px-2 py-2 text-right">
-                                    Total{{ show === 'all' ? '' : ' of the rows shown' }} ({{ lines.length }} rows)
+                                    Total{{ filtered ? ' of the rows shown' : '' }} ({{ lines.length }} rows)
                                 </td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(shownIn) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-right tabular-nums">{{ money(shownOut) }}</td>
