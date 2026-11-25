@@ -52,7 +52,7 @@ const saving = ref(false);
 function blank(kind) {
     if (kind === 'eb') return { code: '', booking_from: '', booking_to: '', stay_from: '', stay_to: '', discount_percent: null, prepayment_percent: null, payment_deadline: '', active: true };
     if (kind === 'spo') return { code: '', name: '', type: 'percent', discount_percent: null, booking_from: '', booking_to: '', stay_windows: [], room_codes: [], min_nights: null, combinable_with_eb: true, combinable_with_offers: true, match_adults: 2, match_children: 2, charge_adults: 2, charge_children: 0, on_request: false, active: true, notes: '' };
-    return { code: '', priority: 10, channel: null, booking_from: '', booking_to: '', checkin_from: '', checkin_to: '', room_codes: [], markup_percent: null, active: true };
+    return { channel: null, booking_from: '', booking_to: '', checkin_from: '', checkin_to: '', room_codes: [], markup_percent: null, active: true };
 }
 
 function openEditor(kind, row = null) {
@@ -353,13 +353,12 @@ function openStopSale() {
                 <template #actions>
                     <Button v-if="canEdit" size="sm" variant="primary" @click="openEditor('markup')">+ Add</Button>
                 </template>
-                <p class="mb-2 text-xs text-gray-500">The active rule with the highest priority that matches channel, reservation date and check-in wins. Keep one rule without dates as the default.</p>
+                <p class="mb-2 text-xs text-gray-500">The most specific active rule that matches room, check-in, reservation date and channel wins. Keep one rule without dates as the default. The code is made automatically.</p>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase text-gray-500">
                                 <th class="border border-gray-300 px-2 py-2">Code</th>
-                                <th class="border border-gray-300 px-2 py-2 text-center">Priority</th>
                                 <th class="border border-gray-300 px-2 py-2">Channel</th>
                                 <th class="border border-gray-300 px-2 py-2">Reservation dates</th>
                                 <th class="border border-gray-300 px-2 py-2">Check-in dates</th>
@@ -369,10 +368,9 @@ function openStopSale() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="contract.markups.length === 0"><td colspan="8" class="border border-gray-300 px-2 py-3 text-center text-red-600">No markup rule: the search cannot price this contract.</td></tr>
+                            <tr v-if="contract.markups.length === 0"><td colspan="7" class="border border-gray-300 px-2 py-3 text-center text-red-600">No markup rule: the search cannot price this contract.</td></tr>
                             <tr v-for="row in contract.markups" :key="row.id" :class="row.active ? '' : 'text-gray-400'">
                                 <td class="border border-gray-300 px-2 py-2 font-medium">{{ row.code }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-center">{{ row.priority }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ row.channel ?? 'Both' }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ window_(row.booking_from, row.booking_to) }}</td>
                                 <td class="border border-gray-300 px-2 py-2">{{ window_(row.checkin_from, row.checkin_to) }}</td>
@@ -685,8 +683,6 @@ function openStopSale() {
 
                 <template v-else>
                     <div class="grid grid-cols-2 gap-3">
-                        <InputText v-model="editor.form.code" label="Code *" :error="errors.code" />
-                        <InputNumber v-model="editor.form.priority" label="Priority * (higher wins)" :error="errors.priority" />
                         <InputNumber v-model="editor.form.markup_percent" label="Markup % *" :error="errors.markup_percent" />
                         <Select v-model="editor.form.channel" :options="channelOptions" label="Channel" placeholder="Both" />
                         <DatePicker v-model="editor.form.booking_from" label="Reservation from" :error="errors.booking_from" />
