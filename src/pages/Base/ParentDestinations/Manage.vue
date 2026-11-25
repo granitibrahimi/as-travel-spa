@@ -9,6 +9,9 @@ import FullWidthBox from '../../../components/FullWidthBox.vue';
 import Button from '../../../components/Button.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import NiceCheckbox from '../../../components/Form/NiceCheckbox.vue';
+import InputNumber from '../../../components/Form/InputNumber.vue';
+import Select from '../../../components/Form/Select.vue';
+import { useAuthStore } from '../../../stores/auth.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -19,7 +22,46 @@ const form = reactive({ name: '', code: '', taxes_included: false });
 const errors = ref({});
 const processing = ref(false);
 
+// Markups: one row per hotel type and customer type (B2C / B2B). Empty amount = no markup.
+const auth = useAuthStore();
+const canSeeMarkups = auth.can('hotelContracts.list');
+const canEditMarkups = auth.can('hotelContracts.edit');
+const markups = ref([]);
+const markupErrors = ref({});
+const markupSaving = ref(false);
+const markupSaved = ref(false);
+const calcOptions = [{ value: 'percent', label: '%' }, { value: 'amount', label: 'EUR' }];
+
+async function loadMarkups() {
+    const { data } = await api.get(`/parent-destination-markups/${id}`);
+    markups.value = castResource(data).rows ?? [];
+}
+
+async function saveMarkups() {
+    markupSaving.value = true;
+    markupSaved.value = false;
+    markupErrors.value = {};
+    try {
+        await api.put(`/parent-destination-markups/${id}`, { rows: markups.value });
+        markupSaved.value = true;
+        await loadMarkups();
+    } catch (error) {
+        if (error.response?.status === 422) {
+            markupErrors.value = Object.fromEntries(
+                Object.entries(error.response.data.errors ?? {}).map(([field, messages]) => [field, messages[0]]),
+            );
+        } else {
+            throw error;
+        }
+    } finally {
+        markupSaving.value = false;
+    }
+}
+
 onMounted(async () => {
+    if (isEdit && canSeeMarkups) {
+        loadMarkups();
+    }
     if (isEdit) {
         const { data } = await api.get(`/parent-destinations/${id}`);
         const parentDestination = castResource(data);
@@ -85,6 +127,37 @@ async function submit() {
                     :error="errors.taxes_included"
                     class="mt-4"
                 />
+            </FullWidthBox>
+
+            <FullWidthBox v-if="isEdit && canSeeMarkups" title="Markups" :collapsible="false">
+                <p class="mb-3 text-xs text-gray-500">
+                    Used for every hotel of this destination by its hotel type, when the hotel's contract has no markup of its own.
+                    EUR is per room for the whole stay. Leave the amount empty for no markup.
+                </p>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="text-left text-xs uppercase text-gray-500">
+                                <th class="border border-gray-300 px-2 py-2">Hotel type</th>
+                                <th class="border border-gray-300 px-2 py-2">Customer type</th>
+                                <th class="border border-gray-300 px-2 py-2" style="width: 140px;">Calculation</th>
+                                <th class="border border-gray-300 px-2 py-2" style="width: 180px;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(row, i) in markups" :key="`${row.hotel_type}-${row.channel}`">
+                                <td class="border border-gray-300 px-2 py-2">{{ row.hotel_type_name }}</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ row.channel }}</td>
+                                <td class="border border-gray-300 px-2 py-1"><Select v-model="row.calc_type" :options="calcOptions" :placeholder="null" :disabled="! canEditMarkups" /></td>
+                                <td class="border border-gray-300 px-2 py-1"><InputNumber v-model="row.amount" :disabled="! canEditMarkups" :error="markupErrors[`rows.${i}.amount`]" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-if="canEditMarkups" class="mt-3 flex items-center justify-end gap-3">
+                    <span v-if="markupSaved" class="text-xs text-green-700">Markups saved.</span>
+                    <Button type="button" variant="primary" :disabled="markupSaving" @click="saveMarkups">{{ markupSaving ? 'Saving…' : 'Save markups' }}</Button>
+                </div>
             </FullWidthBox>
 
             <footer class="flex items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 shadow-lg">
