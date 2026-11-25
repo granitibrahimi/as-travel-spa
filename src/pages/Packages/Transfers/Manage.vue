@@ -17,8 +17,7 @@ const route = useRoute();
 const router = useRouter();
 const id = route.params.id ?? null;
 const isEdit = Boolean(id);
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-const hotelsUrl = `${apiOrigin}/api/customers/hotels`;
+const hotelsUrl = '/hotels/autosuggest';
 
 const form = reactive({
     supplier_id: null, name: '', parent_destination_id: null, hotel_id: null, active: true, notes: '',

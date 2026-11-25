@@ -18,8 +18,7 @@ import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-const hotelsUrl = `${apiOrigin}/api/customers/hotels`;
+const hotelsUrl = '/hotels/autosuggest';
 
 const { filters, response: apiResponse, loading, apply, clear, goToPage, reload } = useListFilters(
     { q: '' },

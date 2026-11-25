@@ -22,8 +22,7 @@ import CheckboxDropdown from '../../../components/Form/CheckboxDropdown.vue';
 
 const route = useRoute();
 const id = route.params.id;
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-const hotelsUrl = `${apiOrigin}/api/customers/hotels`;
+const hotelsUrl = '/hotels/autosuggest';
 
 const contract = ref(null);
 const openRoom = ref(null);

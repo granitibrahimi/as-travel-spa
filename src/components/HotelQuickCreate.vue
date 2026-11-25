@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import axios from 'axios';
+import api from '../helpers/api';
 import Button from './Button.vue';
 import InputText from './Form/InputText.vue';
 import InputNumber from './Form/InputNumber.vue';
@@ -49,8 +49,9 @@ watch(() => props.show, (open) => {
     if (isEdit.value) {
         loading.value = true;
 
-        axios.get(`${props.baseUrl}/${props.hotelId}`, { withCredentials: true })
-            .then(({ data }) => {
+        api.get(`${props.baseUrl}/${props.hotelId}`)
+            .then(({ data: response }) => {
+                const data = response.data ?? response;
                 title.value = data.title ?? '';
                 stars.value = data.stars ?? 0;
                 link.value = data.link ?? '';
@@ -85,11 +86,15 @@ function submit() {
     };
 
     const request = isEdit.value
-        ? axios.put(`${props.baseUrl}/${props.hotelId}`, payload, { withCredentials: true })
-        : axios.post(props.baseUrl, payload, { withCredentials: true });
+        ? api.put(`${props.baseUrl}/${props.hotelId}`, payload)
+        : api.post(props.baseUrl, payload);
 
+    // The API answers with { data: { id } }; the parent needs { id, title }.
     request
-        .then(({ data }) => emit(isEdit.value ? 'updated' : 'created', data))
+        .then(({ data: response }) => emit(isEdit.value ? 'updated' : 'created', {
+            id: response.data?.id ?? props.hotelId,
+            title: title.value,
+        }))
         .catch((error) => {
             errors.value = error.response?.data?.errors ?? { title: ['Could not save the hotel.'] };
         })

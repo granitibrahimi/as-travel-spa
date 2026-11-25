@@ -212,7 +212,7 @@ function onRoomChange(line, option) {
         <HotelQuickCreate
             :show="Boolean(modalLine)"
             :destination="destinationId ? { id: destinationId, name: destinationName } : null"
-            :base-url="meta.hotelsUrl"
+            :base-url="meta.hotelStoreUrl"
             :hotel-id="modalHotelId"
             @created="onHotelCreated"
             @updated="onHotelUpdated"

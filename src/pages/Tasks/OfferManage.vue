@@ -24,12 +24,9 @@ const offerId = ref(route.params.offerId ?? null);
 const isEdit = computed(() => Boolean(offerId.value));
 const pageTitle = computed(() => [isEdit.value ? 'Edit' : 'Prepare', typeName.value, 'offer'].filter(Boolean).join(' '));
 
-// Hotel/room/supplier lookups live under /api (siblings of /api/v1, the api
-// client's base) so they're addressed with absolute URLs off the same origin.
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-const suppliersUrl = `${apiOrigin}/api/suppliers`;
-const hotelsUrl = `${apiOrigin}/api/customers/hotels`;
-const roomsUrl = `${apiOrigin}/api/customers/hotel-rooms`;
+const suppliersUrl = '/suppliers/suppliers/autosuggest';
+const hotelsUrl = '/hotels/autosuggest';
+const roomsUrl = '/hotel-rooms/autosuggest';
 
 const meta = ref(null);
 const loading = ref(true);
@@ -168,7 +165,7 @@ provide('offerMeta', new Proxy({}, {
             perUnitBasis: meta.value.perUnitBasis,
             suppliersUrl,
             hotelsUrl,
-            hotelStoreUrl: hotelsUrl,
+            hotelStoreUrl: '/hotels',
             roomsUrl,
         };
 
