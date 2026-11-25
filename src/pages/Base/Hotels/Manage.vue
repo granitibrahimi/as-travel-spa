@@ -10,6 +10,7 @@ import AsyncSelect from '../../../components/Form/AsyncSelect.vue';
 import InputText from '../../../components/Form/InputText.vue';
 import InputNumber from '../../../components/Form/InputNumber.vue';
 import StarRating from '../../../components/StarRating.vue';
+import Select from '../../../components/Form/Select.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -26,12 +27,15 @@ const form = reactive({
     parent_destination_id: null,
     link: '',
     stars: 0,
+    hotel_type: null,
     min_age_allowed: null,
     infant_max_age: null,
     child_max_age: null,
     rooms: [],
 });
 const destinationInitial = ref(null);
+// Used for destination markups; empty = taken from the stars.
+const hotelTypeOptions = [{ value: 1, label: '4 stars and below' }, { value: 2, label: '5 stars' }, { value: 3, label: '6 stars' }];
 const errors = ref({});
 const processing = ref(false);
 
@@ -44,6 +48,7 @@ onMounted(async () => {
             parent_destination_id: hotel.parent_destination_id ?? null,
             link: hotel.link ?? '',
             stars: hotel.stars ?? 0,
+            hotel_type: hotel.hotel_type ?? null,
             min_age_allowed: hotel.min_age_allowed ?? null,
             infant_max_age: hotel.infant_max_age ?? null,
             child_max_age: hotel.child_max_age ?? null,
@@ -110,6 +115,8 @@ async function submit() {
                         <StarRating v-model="form.stars" class="mt-1" />
                         <p v-if="errors.stars" class="mt-1 text-xs text-red-600">{{ errors.stars }}</p>
                     </div>
+
+                    <Select v-model="form.hotel_type" :options="hotelTypeOptions" label="Hotel type (for markups)" placeholder="From the stars" :error="errors.hotel_type" />
                 </div>
 
                 <h3 class="mb-3 mt-6 text-sm font-semibold uppercase text-gray-500">Age categories</h3>

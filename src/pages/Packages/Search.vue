@@ -258,7 +258,7 @@ const colCount = computed(() => 5 + (isB2B.value ? 1 : 0) + (showNet.value ? 4 :
                                     <template v-if="showNet">
                                         <td class="border border-gray-300 px-2 py-2 text-right">{{ money(room.hotel_net) }}</td>
                                         <td class="border border-gray-300 px-2 py-2 text-right">{{ money(room.total_net) }}</td>
-                                        <td class="border border-gray-300 px-2 py-2 text-right">{{ pct(room.markup.pct) }}<div class="text-xs text-gray-500">{{ room.markup.code }}</div></td>
+                                        <td class="border border-gray-300 px-2 py-2 text-right">{{ room.markup.amount ? `${room.markup.amount} EUR` : pct(room.markup.pct) }}<div class="text-xs text-gray-500">{{ room.markup.source === 'destination' ? 'Destination' : room.markup.code }}</div></td>
                                         <td class="border border-gray-300 px-2 py-2 text-right">{{ money(room.margin) }}</td>
                                     </template>
                                     <td class="border border-gray-300 px-2 py-2 text-center">

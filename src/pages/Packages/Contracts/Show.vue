@@ -43,7 +43,7 @@ const window_ = (from, to) => (from || to ? `${from ?? '…'} – ${to ?? '…'}
 const SECTIONS = {
     eb: { url: 'early-bookings', title: 'Early booking' },
     spo: { url: 'special-offers', title: 'Special offer' },
-    markup: { url: 'markups', title: 'Markup rule' },
+    markup: { url: 'markups', title: 'Markup' },
 };
 const editor = ref(null); // { kind, id, form }
 const errors = ref({});
@@ -52,7 +52,7 @@ const saving = ref(false);
 function blank(kind) {
     if (kind === 'eb') return { code: '', booking_from: '', booking_to: '', stay_from: '', stay_to: '', discount_percent: null, prepayment_percent: null, payment_deadline: '', active: true };
     if (kind === 'spo') return { code: '', name: '', type: 'percent', discount_percent: null, booking_from: '', booking_to: '', stay_windows: [], room_codes: [], min_nights: null, combinable_with_eb: true, combinable_with_offers: true, match_adults: 2, match_children: 2, charge_adults: 2, charge_children: 0, on_request: false, active: true, notes: '' };
-    return { channel: null, booking_from: '', booking_to: '', checkin_from: '', checkin_to: '', room_codes: [], markup_percent: null, active: true };
+    return { calc_type: 'percent', amount: null, room_codes: [], active: true };
 }
 
 function openEditor(kind, row = null) {
@@ -131,6 +131,10 @@ const editorTitle = computed(() => {
 });
 const typeOptions = computed(() => (contract.value?.special_offer_types ?? []).map((t) => ({ value: t.id, label: t.name })));
 const channelOptions = [{ value: 'B2C', label: 'B2C' }, { value: 'B2B', label: 'B2B' }];
+const calcOptions = [{ value: 'percent', label: '%' }, { value: 'amount', label: 'EUR' }];
+const roomNames = (codes) => (codes?.length ? codes.map((c) => roomOptions.value.find((o) => o.value === c)?.label ?? c).join(', ') : 'All rooms');
+const markupText = (row) => (row.calc_type === 'amount' ? `${row.amount} EUR` : `${row.amount}%`);
+const markupLimits = (row) => [row.channel, row.booking_from || row.booking_to ? `reservation ${window_(row.booking_from, row.booking_to)}` : null, row.checkin_from || row.checkin_to ? `check-in ${window_(row.checkin_from, row.checkin_to)}` : null].filter(Boolean).join(', ');
 const feePerOptions = [{ value: 'booking', label: 'Per booking' }, { value: 'pax', label: 'Per person' }, { value: 'night', label: 'Per night' }];
 const roundingOptions = [{ value: 'nearest_1', label: 'Nearest 1 €' }, { value: 'nearest_5', label: 'Nearest 5 €' }, { value: 'none', label: 'Cents' }];
 const pad2 = (v) => (v === null || v === undefined ? '—' : `${v}%`);
@@ -349,32 +353,30 @@ function openStopSale() {
                 </div>
             </FullWidthBox>
 
-            <FullWidthBox title="Markup rules" class="mt-6">
+            <FullWidthBox title="Markup" class="mt-6">
                 <template #actions>
                     <Button v-if="canEdit" size="sm" variant="primary" @click="openEditor('markup')">+ Add</Button>
                 </template>
-                <p class="mb-2 text-xs text-gray-500">The most specific active rule that matches room, check-in, reservation date and channel wins. Keep one rule without dates as the default. The code is made automatically.</p>
+                <p class="mb-2 text-xs text-gray-500">
+                    % or EUR (per room for the whole stay), for all rooms or chosen rooms. A rule for chosen rooms wins over one for all rooms.
+                    Without a contract markup, the markup of the destination for this hotel type ({{ contract.hotel?.hotel_type }}) and B2C / B2B is used.
+                    <RouterLink v-if="contract.hotel?.parent_destination_id" :to="{ name: 'parentDestinations.edit', params: { id: contract.hotel.parent_destination_id } }" class="text-red-600 hover:underline">Destination markups</RouterLink>
+                </p>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse border border-gray-300 text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase text-gray-500">
-                                <th class="border border-gray-300 px-2 py-2">Code</th>
-                                <th class="border border-gray-300 px-2 py-2">Channel</th>
-                                <th class="border border-gray-300 px-2 py-2">Reservation dates</th>
-                                <th class="border border-gray-300 px-2 py-2">Check-in dates</th>
+                                <th class="border border-gray-300 px-2 py-2">Rooms</th>
                                 <th class="border border-gray-300 px-2 py-2 text-right">Markup</th>
                                 <th class="border border-gray-300 px-2 py-2 text-center">Active</th>
                                 <th v-if="canEdit" class="border border-gray-300 px-2 py-2 text-center" style="width: 120px;"></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="contract.markups.length === 0"><td colspan="7" class="border border-gray-300 px-2 py-3 text-center text-red-600">No markup rule: the search cannot price this contract.</td></tr>
+                            <tr v-if="contract.markups.length === 0"><td colspan="4" class="border border-gray-300 px-2 py-3 text-center text-gray-500">No contract markup: the destination markup is used.</td></tr>
                             <tr v-for="row in contract.markups" :key="row.id" :class="row.active ? '' : 'text-gray-400'">
-                                <td class="border border-gray-300 px-2 py-2 font-medium">{{ row.code }}</td>
-                                <td class="border border-gray-300 px-2 py-2">{{ row.channel ?? 'Both' }}</td>
-                                <td class="border border-gray-300 px-2 py-2">{{ window_(row.booking_from, row.booking_to) }}</td>
-                                <td class="border border-gray-300 px-2 py-2">{{ window_(row.checkin_from, row.checkin_to) }}</td>
-                                <td class="border border-gray-300 px-2 py-2 text-right">{{ row.markup_percent }}%</td>
+                                <td class="border border-gray-300 px-2 py-2">{{ roomNames(row.room_codes) }}<div v-if="markupLimits(row)" class="text-xs text-gray-500">Only {{ markupLimits(row) }} (imported)</div></td>
+                                <td class="border border-gray-300 px-2 py-2 text-right font-medium">{{ markupText(row) }}</td>
                                 <td class="border border-gray-300 px-2 py-2 text-center"><NiceCheckbox :model-value="row.active" :disabled="! canEdit" @update:model-value="toggleActive('markup', row)" /></td>
                                 <td v-if="canEdit" class="border border-gray-300 px-2 py-2 text-center">
                                     <button type="button" class="mr-2 text-xs text-red-600 hover:underline" @click="openEditor('markup', row)">Edit</button>
@@ -683,12 +685,8 @@ function openStopSale() {
 
                 <template v-else>
                     <div class="grid grid-cols-2 gap-3">
-                        <InputNumber v-model="editor.form.markup_percent" label="Markup % *" :error="errors.markup_percent" />
-                        <Select v-model="editor.form.channel" :options="channelOptions" label="Channel" placeholder="Both" />
-                        <DatePicker v-model="editor.form.booking_from" label="Reservation from" :error="errors.booking_from" />
-                        <DatePicker v-model="editor.form.booking_to" label="Reservation to" :error="errors.booking_to" />
-                        <DatePicker v-model="editor.form.checkin_from" label="Check-in from" :error="errors.checkin_from" />
-                        <DatePicker v-model="editor.form.checkin_to" label="Check-in to" :error="errors.checkin_to" />
+                        <Select v-model="editor.form.calc_type" :options="calcOptions" :placeholder="null" label="Calculation type *" :error="errors.calc_type" />
+                        <InputNumber v-model="editor.form.amount" :label="editor.form.calc_type === 'amount' ? 'Amount (EUR per room) *' : 'Amount (%) *'" :error="errors.amount" />
                     </div>
                     <CheckboxDropdown v-model="editor.form.room_codes" :options="roomOptions" label="Rooms (none = all rooms)" />
                     <NiceCheckbox v-model="editor.form.active" label="Active" />
@@ -704,7 +702,7 @@ function openStopSale() {
         <ConfirmDialog
             :show="Boolean(toDelete)"
             title="Delete?"
-            :message="toDelete ? `${toDelete.row.code} will be deleted. To pause it, switch it off instead.` : ''"
+            :message="toDelete ? `${toDelete.row.code ?? 'This row'} will be deleted. To pause it, switch it off instead.` : ''"
             confirm-label="Yes, delete"
             :processing="deleting"
             @confirm="confirmDelete"
