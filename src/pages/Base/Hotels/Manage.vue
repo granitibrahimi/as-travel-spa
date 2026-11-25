@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import api from '../../../helpers/api.js';
+import api, { getParentDestinationsAutosuggestEndpoint } from '../../../helpers/api.js';
 import { castResource } from '../../../types/responses.js';
 import { routeUrl } from '../../../helpers/route.js';
 import AppLayout from '../../../layouts/AppLayout.vue';
@@ -15,11 +15,6 @@ const route = useRoute();
 const router = useRouter();
 const id = route.params.id ?? null;
 const isEdit = Boolean(id);
-
-// The parent-destination lookup lives under /api/customers (sibling of /api/v1,
-// the api client's base) so it's addressed with an absolute URL off the same origin.
-const apiOrigin = new URL(import.meta.env.VITE_API_URL ?? '/api/v1', window.location.origin).origin;
-const destinationsUrl = `${apiOrigin}/api/customers/destinations`;
 
 const form = reactive({
     title: '',
@@ -96,7 +91,7 @@ async function submit() {
 
                     <AsyncSelect
                         v-model="form.parent_destination_id"
-                        :url="destinationsUrl"
+                        :url="getParentDestinationsAutosuggestEndpoint()"
                         :initial-option="destinationInitial"
                         label="Destination *"
                         placeholder="Choose destination…"
