@@ -313,6 +313,49 @@ const colCount = computed(() => 5 + (isB2B.value ? 1 : 0) + (showNet.value ? 4 :
                                             Hotel {{ hm(hotel, room.hotel_net) }}<span v-if="hotel.exchange_rate"> ({{ inContract(hotel, room.hotel_net_original) }})</span> + fee {{ hm(hotel, room.booking_fees) }} + charter {{ hm(hotel, room.charter_net) }} + transfer {{ hm(hotel, room.transfer_net) }} = {{ hm(hotel, room.total_net - (room.tax_total ?? 0)) }} net<span v-if="room.tax_total"> · + taxes {{ hm(hotel, room.tax_total) }} at cost</span>
                                             <span v-if="room.rate_label"> · rate row: {{ room.rate_label }}</span>
                                         </div>
+                                        <div class="mt-1 text-xs text-gray-600">
+                                            <span v-if="room.min_stay">Minimum stay {{ room.min_stay }} nights · </span>
+                                            <span v-if="room.release_days">Release {{ room.release_days }} days · </span>
+                                            Booked on {{ (result.booking_date ?? '').split('-').reverse().join('.') }}
+                                        </div>
+                                        <div class="mt-3">
+                                            <div class="mb-1 text-xs font-semibold uppercase text-gray-500">Offers and discounts in this contract</div>
+                                            <div v-if="! room.offers?.length" class="text-xs text-gray-500">This contract has no early booking or special offers.</div>
+                                            <table v-else class="w-full text-xs">
+                                                <thead>
+                                                    <tr class="text-left text-gray-500">
+                                                        <th class="pr-3" style="width: 20px;" />
+                                                        <th class="pr-3">Code</th>
+                                                        <th class="pr-3">Type</th>
+                                                        <th class="pr-3">Discount</th>
+                                                        <th class="pr-3">Booking dates</th>
+                                                        <th class="pr-3">Stay dates</th>
+                                                        <th class="pr-3">For this stay</th>
+                                                        <th v-if="showNet" class="text-right">Saved</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr v-for="(offer, i) in room.offers" :key="`${offer.code}-${i}`" :class="offer.applied ? '' : 'text-gray-500'">
+                                                        <td class="pr-3 align-top font-bold" :class="offer.applied ? 'text-green-700' : 'text-gray-400'">{{ offer.applied ? '✓' : '✗' }}</td>
+                                                        <td class="pr-3 align-top">
+                                                            <span :class="offer.applied ? 'rounded bg-green-100 px-1 text-green-800' : ''">{{ offer.code }}</span>
+                                                            <span v-if="offer.name && offer.name !== offer.code" class="block text-gray-500">{{ offer.name }}</span>
+                                                        </td>
+                                                        <td class="pr-3 align-top">{{ offer.kind }}</td>
+                                                        <td class="pr-3 align-top">{{ offer.value }}</td>
+                                                        <td class="pr-3 align-top">{{ offer.booking ?? 'Any' }}</td>
+                                                        <td class="pr-3 align-top">{{ offer.stay ?? 'Any' }}</td>
+                                                        <td class="pr-3 align-top">
+                                                            <span v-if="offer.applied" class="font-medium text-green-800">Applied{{ offer.nights && offer.nights < result.nights ? ` on ${offer.nights} of ${result.nights} nights` : '' }}</span>
+                                                            <span v-for="reason in offer.reasons" :key="reason" class="block">{{ reason }}</span>
+                                                        </td>
+                                                        <td v-if="showNet" class="text-right align-top">
+                                                            <template v-if="offer.saved">{{ hm(hotel, offer.saved) }}<span v-if="hotel.exchange_rate" class="block text-gray-500">{{ inContract(hotel, offer.saved_original) }}</span></template>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </td>
                                 </tr>
                             </template>
